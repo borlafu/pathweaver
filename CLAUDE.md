@@ -12,6 +12,23 @@ commands below do not work yet.
 Toolchain is ready: .NET SDK 10.0.400, and Unity **6000.5.9f1** (Unity 6.5) with
 the Android modules. See Toolchain setup.
 
+## Release identity
+
+| | |
+|---|---|
+| Application ID | `es.borlafu.pathweaver` |
+| Play Console account | `borlafu`, **personal** |
+| Distribution | Free, no in-app purchases in the MVP |
+
+The application ID is **permanent**. It cannot be changed after the first upload
+and cannot be reused even if the app is deleted, so it must match exactly in
+Unity's Player Settings (Other Settings → Identification → Package Name).
+
+Because the account is personal, Production and Open testing stay locked until a
+closed test has run with 12 testers opted in continuously for 14 days, followed
+by a production-access review. That is wall-clock time no amount of coding
+removes, so it runs in parallel with development.
+
 ## Layout
 
 ```
@@ -124,6 +141,18 @@ begin working once `Assets/` exists:
 - EditMode tests: `Unity -runTests -batchmode -projectPath . -testPlatform EditMode`
 - PlayMode tests: `Unity -runTests -batchmode -projectPath . -testPlatform PlayMode`
 - Android build: `Unity -quit -batchmode -projectPath . -executeMethod BuildScript.BuildAndroid`
+
+On-device checks once a build exists:
+
+```bash
+adb install -r <path-to-apk>
+adb shell am start -W -n es.borlafu.pathweaver/com.unity3d.player.UnityPlayerActivity
+adb logcat -s Unity
+```
+
+The `am start -W` output carries the cold-boot timing the 1.5 second budget is
+measured against. Confirm the activity name against the generated manifest — a
+custom activity would change it.
 
 Unity holds an exclusive lock on the project while the Editor is open; batchmode
 commands fail until it is closed.
