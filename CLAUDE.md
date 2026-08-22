@@ -9,8 +9,8 @@ See PRD.md for the full product spec.
 has been scaffolded yet — no `Assets/` or `ProjectSettings/`, so the Unity
 commands below do not work yet.
 
-Toolchain: .NET SDK 10.0.400 installed. Unity Hub installed, but no Editor
-version yet. See Toolchain setup.
+Toolchain is ready: .NET SDK 10.0.400, and Unity **6000.5.9f1** (Unity 6.5) with
+the Android modules. See Toolchain setup.
 
 ## Layout
 
@@ -29,45 +29,65 @@ consume it as a managed plugin and supply only presentation and input.
 
 Verified on macOS 26.5.2, arm64, Homebrew 6.0.17 at `/opt/homebrew`.
 
-### Unity
+### Unity — pinned to 6000.5.9f1
 
-Unity is installed in two steps: the Hub, then an Editor version through the Hub.
+This project builds on **Unity 6000.5.9f1** (Unity 6.5), installed at:
+
+```
+/Applications/Unity/Hub/Editor/6000.5.9f1/Unity.app/Contents/MacOS/Unity
+```
+
+That is the `Unity` binary the commands below refer to; there is no `Unity` on
+PATH by default.
+
+The version is pinned rather than merely current, for two reasons:
+
+- It offers **Target API Level 36**, which Google Play requires for new
+  submissions from 31 August 2026. It also offers 37.0. Any Editor that caps
+  below 36 cannot ship this game.
+- Its splash screen is disableable on a Personal licence, which the 1.5 second
+  cold-boot target depends on.
+
+Do not upgrade the Editor mid-project without re-checking both, and without
+re-running the determinism tests — an engine change must never alter simulation
+output.
+
+To reproduce the install from scratch:
 
 ```bash
 brew install --cask unity-hub
 ```
 
-Then sign in to the Hub once (a free Personal license is enough for this
-project) and install an Editor. Prefer the current Unity 6 LTS release. List
-what is available before picking a version:
+Sign in to the Hub once (a free Personal licence suffices), then install the
+pinned Editor with the Android build support modules. Without the `android`
+module there is no Android build target, and without the two sub-modules the Hub
+provides no SDK/NDK or JDK:
 
 ```bash
 alias unityhub='"/Applications/Unity Hub.app/Contents/MacOS/Unity Hub" --'
-unityhub --headless editors --releases
-```
-
-Install the Editor with the Android build support modules. Without the
-`android` module there is no Android build target, and without the two
-sub-modules the Hub will not provide an SDK/NDK or JDK:
-
-```bash
 unityhub --headless install \
-  --version <version-from-the-list-above> \
+  --version 6000.5.9f1 \
   --module android android-sdk-ndk-tools android-open-jdk \
   --childModules
 ```
 
-The Editor lands at:
+A convenient alias for the pinned Editor:
 
+```bash
+alias unity='/Applications/Unity/Hub/Editor/6000.5.9f1/Unity.app/Contents/MacOS/Unity'
 ```
-/Applications/Unity/Hub/Editor/<version>/Unity.app/Contents/MacOS/Unity
-```
-
-That binary is the `Unity` CLI referenced under Commands. Add it to PATH or
-alias it — there is no `Unity` on PATH by default.
 
 Choose the Apple Silicon Editor build, not Intel. The Intel build runs under
 Rosetta and is markedly slower for iterative work.
+
+### Player settings that must not regress
+
+Both were verified on 6000.5.9f1 and are load-bearing for PRD targets:
+
+| Setting | Path | Required value |
+|---|---|---|
+| Target API Level | Player → Other Settings → Identification | 36 or higher |
+| Show Splash Screen | Player → Splash Image | unchecked |
 
 ### .NET SDK
 
@@ -98,7 +118,8 @@ an `Assets/` folder exists. Those are gitignored; never hand-edit them. The
 hand-authored `src/` and `tests/` projects are tracked, via negation rules in
 `.gitignore`.
 
-Unity — requires an installed Editor:
+Unity — the Editor is installed, but there is no Unity project yet, so these
+begin working once `Assets/` exists:
 
 - EditMode tests: `Unity -runTests -batchmode -projectPath . -testPlatform EditMode`
 - PlayMode tests: `Unity -runTests -batchmode -projectPath . -testPlatform PlayMode`
@@ -114,7 +135,8 @@ commands fail until it is closed.
 
 - Offline-first: no gameplay path may require network access. Cloud save is an
   async delta sync on top of local SQLite, never a dependency.
-- Cold boot under 1.5s to interactive main menu.
+- Cold boot under 1.5s to interactive main menu. Achievable: the engine splash
+  screen is disableable on this Editor and licence.
 - APK/AAB under 85 MB.
 - Deterministic generation: the Daily Expedition seed derives from device date
   only, and must produce an identical grid on every device with no server call.
