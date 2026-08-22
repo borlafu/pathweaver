@@ -1,0 +1,75 @@
+# Unity generated directories
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]in/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Asset meta data should only be ignored when the corresponding asset is also ignored
+!/[Aa]ssets/**/*.meta
+
+# Unity3D generated project files. Unity regenerates these; never hand-edit or commit them.
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+
+# Hand-authored .NET projects outside Assets/ are real source and must be tracked.
+# Pathweaver.slnx is the solution; the legacy *.sln pattern above does not match it.
+!/src/**/*.csproj
+!/tests/**/*.csproj
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity3D generated crash report
+sysinfo.txt
+
+# Builds
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+*.DotSettings.user
+
+# Gradle output from Android export
+*.gradle/
+local.properties
+
+# Crashlytics / Play signing keys — never commit signing material
+*.keystore
+*.jks
+!/[Aa]ssets/**/*.keystore
+!/[Aa]ssets/**/*.jks
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Local secrets and environment
+.env
+.env.local
+
+# Per-developer Claude Code settings
+.claude/settings.local.json
