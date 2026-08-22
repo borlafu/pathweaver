@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- netstandard2.1 is the only modern target Unity loads as a managed plugin.
+         Do not raise this to net10.0 or the DLL becomes unusable from Unity. -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <!-- C# 9 matches Unity 6's compiler, so this code stays valid if it is ever
+         consumed as source inside Assets/ rather than as a prebuilt DLL. -->
+    <LangVersion>9</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Determinism is a product requirement, not a build nicety. -->
+    <Deterministic>true</Deterministic>
+    <AssemblyName>Pathweaver.Core</AssemblyName>
+    <RootNamespace>Pathweaver.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>
