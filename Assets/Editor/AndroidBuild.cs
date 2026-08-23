@@ -204,6 +204,13 @@ namespace Pathweaver.EditorTools
         /// <summary>
         /// Builds an installable APK for on-device testing.
         /// </summary>
+        /// <remarks>
+        /// A development build by default: the profiler and script debugging are what make a device
+        /// session worth running. Pass <c>-development false</c> for a build without them, which is
+        /// also a build without Unity's "Development Build" watermark — the reason store screenshots
+        /// cannot be taken from the everyday build. It still carries Unity's debug key, so it installs
+        /// over an existing one without uninstalling and without touching the player's saves.
+        /// </remarks>
         internal static void BuildApk()
         {
             ConfigurePlayerSettings();
@@ -225,13 +232,19 @@ namespace Pathweaver.EditorTools
             EditorUserBuildSettings.buildAppBundle = false;
             PlayerSettings.Android.useCustomKeystore = false;
 
+            var isDevelopment = ArgumentOr("-development", "true") != "false";
+
             var options = new BuildPlayerOptions
             {
                 scenes = new[] { "Assets/Scenes/Game.unity" },
                 locationPathName = outputPath,
                 target = BuildTarget.Android,
-                options = BuildOptions.Development | BuildOptions.AllowDebugging,
+                options = isDevelopment
+                    ? BuildOptions.Development | BuildOptions.AllowDebugging
+                    : BuildOptions.None,
             };
+
+            Debug.Log($"[build] {(isDevelopment ? "development" : "release-flavoured")} APK");
 
             var report = BuildPipeline.BuildPlayer(options);
             var summary = report.summary;
