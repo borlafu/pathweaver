@@ -628,3 +628,52 @@ Everything reported as established in this document can be checked in:
 - `Assets/Scripts/Presentation/BoardView.cs` — the 0.9-second harvest flash
 - `Assets/Scripts/Presentation/BoardCameraFitter.cs` — how the board is framed on screen
 - `levels/biome1-01.pwlevel` — the tutorial level, and the misleading direction comment
+
+---
+
+## Installing your art: no code required
+
+The board reads its artwork from a single asset, `Assets/Settings/BoardTheme.asset`. Every
+field on it is optional, and anything left empty falls back to the placeholder geometry the
+game ships with today.
+
+That is deliberate. Art arrives one piece at a time, and a design that switched from
+"all placeholder" to "all sprites" would mean nothing could be seen in the game until the last
+file existed. Instead you can drop in a single conduit arm, run the game, and see it in place
+with everything else still generated.
+
+### Steps
+
+1. Put your PNGs anywhere under `Assets/`, for example `Assets/Art/Tiles/`.
+2. Select each one and set **Texture Type: Sprite (2D and UI)**, **Pixels Per Unit** to the
+   value in the delivery table below, and **Pivot: Center**.
+3. Open `Assets/Settings/BoardTheme.asset`.
+4. Assign the sprites. The fields are:
+
+| Field | What it replaces | Empty means |
+|---|---|---|
+| Cell Background | the hexagon behind everything | generated hexagon |
+| Legal Cell Overlay | the marker on a cell where the held tile may go | a lighter background colour |
+| Spring | the source cell | generated hexagon plus six marks |
+| Hub | the destination cell | generated hexagon plus two marks |
+| Resources → Arm | the conduit painted across a tile, drawn once per open edge and rotated into place | a generated bar |
+| Resources → Motif | the shape identifying the resource | a generated circle, triangle, diamond or hexagon |
+| Resources → Colour | tints the placeholder geometry | the placeholder palette |
+
+The **Resources** list has one entry per resource kind. Add four entries and set each `kind`
+field, or add only the kinds you have finished.
+
+### The arm is drawn once per open edge
+
+One arm sprite serves all six edges: the game instantiates it once per open edge and rotates
+it. So the arm should be drawn **pointing east**, running from the tile centre to the middle of
+the eastern edge, and it must look correct when that same image is rotated by any multiple of
+60 degrees. This is why the rotation constraints in section 5 matter — they are not advice, they
+are what makes one sprite cover six directions.
+
+### Colour is a fallback, not a tint
+
+If you supply a sprite, its own colours are used and the palette colour is ignored. If you
+supply only a colour, it tints the generated geometry. Leaving a colour as fully transparent
+counts as "not set" rather than as "invisible", so an unfinished entry cannot accidentally hide
+a resource.

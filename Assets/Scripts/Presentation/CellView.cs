@@ -25,14 +25,15 @@ namespace Pathweaver.Game.Presentation
 
         internal HexCoord Coordinate { get; private set; }
 
-        internal void Initialise(HexCoord coordinate, Mesh hexMesh, Mesh spokeMesh, Material material)
+        internal void Initialise(
+            HexCoord coordinate, Mesh hexMesh, Mesh spokeMesh, Material material, BoardTheme theme)
         {
             Coordinate = coordinate;
             transform.localPosition = HexMetrics.ToWorld(coordinate);
 
             _visual = new GameObject("Visual").AddComponent<TileVisual>();
             _visual.transform.SetParent(transform, worldPositionStays: false);
-            _visual.Initialise(hexMesh, spokeMesh, material);
+            _visual.Initialise(hexMesh, spokeMesh, material, theme);
 
             ShowEmpty();
         }
@@ -62,6 +63,7 @@ namespace Pathweaver.Game.Presentation
             var isSpring = endpoint.Role == EndpointRole.Spring;
 
             _visual.SetBackground(isSpring ? BoardPalette.Spring : BoardPalette.Hub);
+            _visual.UseResourceArt(null);
             _visual.ShowEdges(
                 isSpring ? SpringMarkEdges : HubMarkEdges, BoardPalette.ForKind(endpoint.Kind));
             _visual.ShowResource(endpoint.Kind, BoardPalette.ForKind(endpoint.Kind));
@@ -70,6 +72,7 @@ namespace Pathweaver.Game.Presentation
         internal void ShowConduit(ConduitTile tile)
         {
             _visual.SetBackground(BoardPalette.CellOutline);
+            _visual.UseResourceArt(tile.Kind);
             _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
             _visual.ShowResource(tile.Kind, BoardPalette.ForKind(tile.Kind));
         }
@@ -84,6 +87,7 @@ namespace Pathweaver.Game.Presentation
         internal void ShowHarvestedConduit(ConduitTile tile)
         {
             _visual.SetBackground(BoardPalette.HarvestFlash);
+            _visual.UseResourceArt(tile.Kind);
             _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
             _visual.ShowResource(tile.Kind, BoardPalette.ForKind(tile.Kind));
         }
