@@ -22,6 +22,18 @@ namespace Pathweaver.Game.Presentation
     /// </remarks>
     internal sealed class BoardView : MonoBehaviour
     {
+        /// <summary>
+        /// The material cells are drawn with.
+        /// </summary>
+        /// <remarks>
+        /// An asset reference, not <c>Shader.Find</c>. A shader no material asset points at
+        /// is stripped from a player build, so <c>Shader.Find</c> returns null on device
+        /// while working perfectly in the Editor — which is how the first build on hardware
+        /// came up blank with "Value cannot be null. Parameter name: shader".
+        /// </remarks>
+        [SerializeField]
+        private Material _tileMaterial;
+
         private readonly Dictionary<HexCoord, CellView> _cells = new Dictionary<HexCoord, CellView>();
 
         private Mesh _hexMesh;
@@ -129,9 +141,19 @@ namespace Pathweaver.Game.Presentation
             _hexMesh ??= HexMeshFactory.CreateHexagon(HexMetrics.Size * 0.92f);
             _spokeMesh ??= HexMeshFactory.CreateSpoke(TileVisual.SpokeLength, TileVisual.SpokeThickness);
 
-            // Unlit: the board is flat colour, and lighting it would cost frame time
-            // for no visual gain until real art arrives.
-            _material ??= new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            if (_material == null)
+            {
+                if (_tileMaterial == null)
+                {
+                    Debug.LogError(
+                        "[BoardView] No tile material assigned. Run ProjectBootstrap.CreateGameScene.");
+                    return;
+                }
+
+                // Instanced from the asset so per-cell colour changes do not write back to
+                // the shared material.
+                _material = new Material(_tileMaterial);
+            }
         }
 
         private void Clear()
