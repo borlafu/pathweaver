@@ -109,6 +109,19 @@ namespace Pathweaver.Core.Determinism
             }
         }
 
+        /// <summary>
+        /// The raw state, for serialisation. Internal because callers have no
+        /// business reading it otherwise — the generator is meant to be threaded
+        /// through, not inspected.
+        /// </summary>
+        internal (ulong State, ulong Increment) Snapshot() => (_state, _increment);
+
+        /// <summary>
+        /// Rebuilds a generator from a snapshot, so a resumed run continues the
+        /// same sequence.
+        /// </summary>
+        internal static Pcg32 FromSnapshot(ulong state, ulong increment) => new Pcg32(state, increment);
+
         public bool Equals(Pcg32 other) => _state == other._state && _increment == other._increment;
 
         public override bool Equals(object? obj) => obj is Pcg32 other && Equals(other);
