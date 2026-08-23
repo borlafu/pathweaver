@@ -40,8 +40,9 @@ namespace Pathweaver.Game.Presentation.Menus
             _back = HexButton.Create(
                 transform, BackId, camera, material,
                 new Vector2(0.14f, 0.09f), 0.4f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.12f);
+            // Left, matching the level list's back control. See LevelSelectView for why 30 was wrong.
             _back.AddGlyph(
-                HexMeshFactory.CreateRegularPolygon(3, 0.19f, rotationDegrees: 30f), BoardPalette.MenuGlyph);
+                HexMeshFactory.CreateRegularPolygon(3, 0.19f, rotationDegrees: 90f), BoardPalette.MenuGlyph);
 
             Refresh();
         }

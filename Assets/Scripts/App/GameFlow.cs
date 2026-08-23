@@ -66,6 +66,8 @@ namespace Pathweaver.Game.App
 
             var material = _boardView.TileMaterial;
 
+            MenuCamera.Frame(_camera);
+
             _mainMenu.Build(_camera, material);
             _pause.Build(_camera, material);
             _settings.Build(_camera, material);
@@ -139,8 +141,7 @@ namespace Pathweaver.Game.App
                     StartLevel(_campaign.NextLevel(_progress));
                     return true;
                 case MainMenuView.LevelsId:
-                    _levelSelect.Build(_camera, _boardView.TileMaterial, _campaign, _progress);
-                    _router.Show(GameScreen.LevelSelect);
+                    ShowLevelSelect();
                     return true;
                 case MainMenuView.SettingsId:
                     _settings.Refresh();
@@ -180,8 +181,7 @@ namespace Pathweaver.Game.App
                     _router.Show(GameScreen.Playing);
                     return true;
                 case PauseView.MenuId:
-                    _levelSelect.Build(_camera, _boardView.TileMaterial, _campaign, _progress);
-                    _router.Show(GameScreen.LevelSelect);
+                    ShowLevelSelect();
                     return true;
                 default:
                     return false;
@@ -208,6 +208,20 @@ namespace Pathweaver.Game.App
             }
         }
 
+        /// <summary>
+        /// Rebuilds the level list and shows it.
+        /// </summary>
+        /// <remarks>
+        /// Rebuilt each time so a level cleared moments ago is not still drawn as locked, and framed
+        /// before it is built because the grid's button size is computed from the camera.
+        /// </remarks>
+        private void ShowLevelSelect()
+        {
+            MenuCamera.Frame(_camera);
+            _levelSelect.Build(_camera, _boardView.TileMaterial, _campaign, _progress);
+            _router.Show(GameScreen.LevelSelect);
+        }
+
         private void StartLevel(string levelId)
         {
             _hasRecordedThisClear = false;
@@ -229,10 +243,19 @@ namespace Pathweaver.Game.App
 
             // Visible while playing and while paused, hidden behind the menus. Pausing is looking
             // at the board; opening the level list is leaving it.
+            var isBoardOnScreen = screen == GameScreen.Playing || screen == GameScreen.Paused;
+
             if (_boardView != null)
             {
-                var showBoard = screen == GameScreen.Playing || screen == GameScreen.Paused;
-                _boardView.gameObject.SetActive(showBoard);
+                _boardView.gameObject.SetActive(isBoardOnScreen);
+            }
+
+            // The board fitter rezooms the camera per level, so a menu shown afterwards would
+            // inherit that zoom and draw its buttons at the wrong size. Pause keeps the board's
+            // framing because the board is still on screen behind it.
+            if (!isBoardOnScreen)
+            {
+                MenuCamera.Frame(_camera);
             }
         }
 

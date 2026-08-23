@@ -1,0 +1,33 @@
+# Biome 1, level 7 — The Fork
+#
+# One spring, two hubs, two paths of different lengths. The target needs both, so neither can be
+# ignored, and the longer arm pays more — the length multiplier stated as a layout rather than as a
+# rule. The target is 280: the long arm pays 182 for three conduits and the short one 100 for a
+# single conduit, so both are needed and there is nothing spare.
+#
+# The first version of this level put the second hub next to the spring. Touching endpoints complete
+# nothing, because a route is built from conduits, so its target was unreachable and the solvability
+# gate caught it.
+
+id: biome1-07
+
+base-score: 100
+target-score: 280
+tokens: 0
+skips: 3
+
+cell: 2,-2
+cell: 1,-1
+cell: 2,-1
+cell: 1,0
+cell: 2,0
+cell: 0,1
+cell: 0,2
+
+spring: 2,-2 water
+hub: 0,2 water
+hub: 2,0 water
+
+tile: 0,2 water x4
+tile: 0,3 water x2
+tile: 0,1 water x2

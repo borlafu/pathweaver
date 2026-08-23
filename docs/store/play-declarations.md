@@ -28,17 +28,16 @@ consent flow. That is the main reason the MVP ships without one.
 
 Play requires a policy URL for every app, including one that collects nothing.
 
-The text is in `docs/store/privacy-policy.md`. It needs a public URL; GitHub Pages on this
-repository is sufficient and free.
-
-To publish it: repository **Settings → Pages**, source **Deploy from a branch**, branch `main`,
-folder `/docs`. The policy is then at:
+The text is in `docs/store/privacy-policy.md`, published by GitHub Pages from `main` at `/docs`
+(**Settings → Pages**). This is the URL for the Console:
 
 ```
 https://borlafu.github.io/pathweaver/store/privacy-policy
 ```
 
-Check the URL loads before pasting it into the Console — Play validates that it resolves.
+Because the page is generated from the file in this repository, edit `docs/store/privacy-policy.md`
+and let Pages redeploy — never paste amended text straight into the Console, or the published policy
+and the repository's copy will drift apart with no sign of which one players saw.
 
 ## Content rating (IARC questionnaire)
 

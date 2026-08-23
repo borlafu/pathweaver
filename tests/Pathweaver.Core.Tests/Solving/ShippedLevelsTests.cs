@@ -1,4 +1,5 @@
 using Pathweaver.Core.Levels;
+using Pathweaver.Core.Scoring;
 using Pathweaver.Core.State;
 
 namespace Pathweaver.Core.Tests.Solving;
@@ -13,16 +14,6 @@ namespace Pathweaver.Core.Tests.Solving;
 /// </remarks>
 public class ShippedLevelsTests
 {
-    /// <summary>
-    /// Seeds a level must all be solvable under.
-    /// </summary>
-    /// <remarks>
-    /// The Daily Expedition derives its seed from the date, so a level is played
-    /// under seeds nobody chose. Checking several catches a level that only works
-    /// when the tile order is kind.
-    /// </remarks>
-    private static readonly ulong[] Seeds = { 1UL, 2UL, 3UL, 7UL, 42UL };
-
     public static TheoryData<string> LevelFiles()
     {
         var data = new TheoryData<string>();
@@ -56,22 +47,48 @@ public class ShippedLevelsTests
 
     [Theory]
     [MemberData(nameof(LevelFiles))]
-    public void A_shipped_level_can_be_completed_under_every_seed(string path)
+    public void A_shipped_level_can_be_completed_at_its_own_seed(string path)
     {
+        // The puzzle players actually get.
+        var level = LevelLoader.Parse(File.ReadAllText(path));
+        var result = LevelSolver.Solve(level, level.Seed);
+
+        // Three failures needing three different responses: widen the search, look at the level, or
+        // accept that a narrowed search cannot prove a negative.
+        var reason = result.BudgetExhausted
+            ? $"was not proven solvable within {LevelSolver.DefaultNodeBudget} states"
+            : result.Exhaustive
+                ? "cannot be completed"
+                : "was not solved; the search narrowed its options, so this is not proof it is impossible";
+
+        Assert.True(result.Solved, $"{level.Id} (seed {level.Seed}) {reason}.");
+    }
+
+    [Theory]
+    [MemberData(nameof(LevelFiles))]
+    public void A_level_asks_for_more_than_a_single_short_route(string path)
+    {
+        // A target two conduits already cover is not a puzzle: the player drops a tile beside each
+        // endpoint and the level ends before it has asked anything.
+        //
+        // The bar is deliberately this low. Set at three conduits it failed biome1-02, whose whole
+        // lesson is rotation inside a zigzag corridor three cells long — a short route can still be
+        // a real puzzle when the board only admits one orientation.
+        //
+        // This replaces an earlier check that targets never fell from one level to the next, which
+        // encoded a wrong assumption: difficulty is not monotonic in target score, because a cramped
+        // board with a low target can be harder than an open one with a high target.
         // Arrange
         var level = LevelLoader.Parse(File.ReadAllText(path));
 
-        // Act / Assert
-        foreach (var seed in Seeds)
-        {
-            var result = LevelSolver.Solve(level, seed);
+        // Act
+        var trivialRoute = ScoreTable.ScoreFor(level.BaseRouteScore, length: 2);
 
-            Assert.True(
-                result.Solved,
-                result.BudgetExhausted
-                    ? $"{level.Id} was not proven solvable for seed {seed} within {LevelSolver.DefaultNodeBudget} states."
-                    : $"{level.Id} cannot be completed for seed {seed}.");
-        }
+        // Assert
+        Assert.True(
+            level.TargetScore > trivialRoute,
+            $"{level.Id} targets {level.TargetScore}, which a single two-conduit route "
+            + $"({trivialRoute}) already clears.");
     }
 
     [Theory]
@@ -82,11 +99,11 @@ public class ShippedLevelsTests
         // solver certify a level the game cannot actually clear.
         // Arrange
         var level = LevelLoader.Parse(File.ReadAllText(path));
-        var result = LevelSolver.Solve(level, Seeds[0]);
+        var result = LevelSolver.Solve(level, level.Seed);
         Assert.True(result.Solved);
 
         // Act — replay the reported moves from a fresh game
-        var state = level.CreateGame(Seeds[0]);
+        var state = level.CreateGame();
         foreach (var command in result.Commands)
         {
             state = GameEngine.Apply(state, command);
