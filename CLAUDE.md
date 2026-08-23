@@ -219,7 +219,14 @@ unity -batchmode -quit -projectPath . \
 
 Writes `Artifacts/store/icon-512.png` and `Artifacts/store/feature-1024x500.png`. Both
 are build outputs rather than committed assets. Listing text lives in
-`docs/store/listing.md`.
+`docs/store/listing.md`, and the store screenshots — which come from a device session
+rather than a command — are committed under `docs/store/screenshots/`.
+
+Screenshots need a build without Unity's "Development Build" watermark, which
+`./scripts/deploy.sh` cannot give. Pass `-development false` to `AndroidBuild.BuildApk`
+for one: it drops the profiler and the watermark but keeps Unity's debug key, so it
+installs over the everyday build without uninstalling and without touching saves. The
+resizing the Play Console demands is recorded in `docs/store/listing.md`.
 
 Unity tests, which CI cannot run because it has no licence:
 

@@ -97,15 +97,44 @@ tiles arrive the command produces the new ones with no edits here.
 
 ## Screenshots
 
-Still to capture: Play needs between two and eight phone screenshots, at least 320 px on the short
-edge. Take them from a device rather than the Editor, since the Editor's aspect is not a phone's:
+Four, committed under `docs/store/screenshots/`, in upload order:
+
+| File | What it shows |
+|---|---|
+| `1-building-a-route.png` | a route under construction, the next tile in hand, legal cells lit |
+| `2-route-complete.png` | the route closed, the quota bar full, and the one control a finished board offers |
+| `3-level-list.png` | twenty levels, each drawn as its own board, cleared ones in green |
+| `4-endless-three-networks.png` | an endless round with water, wind and crystal at once |
+
+They are committed rather than regenerated, because unlike the icon and the feature graphic they come
+from a device session rather than from a command.
+
+Two things make them harder to take than `adb exec-out screencap` suggests:
+
+**The watermark.** The everyday build is a Unity development build, which stamps "Development Build"
+across the corner of every frame. `BuildApk` therefore takes `-development false`, which drops the
+profiler and the watermark while keeping Unity's debug key — so it installs over the existing build
+without uninstalling and without touching the player's saves:
 
 ```bash
-adb exec-out screencap -p > Artifacts/store/screen-1.png
+unity -batchmode -quit -projectPath . -buildTarget Android \
+  -executeMethod Pathweaver.EditorTools.AndroidBuild.BuildApk \
+  -apkOutput Artifacts/pathweaver-shots.apk -development false -logFile /tmp/unity.log
 ```
 
-Worth showing, in this order: a board mid-route with the next tile in hand, a completed route paying
-out, the level list, and an endless round with three networks.
+Wait a few seconds after launching before capturing: this phone draws a vendor "game mode" overlay
+over the first frames, and it lands in the screenshot.
+
+**The shape.** This device is 1080×2376, which is taller than 9:16 and too tall for Play. Each shot is
+therefore cropped 30 px at each side — removing the sliver of the vendor's edge panel — scaled to
+1920 tall, and padded to 1080 wide in the game's own background colour, which makes the padding
+invisible:
+
+```bash
+sips -c 2376 1020 shot.png
+sips --resampleHeight 1920 shot.png
+sips -p 1920 1080 --padColor 14171C shot.png
+```
 
 ## What is not in this listing
 
