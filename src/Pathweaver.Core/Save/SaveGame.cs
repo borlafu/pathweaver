@@ -34,12 +34,34 @@ namespace Pathweaver.Core.Save
     /// can be stripped by IL2CPP.
     /// </para>
     /// </remarks>
-    public static class SaveGameV1
+    public static class SaveGame
     {
-        /// <summary>The version this build writes, and the newest it can read.</summary>
-        public const int FormatVersion = 1;
+        /// <summary>The version this build writes.</summary>
+        public const int FormatVersion = 2;
+
+        /// <summary>
+        /// The oldest version this build can still read.
+        /// </summary>
+        /// <remarks>
+        /// Version 1 predates skips. Reading it rather than rejecting it is the point of
+        /// having a version field: a player mid-run through an update keeps their board,
+        /// and the missing skips are filled in from the level's own starting count.
+        /// </remarks>
+        public const int MinimumReadableVersion = 1;
+
+        /// <summary>The version that first carried a skip count.</summary>
+        private const int SkipsAddedInVersion = 2;
 
         private const int HeaderLength = 8;
+
+        /// <summary>
+        /// Skips granted when loading a save written before they existed.
+        /// </summary>
+        /// <remarks>
+        /// Matches the loader's default, so a resumed old run is no worse off than a fresh
+        /// one.
+        /// </remarks>
+        private const int DefaultSkipsForOldSaves = 3;
 
         /// <summary>
         /// Guards against a corrupt length field allocating wildly. No level comes
@@ -69,6 +91,7 @@ namespace Pathweaver.Core.Save
             writer.Write(state.BaseRouteScore);
             writer.Write(state.Score);
             writer.Write(state.PivotTokens.Count);
+            writer.Write(state.SkipTokens.Count);
 
             WriteShape(writer, state.Board);
             WritePlacedTiles(writer, state.Board);
@@ -126,15 +149,16 @@ namespace Pathweaver.Core.Save
         public static GameState Read(byte[] data)
         {
             var version = ReadFormatVersion(data);
-            if (version != FormatVersion)
+            if (version < MinimumReadableVersion || version > FormatVersion)
             {
                 throw new SaveFormatException(
-                    $"Save format version {version} is not supported; this build reads version {FormatVersion}.");
+                    $"Save format version {version} is not supported; this build reads " +
+                    $"{MinimumReadableVersion} to {FormatVersion}.");
             }
 
             try
             {
-                return ReadPayload(data);
+                return ReadPayload(data, version);
             }
             catch (SaveFormatException)
             {
@@ -149,7 +173,7 @@ namespace Pathweaver.Core.Save
             }
         }
 
-        private static GameState ReadPayload(byte[] data)
+        private static GameState ReadPayload(byte[] data, int version)
         {
             using var buffer = new MemoryStream(data, writable: false);
             using var reader = new BinaryReader(buffer, Encoding.ASCII, leaveOpen: true);
@@ -158,7 +182,11 @@ namespace Pathweaver.Core.Save
 
             var baseRouteScore = reader.ReadInt64();
             var score = reader.ReadInt64();
-            var tokens = reader.ReadInt32();
+            var pivotTokens = reader.ReadInt32();
+
+            // A version 1 save has no skip count. Defaulting rather than failing is what
+            // keeps an in-progress run alive across the update that added them.
+            var skipTokens = version >= SkipsAddedInVersion ? reader.ReadInt32() : DefaultSkipsForOldSaves;
 
             var shape = ReadShape(reader);
             var board = HexGrid<ConduitTile>.FromShape(shape);
@@ -177,7 +205,8 @@ namespace Pathweaver.Core.Save
             var completedRoutes = ReadCompletedRoutes(reader, endpoints);
 
             return GameState.Restore(
-                board, endpoints, bag, heldTile, PivotTokenPool.Of(tokens), score, baseRouteScore, completedRoutes);
+                board, endpoints, bag, heldTile, TokenPool.Of(pivotTokens), TokenPool.Of(skipTokens),
+                score, baseRouteScore, completedRoutes);
         }
 
         private static void WriteShape(BinaryWriter writer, HexGrid<ConduitTile> board)

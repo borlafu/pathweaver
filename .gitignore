@@ -85,3 +85,6 @@ local.properties
 
 # Rendered previews from ProjectBootstrap.CaptureBoardPreview
 /Artifacts/
+
+# IL2CPP scratch space from an Android build
+/.utmp/

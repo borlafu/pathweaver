@@ -71,6 +71,19 @@ namespace Pathweaver.Core.State
     }
 
     /// <summary>
+    /// Spends a skip to discard the tile in hand and draw the next one.
+    /// </summary>
+    /// <remarks>
+    /// The discarded tile does not return to the bag. Putting it back would allow the
+    /// same tile to be dealt straight afterwards, which would make a spent skip look
+    /// like a bug.
+    /// </remarks>
+    public sealed class SkipTile : GameCommand
+    {
+        public override string ToString() => "Skip the held tile";
+    }
+
+    /// <summary>
     /// Spends a Pivot Token to take a conduit off the board.
     /// </summary>
     /// <remarks>

@@ -53,13 +53,14 @@ internal static class GameFixture
             new[] { Straight(), Straight() },
             SeedSource.Stream(seed, PathweaverStream.TileBag));
 
-    internal static GameState NewGame(ulong seed = 42UL, int startingTokens = 0)
+    internal static GameState NewGame(ulong seed = 42UL, int startingTokens = 0, int startingSkips = 0)
         => GameState.Create(
             HexGrid<ConduitTile>.Hexagon(3),
             Endpoints,
             StraightBag(seed),
             BaseRouteScore,
-            PivotTokenPool.Of(startingTokens));
+            TokenPool.Of(startingTokens),
+            TokenPool.Of(startingSkips));
 
     /// <summary>
     /// Plays the row from the spring towards the hub, stopping after

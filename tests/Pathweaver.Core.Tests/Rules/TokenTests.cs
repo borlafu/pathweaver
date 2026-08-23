@@ -16,7 +16,7 @@ public class PivotTokenTests
     public void A_new_pool_holds_the_starting_count()
     {
         // Act
-        var pool = PivotTokenPool.Of(2);
+        var pool = TokenPool.Of(2);
 
         // Assert
         Assert.Equal(2, pool.Count);
@@ -25,20 +25,20 @@ public class PivotTokenTests
     [Fact]
     public void An_empty_pool_holds_nothing()
     {
-        Assert.Equal(0, PivotTokenPool.Empty.Count);
+        Assert.Equal(0, TokenPool.Empty.Count);
     }
 
     [Fact]
     public void A_negative_starting_count_is_rejected()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => PivotTokenPool.Of(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TokenPool.Of(-1));
     }
 
     [Fact]
     public void Earning_returns_a_new_pool_and_leaves_the_original_alone()
     {
         // Arrange
-        var original = PivotTokenPool.Of(1);
+        var original = TokenPool.Of(1);
 
         // Act
         var earned = original.Earn(2);
@@ -52,20 +52,20 @@ public class PivotTokenTests
     public void Earning_nothing_is_allowed()
     {
         // Most completed routes earn no token, so this is the common path.
-        Assert.Equal(1, PivotTokenPool.Of(1).Earn(0).Count);
+        Assert.Equal(1, TokenPool.Of(1).Earn(0).Count);
     }
 
     [Fact]
     public void Earning_a_negative_amount_is_rejected()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => PivotTokenPool.Of(1).Earn(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TokenPool.Of(1).Earn(-1));
     }
 
     [Fact]
     public void Spending_returns_a_new_pool_and_leaves_the_original_alone()
     {
         // Arrange
-        var original = PivotTokenPool.Of(2);
+        var original = TokenPool.Of(2);
 
         // Act
         var spent = original.Spend();
@@ -80,14 +80,45 @@ public class PivotTokenTests
     {
         // A silent no-op would let the UI offer a rotation the player cannot pay
         // for, and the board would change without the cost being taken.
-        Assert.Throws<InvalidOperationException>(() => PivotTokenPool.Empty.Spend());
+        Assert.Throws<InvalidOperationException>(() => TokenPool.Empty.Spend());
     }
 
     [Fact]
     public void A_pool_reports_whether_it_can_pay()
     {
-        Assert.False(PivotTokenPool.Empty.CanSpend);
-        Assert.True(PivotTokenPool.Of(1).CanSpend);
+        Assert.False(TokenPool.Empty.CanSpend);
+        Assert.True(TokenPool.Of(1).CanSpend);
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(2, 1)]
+    [InlineData(3, 1)]
+    [InlineData(4, 0)]
+    [InlineData(9, 0)]
+    public void A_short_route_earns_a_skip_instead_of_a_pivot(int length, int expected)
+    {
+        // PRD section 3.2A frames the central choice as a short certain route against a
+        // long risky one. Rewarding only length would make the safe play pay nothing,
+        // which turns a dilemma into an obvious answer.
+        Assert.Equal(expected, TokenRules.SkipTokensFor(length));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(12)]
+    public void Every_route_pays_out_in_exactly_one_currency(int length)
+    {
+        // No completed route should feel wasted, and none should pay twice.
+        Assert.Equal(1, TokenRules.PivotTokensFor(length) + TokenRules.SkipTokensFor(length));
+    }
+
+    [Fact]
+    public void A_skip_length_below_one_is_rejected()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TokenRules.SkipTokensFor(0));
     }
 
     [Theory]
@@ -103,20 +134,20 @@ public class PivotTokenTests
         // fixing a number. Four is the chosen threshold: it rewards exactly the
         // extended routing the 1.35^(L-1) curve pushes toward, so the risk and its
         // insurance reinforce each other.
-        Assert.Equal(expected, PivotTokenRule.TokensFor(length));
+        Assert.Equal(expected, TokenRules.PivotTokensFor(length));
     }
 
     [Fact]
     public void The_threshold_is_published_for_the_interface_to_explain()
     {
         // The player has to be able to learn this rule, so it cannot stay buried.
-        Assert.Equal(4, PivotTokenRule.MinimumRouteLength);
+        Assert.Equal(4, TokenRules.PivotThreshold);
     }
 
     [Fact]
     public void A_route_length_below_one_is_rejected()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => PivotTokenRule.TokensFor(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TokenRules.PivotTokensFor(0));
     }
 
     [Fact]
@@ -139,7 +170,7 @@ public class PivotTokenTests
         var routes = FlowResolver.FindCompletedRoutes(board, endpoints);
 
         // Act
-        var earned = PivotTokenRule.TokensEarned(routes);
+        var earned = TokenRules.PivotTokensEarned(routes);
 
         // Assert
         Assert.Equal(4, Assert.Single(routes).Length);
@@ -163,18 +194,18 @@ public class PivotTokenTests
 
         // Act / Assert
         Assert.Equal(1, Assert.Single(routes).Length);
-        Assert.Equal(0, PivotTokenRule.TokensEarned(routes));
+        Assert.Equal(0, TokenRules.PivotTokensEarned(routes));
     }
 
     [Fact]
     public void No_routes_earn_no_tokens()
     {
-        Assert.Equal(0, PivotTokenRule.TokensEarned(Array.Empty<Route>()));
+        Assert.Equal(0, TokenRules.PivotTokensEarned(Array.Empty<Route>()));
     }
 
     [Fact]
     public void A_null_route_collection_is_rejected()
     {
-        Assert.Throws<ArgumentNullException>(() => PivotTokenRule.TokensEarned(null!));
+        Assert.Throws<ArgumentNullException>(() => TokenRules.PivotTokensEarned(null!));
     }
 }

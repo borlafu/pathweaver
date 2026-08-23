@@ -62,8 +62,12 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private LevelCompleteView _levelComplete;
 
+        [SerializeField]
+        private SkipButtonView _skipButton;
+
         private bool _isPressed;
         private bool _startedOnRestart;
+        private bool _startedOnSkip;
         private bool _startedOnTray;
         private Vector2 _pressPosition;
         private float _travelled;
@@ -142,9 +146,14 @@ namespace Pathweaver.Game.Presentation
             _pressPosition = screenPosition;
             _travelled = 0f;
 
-            // Checked before the tray, so the two cannot both claim a press near the corner.
+            // Buttons are checked before the tray, so a press near a corner cannot be claimed
+            // by two things at once.
             _startedOnRestart = _restartButton != null && _restartButton.IsPressed(screenPosition);
+            _startedOnSkip = !_startedOnRestart
+                             && _skipButton != null
+                             && _skipButton.IsPressed(screenPosition);
             _startedOnTray = !_startedOnRestart
+                             && !_startedOnSkip
                              && _heldTileView != null
                              && _heldTileView.IsTrayTouch(screenPosition);
         }
@@ -208,6 +217,18 @@ namespace Pathweaver.Game.Presentation
                 if (wasTap && _restartButton.IsPressed(screenPosition))
                 {
                     RequestRestart();
+                }
+
+                return;
+            }
+
+            if (_startedOnSkip)
+            {
+                // Tap only, like the restart button: a drag that happens to start here should
+                // not spend a resource.
+                if (wasTap && _skipButton.IsPressed(screenPosition) && _session.TrySkipHeld())
+                {
+                    _haptics?.TileLocked();
                 }
 
                 return;

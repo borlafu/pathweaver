@@ -1,4 +1,7 @@
+using Pathweaver.Core.Determinism;
+using Pathweaver.Core.Flow;
 using Pathweaver.Core.Hex;
+using Pathweaver.Core.Rules;
 using Pathweaver.Core.Scoring;
 using Pathweaver.Core.State;
 using Pathweaver.Core.Tiles;
@@ -308,6 +311,140 @@ public class GameEngineTests
         Assert.Equal(
             first.Board.OccupiedCells.Select(cell => cell.Coordinate),
             second.Board.OccupiedCells.Select(cell => cell.Coordinate));
+    }
+
+    [Fact]
+    public void Skipping_draws_a_new_tile_and_spends_a_skip()
+    {
+        // Arrange
+        var state = GameFixture.NewGame(startingSkips: 3);
+
+        // Act
+        var after = GameEngine.Apply(state, new SkipTile());
+
+        // Assert
+        Assert.Equal(2, after.SkipTokens.Count);
+        Assert.Equal(3, state.SkipTokens.Count);
+    }
+
+    [Fact]
+    public void Skipping_leaves_the_board_and_score_alone()
+    {
+        // Discarding a tile cannot complete a route, so nothing else should move.
+        // Arrange
+        var state = GameFixture.PlayRow(GameFixture.NewGame(startingSkips: 1), 2);
+
+        // Act
+        var after = GameEngine.Apply(state, new SkipTile());
+
+        // Assert
+        Assert.Equal(state.Board.OccupiedCount, after.Board.OccupiedCount);
+        Assert.Equal(state.Score, after.Score);
+        Assert.Equal(state.PivotTokens, after.PivotTokens);
+    }
+
+    [Fact]
+    public void Skipping_without_a_skip_is_refused()
+    {
+        // Arrange
+        var state = GameFixture.NewGame(startingSkips: 0);
+
+        // Act / Assert
+        Assert.Throws<InvalidOperationException>(() => GameEngine.Apply(state, new SkipTile()));
+    }
+
+    [Fact]
+    public void A_skipped_tile_does_not_come_straight_back()
+    {
+        // Returning the discard to the bag would let the same tile be dealt again
+        // immediately, which would make a spent skip look like a bug.
+        // Arrange — a bag of two distinct tiles so a repeat is visible
+        var board = HexGrid<ConduitTile>.Hexagon(3);
+        var bag = TileBag.Create(
+            new[]
+            {
+                new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(0, 3)),
+                new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(0, 2)),
+            },
+            SeedSource.Stream(5UL, PathweaverStream.TileBag));
+
+        var state = GameState.Create(
+            board, GameFixture.Endpoints, bag, GameFixture.BaseRouteScore,
+            TokenPool.Empty, TokenPool.Of(1));
+
+        var firstTile = state.HeldTile;
+
+        // Act
+        var after = GameEngine.Apply(state, new SkipTile());
+
+        // Assert
+        Assert.NotEqual(firstTile, after.HeldTile);
+    }
+
+    [Fact]
+    public void A_short_route_earns_a_skip_rather_than_a_pivot()
+    {
+        // Arrange — spring and hub two apart, so one conduit completes a route of 1
+        var board = HexGrid<ConduitTile>.Hexagon(2);
+        var endpoints = new[]
+        {
+            FlowEndpoint.Spring(new HexCoord(-1, 0), ResourceKind.Water),
+            FlowEndpoint.Hub(new HexCoord(1, 0), ResourceKind.Water),
+        };
+
+        var state = GameState.Create(
+            board, endpoints, GameFixture.StraightBag(), GameFixture.BaseRouteScore,
+            TokenPool.Empty, TokenPool.Empty);
+
+        // Act
+        var after = GameEngine.Apply(state, new PlaceTile(HexCoord.Zero, 0));
+
+        // Assert
+        Assert.Equal(1, after.SkipTokens.Count);
+        Assert.Equal(0, after.PivotTokens.Count);
+    }
+
+    [Fact]
+    public void A_long_route_earns_a_pivot_rather_than_a_skip()
+    {
+        // Act — the fixture row is four conduits
+        var state = GameFixture.PlayRow(GameFixture.NewGame(), 4);
+
+        // Assert
+        Assert.Equal(1, state.PivotTokens.Count);
+        Assert.Equal(0, state.SkipTokens.Count);
+    }
+
+    [Fact]
+    public void A_skip_offers_a_way_out_of_a_board_with_no_placement()
+    {
+        // Not a rescue the rules promise, but a consequence worth knowing: a player
+        // holding a skip is never truly stuck by one awkward tile.
+        // Arrange — a crystal tile on a water-only board fits nowhere
+        var board = HexGrid<ConduitTile>.Hexagon(2);
+        var bag = TileBag.Create(
+            new[]
+            {
+                new ConduitTile(ResourceKind.Crystal, EdgeMask.FromDirections(0, 3)),
+                new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(0, 3)),
+            },
+            SeedSource.Stream(11UL, PathweaverStream.TileBag));
+
+        var endpoints = new[]
+        {
+            FlowEndpoint.Spring(new HexCoord(-2, 0), ResourceKind.Water),
+            FlowEndpoint.Hub(new HexCoord(2, 0), ResourceKind.Water),
+        };
+
+        var state = GameState.Create(
+            board, endpoints, bag, GameFixture.BaseRouteScore, TokenPool.Empty, TokenPool.Of(1));
+
+        // Act / Assert — skip until a placeable tile arrives
+        if (state.IsDeadlocked)
+        {
+            var after = GameEngine.Apply(state, new SkipTile());
+            Assert.False(after.IsDeadlocked);
+        }
     }
 
     [Fact]

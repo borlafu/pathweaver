@@ -32,6 +32,7 @@ namespace Pathweaver.Core.Levels
     /// base-score: 100
     /// target-score: 246
     /// tokens: 0
+    /// skips: 3
     /// shape: hexagon 3      # or one "cell: q,r" line per cell
     /// spring: -3,0 water
     /// hub: 2,0 water
@@ -41,6 +42,15 @@ namespace Pathweaver.Core.Levels
     /// </remarks>
     public static class LevelLoader
     {
+        /// <summary>
+        /// Skips a level grants when it does not say otherwise.
+        /// </summary>
+        /// <remarks>
+        /// Three is enough to escape a run of awkward draws without making the tile bag
+        /// irrelevant, and it means existing levels need no edit to gain the mechanic.
+        /// </remarks>
+        private const int DefaultStartingSkips = 3;
+
         private const int MaximumRadius = 32;
         private const int MaximumTileCount = 256;
 
@@ -61,6 +71,7 @@ namespace Pathweaver.Core.Levels
             long? baseScore = null;
             long? targetScore = null;
             var startingTokens = 0;
+            var startingSkips = DefaultStartingSkips;
             int? radius = null;
             var cells = new List<HexCoord>();
             var endpoints = new List<FlowEndpoint>();
@@ -103,6 +114,9 @@ namespace Pathweaver.Core.Levels
                     case "tokens":
                         startingTokens = (int)ParseNonNegativeNumber(value, "tokens", lineNumber);
                         break;
+                    case "skips":
+                        startingSkips = (int)ParseNonNegativeNumber(value, "skips", lineNumber);
+                        break;
                     case "shape":
                         radius = ParseHexagonShape(value, lineNumber);
                         break;
@@ -123,7 +137,9 @@ namespace Pathweaver.Core.Levels
                 }
             }
 
-            return Build(id, name, baseScore, targetScore, startingTokens, radius, cells, endpoints, bagTiles);
+            return Build(
+                id, name, baseScore, targetScore, startingTokens, startingSkips,
+                radius, cells, endpoints, bagTiles);
         }
 
         private static LevelDefinition Build(
@@ -132,6 +148,7 @@ namespace Pathweaver.Core.Levels
             long? baseScore,
             long? targetScore,
             int startingTokens,
+            int startingSkips,
             int? radius,
             List<HexCoord> cells,
             List<FlowEndpoint> endpoints,
@@ -199,7 +216,8 @@ namespace Pathweaver.Core.Levels
                 bagTiles.ToArray(),
                 baseScore.Value,
                 targetScore.Value,
-                startingTokens);
+                startingTokens,
+                startingSkips);
         }
 
         private static List<HexCoord> ResolveShape(int? radius, List<HexCoord> cells)

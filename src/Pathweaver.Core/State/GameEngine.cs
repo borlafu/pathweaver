@@ -40,6 +40,8 @@ namespace Pathweaver.Core.State
                     return ApplyRotate(state, rotate);
                 case PivotRetrieve retrieve:
                     return ApplyRetrieve(state, retrieve);
+                case SkipTile _:
+                    return ApplySkip(state);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(command), command, "Unknown command.");
@@ -61,7 +63,26 @@ namespace Pathweaver.Core.State
             var board = state.Board.Place(command.At, tile);
             var (bag, nextTile) = state.Bag.Draw();
 
-            return Harvest(state, board, bag: bag, heldTile: nextTile, pivotTokens: state.PivotTokens);
+            return Harvest(
+                state, board, bag: bag, heldTile: nextTile,
+                pivotTokens: state.PivotTokens, skipTokens: state.SkipTokens);
+        }
+
+        private static GameState ApplySkip(GameState state)
+        {
+            if (!state.SkipTokens.CanSpend)
+            {
+                throw new InvalidOperationException("A skip is required to discard the held tile.");
+            }
+
+            var (bag, nextTile) = state.Bag.Draw();
+
+            // No harvest pass: discarding a tile cannot complete a route, so running one
+            // would only re-examine a board that has not changed.
+            return state.With(
+                bag: bag,
+                heldTile: nextTile,
+                skipTokens: state.SkipTokens.Spend());
         }
 
         private static GameState ApplyRotate(GameState state, PivotRotate command)
@@ -81,7 +102,9 @@ namespace Pathweaver.Core.State
             var rotated = existing.RotateClockwise(command.Rotation);
             var board = state.Board.Remove(command.At).Place(command.At, rotated);
 
-            return Harvest(state, board, bag: state.Bag, heldTile: state.HeldTile, state.PivotTokens.Spend());
+            return Harvest(
+                state, board, bag: state.Bag, heldTile: state.HeldTile,
+                pivotTokens: state.PivotTokens.Spend(), skipTokens: state.SkipTokens);
         }
 
         private static GameState ApplyRetrieve(GameState state, PivotRetrieve command)
@@ -102,7 +125,9 @@ namespace Pathweaver.Core.State
             // so the held tile is untouched.
             var board = state.Board.Remove(command.At);
 
-            return Harvest(state, board, bag: state.Bag, heldTile: state.HeldTile, state.PivotTokens.Spend());
+            return Harvest(
+                state, board, bag: state.Bag, heldTile: state.HeldTile,
+                pivotTokens: state.PivotTokens.Spend(), skipTokens: state.SkipTokens);
         }
 
         /// <summary>
@@ -120,13 +145,15 @@ namespace Pathweaver.Core.State
             HexGrid<ConduitTile> board,
             TileBag bag,
             ConduitTile heldTile,
-            PivotTokenPool pivotTokens)
+            TokenPool pivotTokens,
+            TokenPool skipTokens)
         {
             var routes = FlowResolver.FindCompletedRoutes(board, state.Endpoints);
 
             var paidOut = new HashSet<CompletedRoute>(state.PaidOutRoutes());
             var score = state.Score;
-            var tokens = pivotTokens;
+            var pivots = pivotTokens;
+            var skips = skipTokens;
 
             foreach (var route in routes)
             {
@@ -137,14 +164,19 @@ namespace Pathweaver.Core.State
                 }
 
                 score += ScoreTable.ScoreFor(state.BaseRouteScore, route.Length);
-                tokens = tokens.Earn(PivotTokenRule.TokensFor(route.Length));
+
+                // Every completed route pays out in one currency or the other, so none
+                // feels wasted: length buys power, closing early buys flexibility.
+                pivots = pivots.Earn(TokenRules.PivotTokensFor(route.Length));
+                skips = skips.Earn(TokenRules.SkipTokensFor(route.Length));
             }
 
             return state.With(
                 board: board,
                 bag: bag,
                 heldTile: heldTile,
-                pivotTokens: tokens,
+                pivotTokens: pivots,
+                skipTokens: skips,
                 score: score,
                 completedRoutes: paidOut);
         }
