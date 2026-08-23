@@ -5,8 +5,10 @@ See PRD.md for the full product spec.
 
 ## Status
 
-The simulation is complete and covered by tests. The Unity project exists and
-compiles against it, but nothing is rendered yet.
+The simulation is complete and covered by tests. A playable vertical slice runs on
+hardware: a level renders, places tiles one-thumb, scores routes, and resumes after
+a force-quit. Art is placeholder generated geometry, and there is no font or UI
+canvas, so every interface element is a mesh.
 
 Toolchain is ready: .NET SDK 10.0.400, and Unity **6000.5.9f1** (Unity 6.5) with
 the Android modules. See Toolchain setup.
@@ -199,12 +201,12 @@ an `Assets/` folder exists. Those are gitignored; never hand-edit them. The
 hand-authored `src/` and `tests/` projects are tracked, via negation rules in
 `.gitignore`.
 
-Unity — the Editor is installed, but there is no Unity project yet, so these
-begin working once `Assets/` exists:
+Unity — these work today:
 
 - EditMode tests: `Unity -runTests -batchmode -projectPath . -testPlatform EditMode`
 - PlayMode tests: `Unity -runTests -batchmode -projectPath . -testPlatform PlayMode`
-- Android build: `Unity -quit -batchmode -projectPath . -executeMethod BuildScript.BuildAndroid`
+- Android build: `./scripts/deploy.sh`, or directly
+  `Unity -batchmode -quit -projectPath . -buildTarget Android -executeMethod Pathweaver.EditorTools.AndroidBuild.BuildApk -apkOutput Artifacts/pathweaver.apk`
 
 On-device checks once a build exists:
 

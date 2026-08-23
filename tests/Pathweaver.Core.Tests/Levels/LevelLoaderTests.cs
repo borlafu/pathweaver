@@ -141,6 +141,20 @@ public class LevelLoaderTests
         Assert.Equal(first.HeldTile, second.HeldTile);
     }
 
+    [Theory]
+    [InlineData(245, false)]
+    [InlineData(246, true)]
+    [InlineData(1000, true)]
+    public void A_level_knows_what_score_clears_it(long score, bool expected)
+    {
+        // The win condition is a rule, so it lives in the simulation where CI can check it.
+        // It began in the Unity layer, which meant the one thing a level is judged by was the
+        // one thing no test could reach.
+        var level = LevelLoader.Parse(ValidLevel);
+
+        Assert.Equal(expected, level.IsClearedBy(score));
+    }
+
     [Fact]
     public void An_unknown_key_is_rejected_with_its_line_number()
     {

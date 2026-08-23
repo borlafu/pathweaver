@@ -7,8 +7,11 @@ namespace Pathweaver.Core.Tests.Rules;
 
 public class DeadlockDetectorTests
 {
+    // Clockwise on screen from due east, which is what HexMetrics guarantees by
+    // negating the vertical axis. These were originally named for the textbook
+    // counter-clockwise mapping, which made every geometry comment here misleading.
     private const int East = 0;
-    private const int NorthEast = 1;
+    private const int SouthEast = 1;
     private const int West = 3;
 
     private static readonly EdgeMask EastWest = EdgeMask.FromDirections(East, West);
@@ -78,7 +81,7 @@ public class DeadlockDetectorTests
         // deadlock. Missing this would hand out Pivot Tokens for nothing and rob
         // the player of a legitimate move.
         // Arrange — a bend, drawn facing away from everything
-        var bend = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, NorthEast));
+        var bend = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, SouthEast));
 
         // Act / Assert
         Assert.False(DeadlockDetector.IsDeadlocked(EmptyBoard(), Endpoints, bend));

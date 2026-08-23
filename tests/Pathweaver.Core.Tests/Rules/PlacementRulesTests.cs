@@ -10,10 +10,13 @@ namespace Pathweaver.Core.Tests.Rules;
 /// </summary>
 public class PlacementRulesTests
 {
+    // Clockwise on screen from due east, which is what HexMetrics guarantees by
+    // negating the vertical axis. These were originally named for the textbook
+    // counter-clockwise mapping, which made every geometry comment here misleading.
     private const int East = 0;
-    private const int NorthEast = 1;
+    private const int SouthEast = 1;
     private const int West = 3;
-    private const int SouthWest = 4;
+    private const int NorthWest = 4;
 
     private static readonly EdgeMask EastWest = EdgeMask.FromDirections(East, West);
 
@@ -42,7 +45,7 @@ public class PlacementRulesTests
     public void A_tile_beside_a_spring_but_closed_towards_it_may_not()
     {
         // Arrange — open north-east and south-west, so nothing faces the spring
-        var tile = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(NorthEast, SouthWest));
+        var tile = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(SouthEast, NorthWest));
 
         // Act / Assert
         Assert.False(PlacementRules.IsLegal(EmptyBoard(), Endpoints, new HexCoord(-1, 0), tile));
@@ -82,7 +85,7 @@ public class PlacementRulesTests
         // Arrange — the neighbour runs east-west, the candidate runs north-east
         // to south-west, so their edges never meet
         var board = EmptyBoard().Place(new HexCoord(-1, 0), Straight());
-        var tile = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(NorthEast, SouthWest));
+        var tile = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(SouthEast, NorthWest));
 
         // Act / Assert
         Assert.False(PlacementRules.IsLegal(board, Endpoints, HexCoord.Zero, tile));
@@ -135,7 +138,7 @@ public class PlacementRulesTests
     public void Legal_placements_include_the_rotations_that_fit()
     {
         // Arrange — a bend, which only connects to the spring in some rotations
-        var bend = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, NorthEast));
+        var bend = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, SouthEast));
 
         // Act
         var placements = PlacementRules.LegalPlacements(EmptyBoard(), Endpoints, bend);
@@ -149,7 +152,7 @@ public class PlacementRulesTests
     public void A_returned_placement_carries_the_rotated_tile()
     {
         // Arrange
-        var bend = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, NorthEast));
+        var bend = new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, SouthEast));
 
         // Act
         var placements = PlacementRules.LegalPlacements(EmptyBoard(), Endpoints, bend);

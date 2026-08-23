@@ -11,10 +11,13 @@ namespace Pathweaver.Core.Tests.Flow;
 /// </summary>
 public class FlowResolverTests
 {
+    // Clockwise on screen from due east, which is what HexMetrics guarantees by
+    // negating the vertical axis. These were originally named for the textbook
+    // counter-clockwise mapping, which made every geometry comment here misleading.
     private const int East = 0;
-    private const int NorthEast = 1;
+    private const int SouthEast = 1;
     private const int West = 3;
-    private const int SouthWest = 4;
+    private const int NorthWest = 4;
 
     private static readonly EdgeMask EastWest = EdgeMask.FromDirections(East, West);
 
@@ -100,7 +103,7 @@ public class FlowResolverTests
         // Arrange — the middle conduit runs north-east to south-west instead
         var board = EmptyBoard()
             .Place(new HexCoord(-1, 0), Straight())
-            .Place(HexCoord.Zero, new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(NorthEast, SouthWest)))
+            .Place(HexCoord.Zero, new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(SouthEast, NorthWest)))
             .Place(new HexCoord(1, 0), Straight());
 
         // Act / Assert
@@ -124,7 +127,7 @@ public class FlowResolverTests
         // Arrange — the conduit beside the spring faces east and north-east, not west
         var board = WithRow(EmptyBoard())
             .Remove(new HexCoord(-1, 0))
-            .Place(new HexCoord(-1, 0), new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, NorthEast)));
+            .Place(new HexCoord(-1, 0), new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, SouthEast)));
 
         // Act / Assert
         Assert.Empty(FlowResolver.FindCompletedRoutes(board, new[] { Spring(), Hub() }));
@@ -136,7 +139,7 @@ public class FlowResolverTests
         // Arrange
         var board = WithRow(EmptyBoard())
             .Remove(new HexCoord(1, 0))
-            .Place(new HexCoord(1, 0), new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(West, SouthWest)));
+            .Place(new HexCoord(1, 0), new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(West, NorthWest)));
 
         // Act / Assert
         Assert.Empty(FlowResolver.FindCompletedRoutes(board, new[] { Spring(), Hub() }));
@@ -192,7 +195,7 @@ public class FlowResolverTests
         // Arrange — the row, plus a branch north from the origin to a second hub
         var board = WithRow(EmptyBoard())
             .Remove(HexCoord.Zero)
-            .Place(HexCoord.Zero, new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, West, SouthWest)));
+            .Place(HexCoord.Zero, new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, West, NorthWest)));
 
         var northHub = FlowEndpoint.Hub(new HexCoord(0, -1), ResourceKind.Water);
 
@@ -222,8 +225,8 @@ public class FlowResolverTests
         // Arrange — the row, plus a spur hanging north off the origin leading nowhere
         var board = WithRow(EmptyBoard())
             .Remove(HexCoord.Zero)
-            .Place(HexCoord.Zero, new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, West, SouthWest)))
-            .Place(new HexCoord(0, -1), new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(NorthEast, SouthWest)));
+            .Place(HexCoord.Zero, new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(East, West, NorthWest)))
+            .Place(new HexCoord(0, -1), new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(SouthEast, NorthWest)));
 
         // Act
         var route = Assert.Single(FlowResolver.FindCompletedRoutes(board, new[] { Spring(), Hub() }));
