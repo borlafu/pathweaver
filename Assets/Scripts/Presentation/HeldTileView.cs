@@ -27,6 +27,9 @@ namespace Pathweaver.Game.Presentation
         private TileVisual _visual;
         private bool _isFollowingPointer;
 
+        /// <summary>Whether the tile is currently under the player's thumb.</summary>
+        internal bool IsFollowingPointer => _isFollowingPointer;
+
         /// <summary>
         /// How large a screen area counts as touching the tray. Generous on purpose:
         /// a thumb is a blunt instrument, and a missed grab feels like the game
@@ -74,6 +77,19 @@ namespace Pathweaver.Game.Presentation
         {
             _isFollowingPointer = false;
             transform.position = TrayWorldPosition;
+        }
+
+        /// <summary>
+        /// Twists the tile for the rotation hint, in degrees.
+        /// </summary>
+        /// <remarks>
+        /// Decoration only. The pending rotation is expressed by redrawing the tile's edges,
+        /// so this cannot be confused with game state — and it must always be able to return
+        /// to zero, or the tile would sit visibly crooked.
+        /// </remarks>
+        internal void SetHintTwist(float degrees)
+        {
+            transform.localRotation = Quaternion.Euler(0f, 0f, degrees);
         }
 
         /// <summary>Whether a screen position counts as grabbing the tile.</summary>

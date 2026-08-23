@@ -52,6 +52,107 @@ namespace Pathweaver.Game.Presentation
         }
 
         /// <summary>
+        /// A rectangle centred on the origin, for panels and glyph strokes.
+        /// </summary>
+        internal static Mesh CreateRectangle(float width, float height)
+        {
+            var halfWidth = width * 0.5f;
+            var halfHeight = height * 0.5f;
+
+            var mesh = new Mesh { name = "Rectangle" };
+            mesh.SetVertices(new List<Vector3>
+            {
+                new Vector3(-halfWidth, -halfHeight, 0f),
+                new Vector3(-halfWidth, halfHeight, 0f),
+                new Vector3(halfWidth, halfHeight, 0f),
+                new Vector3(halfWidth, -halfHeight, 0f),
+            });
+
+            // Wound to face the camera at negative Z, like every other mesh here.
+            mesh.SetTriangles(new List<int> { 0, 1, 2, 0, 2, 3 }, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            return mesh;
+        }
+
+        /// <summary>
+        /// A circular arrow: an arc with a head, for a restart symbol.
+        /// </summary>
+        /// <remarks>
+        /// Built rather than imported for the same reason as everything else here — no art
+        /// dependency — and because a rotation symbol has to read without text, which the
+        /// project has no means of drawing yet.
+        /// </remarks>
+        internal static Mesh CreateCircularArrow(
+            float radius, float thickness, float sweepDegrees, int segments = 20)
+        {
+            var vertices = new List<Vector3>();
+            var triangles = new List<int>();
+
+            var inner = radius - (thickness * 0.5f);
+            var outer = radius + (thickness * 0.5f);
+
+            // The arc starts at the top and sweeps clockwise, so the gap sits where the head
+            // is about to arrive and the eye follows the direction of travel.
+            for (var step = 0; step <= segments; step++)
+            {
+                var angle = Mathf.Deg2Rad * (90f - (sweepDegrees * step / segments));
+                var cos = Mathf.Cos(angle);
+                var sin = Mathf.Sin(angle);
+
+                vertices.Add(new Vector3(inner * cos, inner * sin, 0f));
+                vertices.Add(new Vector3(outer * cos, outer * sin, 0f));
+
+                if (step == 0)
+                {
+                    continue;
+                }
+
+                var previousInner = (step - 1) * 2;
+                var previousOuter = previousInner + 1;
+                var currentInner = step * 2;
+                var currentOuter = currentInner + 1;
+
+                // Wound to face the camera at negative Z, like every other mesh here. The
+                // first attempt had the arc facing away and only the arrow head rendered.
+                triangles.Add(previousInner);
+                triangles.Add(previousOuter);
+                triangles.Add(currentInner);
+
+                triangles.Add(previousOuter);
+                triangles.Add(currentOuter);
+                triangles.Add(currentInner);
+            }
+
+            // Arrow head at the end of the sweep, pointing along the tangent.
+            var endAngle = Mathf.Deg2Rad * (90f - sweepDegrees);
+            var centre = new Vector3(radius * Mathf.Cos(endAngle), radius * Mathf.Sin(endAngle), 0f);
+            var tangent = new Vector3(Mathf.Sin(endAngle), -Mathf.Cos(endAngle), 0f);
+            var normal = new Vector3(Mathf.Cos(endAngle), Mathf.Sin(endAngle), 0f);
+
+            var headLength = thickness * 2.2f;
+            var headHalfWidth = thickness * 1.3f;
+
+            var headTip = vertices.Count;
+            vertices.Add(centre + (tangent * headLength));
+            vertices.Add(centre + (normal * headHalfWidth));
+            vertices.Add(centre - (normal * headHalfWidth));
+
+            triangles.Add(headTip);
+            triangles.Add(headTip + 2);
+            triangles.Add(headTip + 1);
+
+            var mesh = new Mesh { name = "CircularArrow" };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            return mesh;
+        }
+
+        /// <summary>
         /// A rectangle running from the origin along +X, used for a conduit spoke.
         /// </summary>
         /// <remarks>

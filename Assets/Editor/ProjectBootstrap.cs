@@ -115,6 +115,24 @@ namespace Pathweaver.EditorTools
             var fitter = new GameObject("CameraFitter").AddComponent<BoardCameraFitter>();
             Wire(fitter, ("_camera", camera), ("_boardView", board));
 
+            var rotateHint = new GameObject("RotateHint").AddComponent<RotateHintAnimator>();
+            Wire(rotateHint, ("_heldTileView", heldTile), ("_session", session));
+
+            var restart = new GameObject("RestartButton").AddComponent<RestartButtonView>();
+            Wire(restart, ("_boardView", board), ("_camera", camera), ("_session", session));
+
+            var restartConfirm = new GameObject("RestartConfirm").AddComponent<RestartConfirmView>();
+            Wire(restartConfirm, ("_boardView", board), ("_camera", camera));
+
+            var progress = new GameObject("ProgressBar").AddComponent<ProgressBarView>();
+            Wire(progress, ("_boardView", board), ("_camera", camera), ("_session", session));
+
+            var tokens = new GameObject("TokenPips").AddComponent<TokenPipsView>();
+            Wire(tokens, ("_boardView", board), ("_camera", camera), ("_session", session));
+
+            var levelComplete = new GameObject("LevelComplete").AddComponent<LevelCompleteView>();
+            Wire(levelComplete, ("_boardView", board), ("_camera", camera), ("_session", session));
+
             var platform = new GameObject("Platform");
             var frameRate = platform.AddComponent<FrameRateGovernor>();
             var haptics = platform.AddComponent<HapticsService>();
@@ -132,7 +150,10 @@ namespace Pathweaver.EditorTools
                 ("_heldTileView", heldTile),
                 ("_camera", camera),
                 ("_frameRateGovernor", frameRate),
-                ("_haptics", haptics));
+                ("_haptics", haptics),
+                ("_restartButton", restart),
+                ("_restartConfirm", restartConfirm),
+                ("_levelComplete", levelComplete));
 
             EditorSceneManager.SaveScene(scene, path);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(path, true) };

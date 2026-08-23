@@ -60,5 +60,18 @@ namespace Pathweaver.Game.Presentation
             _visual.SetBackground(BoardPalette.CellOutline);
             _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
         }
+
+        /// <summary>
+        /// Draws a conduit as part of a route that has just harvested.
+        /// </summary>
+        /// <remarks>
+        /// The whole path lights up rather than the last tile placed, because what paid out is
+        /// the route, and a player needs to see which one.
+        /// </remarks>
+        internal void ShowHarvestedConduit(ConduitTile tile)
+        {
+            _visual.SetBackground(BoardPalette.HarvestFlash);
+            _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
+        }
     }
 }

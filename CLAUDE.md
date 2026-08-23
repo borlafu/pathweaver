@@ -233,6 +233,19 @@ commands fail until it is closed.
 `-runTests` writes results to an XML file rather than stdout. Pass
 `-testResults <path>` and read that file to see which tests failed.
 
+## Design decisions the PRD leaves open
+
+Recorded here because they are choices rather than deductions, and the reasoning is easy to
+lose.
+
+| Question | Decision |
+|---|---|
+| Where may a tile be placed? | It must join a conduit or endpoint of its own kind with facing edges. Free placement would reduce deadlock to "board full" and leave Pivot Tokens nothing to rescue. |
+| What earns a Pivot Token? | Completing a route of 4 or more conduits, rewarding the extended routing the score curve already pushes toward. |
+| What happens on a deadlock with no tokens? | The run is lost, and restart is the only way out. A rewarded video granting a token is the intended softener later, alongside the rewarded hints in PRD section 6.2. |
+| Does clearing the quota end the board? | No. Extending routes is rewarded, so play continues and the completion notice is dismissable. |
+| Is a retrieved conduit returned to hand? | No, it is discarded. The token buys back the space, not the tile. |
+
 ## Hard constraints from the PRD
 
 - Offline-first: no gameplay path may require network access. Cloud save is an

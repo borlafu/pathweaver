@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Pathweaver.Core.Flow;
 using Pathweaver.Core.Hex;
+using Pathweaver.Core.Levels;
 using Pathweaver.Core.Rules;
 using Pathweaver.Core.State;
 using Pathweaver.Core.Tiles;
@@ -44,6 +46,7 @@ namespace Pathweaver.Game.App
         private BoardCameraFitter _cameraFitter;
 
         private SaveService _saves;
+        private LevelDefinition _level;
 
         /// <summary>Raised whenever the state changes, including at the start.</summary>
         internal event Action<GameState> StateChanged;
@@ -58,11 +61,34 @@ namespace Pathweaver.Game.App
         /// </remarks>
         internal event Action<int> RoutesHarvested;
 
-        /// <summary>Raised after a tile is placed, whatever it did or did not complete.</summary>
-        internal event Action TilePlaced;
+        /// <summary>
+        /// Raised when the player turns the held tile.
+        /// </summary>
+        /// <remarks>
+        /// The rotation hint listens for this to stop advertising itself once the player has
+        /// clearly found the gesture.
+        /// </remarks>
+        internal event Action HeldRotated;
 
         /// <summary>Whether the current run was restored from a save.</summary>
         internal bool WasResumed { get; private set; }
+
+        /// <summary>The score that clears this level.</summary>
+        internal long TargetScore => _level?.TargetScore ?? 0;
+
+        /// <summary>Whether the level's quota has been met.</summary>
+        internal bool IsComplete => State != null && _level != null && State.Score >= _level.TargetScore;
+
+        /// <summary>
+        /// The conduits on the routes that most recently paid out.
+        /// </summary>
+        /// <remarks>
+        /// Kept so the board can show which path just harvested. Without it a completed route
+        /// is indistinguishable from a placement that did nothing, which is exactly how the
+        /// first device build felt.
+        /// </remarks>
+        internal IReadOnlyList<HexCoord> LastHarvestedTiles { get; private set; } =
+            Array.Empty<HexCoord>();
 
         internal GameState State { get; private set; }
 
@@ -92,10 +118,10 @@ namespace Pathweaver.Game.App
         {
             _saves = saves;
 
-            var level = LevelCatalogue.Load(_levelId);
+            _level = LevelCatalogue.Load(_levelId);
             var resumed = saves?.Load(_levelId);
 
-            State = resumed ?? level.CreateGame(_seed);
+            State = resumed ?? _level.CreateGame(_seed);
             WasResumed = resumed != null;
             HeldRotation = 0;
 
@@ -106,6 +132,30 @@ namespace Pathweaver.Game.App
             _cameraFitter?.Fit(State);
 
             Publish();
+        }
+
+        /// <summary>
+        /// Abandons the current run and deals a fresh board.
+        /// </summary>
+        /// <remarks>
+        /// The save is deleted rather than left behind, or the next launch would resume the
+        /// board the player just walked away from.
+        /// </remarks>
+        internal void Restart()
+        {
+            _saves?.Delete(_levelId);
+
+            _level = LevelCatalogue.Load(_levelId);
+            State = _level.CreateGame(_seed);
+            WasResumed = false;
+            HeldRotation = 0;
+            LastHarvestedTiles = Array.Empty<HexCoord>();
+
+            _boardView.Build(State);
+            _cameraFitter?.Fit(State);
+
+            Publish();
+            SaveNow();
         }
 
         /// <summary>
@@ -128,6 +178,7 @@ namespace Pathweaver.Game.App
         {
             HeldRotation = (HeldRotation + 1) % 6;
             Publish();
+            HeldRotated?.Invoke();
         }
 
         /// <summary>
@@ -149,7 +200,7 @@ namespace Pathweaver.Game.App
                 return false;
             }
 
-            var harvestedBefore = State.CompletedRoutes.Count;
+            var paidBefore = PaidPairs(State);
 
             State = GameEngine.Apply(State, new PlaceTile(coordinate, HeldRotation));
 
@@ -159,11 +210,10 @@ namespace Pathweaver.Game.App
 
             Publish();
 
-            TilePlaced?.Invoke();
-
-            var harvested = State.CompletedRoutes.Count - harvestedBefore;
+            var harvested = State.CompletedRoutes.Count - paidBefore.Count;
             if (harvested > 0)
             {
+                LastHarvestedTiles = TilesOfNewRoutes(paidBefore);
                 RoutesHarvested?.Invoke(harvested);
             }
 
@@ -172,6 +222,51 @@ namespace Pathweaver.Game.App
             SaveNow();
 
             return true;
+        }
+
+        /// <summary>
+        /// The conduits belonging to routes that were not already paid out.
+        /// </summary>
+        /// <remarks>
+        /// Recomputed from the board rather than reported by the engine, because the engine's
+        /// job is to score routes, not to describe them for display. Boards hold tens of
+        /// cells, so asking again costs nothing worth avoiding.
+        /// </remarks>
+        private IReadOnlyList<HexCoord> TilesOfNewRoutes(HashSet<(HexCoord Spring, HexCoord Hub)> paidBefore)
+        {
+            var tiles = new List<HexCoord>();
+
+            foreach (var route in FlowResolver.FindCompletedRoutes(State.Board, State.Endpoints))
+            {
+                if (paidBefore.Contains((route.Spring.Coordinate, route.Hub.Coordinate)))
+                {
+                    continue;
+                }
+
+                tiles.AddRange(route.Tiles);
+            }
+
+            return tiles;
+        }
+
+        /// <summary>
+        /// The spring and hub pairs already harvested, as plain coordinates.
+        /// </summary>
+        /// <remarks>
+        /// Compared as coordinate pairs rather than as CompletedRoute values, whose constructor
+        /// is internal to the simulation. Widening that just so the presentation layer can build
+        /// one would loosen the simulation's surface for a display concern.
+        /// </remarks>
+        private static HashSet<(HexCoord Spring, HexCoord Hub)> PaidPairs(GameState state)
+        {
+            var pairs = new HashSet<(HexCoord Spring, HexCoord Hub)>();
+
+            foreach (var route in state.CompletedRoutes)
+            {
+                pairs.Add((route.Spring, route.Hub));
+            }
+
+            return pairs;
         }
 
         private void Publish()
