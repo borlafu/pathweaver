@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using Pathweaver.Core.Hex;
 using Pathweaver.Core.Levels;
 using Pathweaver.Game.App;
 using Pathweaver.Game.Presentation;
@@ -100,17 +102,47 @@ namespace Pathweaver.EditorTools
 
             var camera = BuildCamera();
             var board = new GameObject("Board").AddComponent<BoardView>();
+            var heldTile = new GameObject("HeldTile").AddComponent<HeldTileView>();
+            var session = new GameObject("Session").AddComponent<GameSession>();
+            var input = new GameObject("Input").AddComponent<InputController>();
 
-            var boot = new GameObject("Boot").AddComponent<BoardDemo>();
-            var serialised = new SerializedObject(boot);
-            serialised.FindProperty("_boardView").objectReferenceValue = board;
-            serialised.ApplyModifiedPropertiesWithoutUndo();
+            Wire(heldTile, ("_boardView", board), ("_camera", camera));
+            Wire(session, ("_boardView", board), ("_heldTileView", heldTile));
+            Wire(
+                input,
+                ("_session", session),
+                ("_boardView", board),
+                ("_heldTileView", heldTile),
+                ("_camera", camera));
 
             EditorSceneManager.SaveScene(scene, path);
-
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(path, true) };
 
-            Debug.Log($"[bootstrap] created {path} with {camera.name} and {board.name}");
+            Debug.Log($"[bootstrap] created {path}");
+        }
+
+        /// <summary>
+        /// Assigns serialised object references, since a scene built in code cannot
+        /// drag them into place.
+        /// </summary>
+        private static void Wire(Component target, params (string Field, Component Value)[] links)
+        {
+            var serialised = new SerializedObject(target);
+
+            foreach (var (field, value) in links)
+            {
+                var property = serialised.FindProperty(field);
+                if (property == null)
+                {
+                    Debug.LogError($"[bootstrap] {target.GetType().Name} has no field {field}.");
+                    EditorApplication.Exit(1);
+                    return;
+                }
+
+                property.objectReferenceValue = value;
+            }
+
+            serialised.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>
@@ -139,6 +171,17 @@ namespace Pathweaver.EditorTools
             var state = level.CreateGame(seed: 42UL);
             board.Build(state);
 
+            var available = new HashSet<HexCoord>();
+            foreach (var placement in state.LegalPlacements)
+            {
+                if (placement.Rotation == 0)
+                {
+                    available.Add(placement.Coordinate);
+                }
+            }
+
+            board.Refresh(state, available);
+
             var target = new RenderTexture(width, height, 24);
             camera.targetTexture = target;
             camera.Render();
@@ -162,6 +205,7 @@ namespace Pathweaver.EditorTools
         private static Camera BuildCamera()
         {
             var camera = new GameObject("Camera").AddComponent<Camera>();
+            camera.tag = "MainCamera";
             camera.transform.position = new Vector3(0f, 0f, -10f);
             camera.orthographic = true;
 

@@ -53,5 +53,52 @@ namespace Pathweaver.Game.Presentation
         /// The centre-to-centre distance between neighbouring cells.
         /// </summary>
         internal static float CellSpacing => Size * Sqrt3;
+
+        /// <summary>
+        /// The cell containing a world position.
+        /// </summary>
+        /// <remarks>
+        /// Inverts <see cref="ToWorld"/>, then rounds in cube space: rounding the two
+        /// axial components independently can land on a cell that does not touch the
+        /// point, because axial axes are not perpendicular. Cube rounding picks the
+        /// nearest centre by discarding whichever component moved furthest and
+        /// rebuilding it from the other two.
+        /// </remarks>
+        internal static HexCoord FromWorld(Vector3 position)
+        {
+            var fractionalR = -position.y / (Size * 1.5f);
+            var fractionalQ = (position.x / (Size * Sqrt3)) - (fractionalR * 0.5f);
+
+            return RoundToCell(fractionalQ, fractionalR);
+        }
+
+        private static HexCoord RoundToCell(float fractionalQ, float fractionalR)
+        {
+            // Axial to cube, where the three components always sum to zero.
+            var cubeX = fractionalQ;
+            var cubeZ = fractionalR;
+            var cubeY = -cubeX - cubeZ;
+
+            var roundedX = Mathf.RoundToInt(cubeX);
+            var roundedY = Mathf.RoundToInt(cubeY);
+            var roundedZ = Mathf.RoundToInt(cubeZ);
+
+            var driftX = Mathf.Abs(roundedX - cubeX);
+            var driftY = Mathf.Abs(roundedY - cubeY);
+            var driftZ = Mathf.Abs(roundedZ - cubeZ);
+
+            // Rebuild the component that moved furthest, so the sum returns to zero
+            // without pulling the result away from the nearest centre.
+            if (driftX > driftY && driftX > driftZ)
+            {
+                roundedX = -roundedY - roundedZ;
+            }
+            else if (driftZ > driftY)
+            {
+                roundedZ = -roundedX - roundedY;
+            }
+
+            return new HexCoord(roundedX, roundedZ);
+        }
     }
 }

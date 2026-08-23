@@ -18,6 +18,16 @@ namespace Pathweaver.Game.Presentation
     {
         internal static readonly Color EmptyCell = new Color(0.22f, 0.24f, 0.29f);
         internal static readonly Color CellOutline = new Color(0.32f, 0.35f, 0.41f);
+        /// <summary>
+        /// An empty cell the held tile could legally occupy.
+        /// </summary>
+        /// <remarks>
+        /// Showing where a tile may go is not a hint, it is the placement rule made
+        /// visible. Requiring conduits to join the network is invisible otherwise, and
+        /// a player who cannot see it reads a refused tap as the game ignoring them.
+        /// </remarks>
+        internal static readonly Color LegalCell = new Color(0.30f, 0.36f, 0.44f);
+
         internal static readonly Color Spring = new Color(0.95f, 0.85f, 0.35f);
         internal static readonly Color Hub = new Color(0.55f, 0.40f, 0.85f);
 
