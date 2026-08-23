@@ -79,4 +79,5 @@ fi
 
 echo
 echo "Verify the signature and compare the fingerprint against Play Console:"
-echo "  /Applications/Unity/Hub/Editor/${UNITY_VERSION}/PlaybackEngines/AndroidPlayer/SDK/build-tools/36.0.0/apksigner verify --print-certs --verbose \"$OUTPUT\""
+echo "  # apksigner reads APKs, not bundles, so a bundle is checked with jarsigner"
+echo "  /Applications/Unity/Hub/Editor/${UNITY_VERSION}/PlaybackEngines/AndroidPlayer/OpenJDK/bin/jarsigner -verify -verbose:summary -certs \"$OUTPUT\" | head -20"

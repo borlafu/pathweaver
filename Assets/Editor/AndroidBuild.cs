@@ -155,7 +155,22 @@ namespace Pathweaver.EditorTools
                 options = BuildOptions.None,
             };
 
-            var report = BuildPipeline.BuildPlayer(options);
+            BuildReport report;
+
+            try
+            {
+                report = BuildPipeline.BuildPlayer(options);
+            }
+            finally
+            {
+                // Cleared whether the build worked or not. Unity writes the keystore path and alias
+                // into ProjectSettings.asset, which is committed, so leaving them behind would put an
+                // absolute path from one machine into everyone's checkout — and quietly disclose
+                // where the signing key lives. Passwords are not written, which was worth verifying
+                // rather than assuming.
+                ResetSigning();
+            }
+
             var summary = report.summary;
 
             if (summary.result != BuildResult.Succeeded)
@@ -166,6 +181,20 @@ namespace Pathweaver.EditorTools
             }
 
             Debug.Log($"[build] wrote {outputPath} in {summary.totalTime}");
+        }
+
+        /// <summary>
+        /// Returns the project's signing fields to their committed, empty state.
+        /// </summary>
+        private static void ResetSigning()
+        {
+            PlayerSettings.Android.useCustomKeystore = false;
+            PlayerSettings.Android.keystoreName = string.Empty;
+            PlayerSettings.Android.keystorePass = string.Empty;
+            PlayerSettings.Android.keyaliasName = string.Empty;
+            PlayerSettings.Android.keyaliasPass = string.Empty;
+
+            AssetDatabase.SaveAssets();
         }
 
         /// <summary>
