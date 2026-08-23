@@ -33,6 +33,7 @@ namespace Pathweaver.Core.Levels
     /// target-score: 246
     /// tokens: 0
     /// skips: 3
+    /// seed: 42
     /// shape: hexagon 3      # or one "cell: q,r" line per cell
     /// spring: -3,0 water
     /// hub: 2,0 water
@@ -50,6 +51,15 @@ namespace Pathweaver.Core.Levels
         /// irrelevant, and it means existing levels need no edit to gain the mechanic.
         /// </remarks>
         private const int DefaultStartingSkips = 3;
+
+        /// <summary>
+        /// The seed a level is played at when it does not name one.
+        /// </summary>
+        /// <remarks>
+        /// Any fixed value would do; what matters is that it is fixed, so a level plays the same way
+        /// for every player and the solvability gate checks the puzzle that ships.
+        /// </remarks>
+        private const ulong DefaultSeed = 42UL;
 
         private const int MaximumRadius = 32;
         private const int MaximumTileCount = 256;
@@ -72,6 +82,7 @@ namespace Pathweaver.Core.Levels
             long? targetScore = null;
             var startingTokens = 0;
             var startingSkips = DefaultStartingSkips;
+            var seed = DefaultSeed;
             int? radius = null;
             var cells = new List<HexCoord>();
             var endpoints = new List<FlowEndpoint>();
@@ -117,6 +128,9 @@ namespace Pathweaver.Core.Levels
                     case "skips":
                         startingSkips = (int)ParseNonNegativeNumber(value, "skips", lineNumber);
                         break;
+                    case "seed":
+                        seed = (ulong)ParseNonNegativeNumber(value, "seed", lineNumber);
+                        break;
                     case "shape":
                         radius = ParseHexagonShape(value, lineNumber);
                         break;
@@ -138,7 +152,7 @@ namespace Pathweaver.Core.Levels
             }
 
             return Build(
-                id, name, baseScore, targetScore, startingTokens, startingSkips,
+                id, name, baseScore, targetScore, startingTokens, startingSkips, seed,
                 radius, cells, endpoints, bagTiles);
         }
 
@@ -149,6 +163,7 @@ namespace Pathweaver.Core.Levels
             long? targetScore,
             int startingTokens,
             int startingSkips,
+            ulong seed,
             int? radius,
             List<HexCoord> cells,
             List<FlowEndpoint> endpoints,
@@ -217,7 +232,8 @@ namespace Pathweaver.Core.Levels
                 baseScore.Value,
                 targetScore.Value,
                 startingTokens,
-                startingSkips);
+                startingSkips,
+                seed);
         }
 
         private static List<HexCoord> ResolveShape(int? radius, List<HexCoord> cells)

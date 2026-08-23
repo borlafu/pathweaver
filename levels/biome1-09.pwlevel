@@ -1,0 +1,28 @@
+# Biome 1, level 9 — Two Descents
+#
+# Two routes running down a narrow board, never needing to cross. This is the level about planning
+# two things at once rather than about congestion.
+
+id: biome1-09
+
+base-score: 100
+target-score: 270
+tokens: 0
+skips: 3
+
+cell: 1,-2
+cell: 2,-2
+cell: 0,-1
+cell: 1,-1
+cell: 0,0
+cell: 1,0
+cell: -1,1
+cell: 0,1
+
+spring: 1,-2 water
+hub: -1,1 water
+spring: 2,-2 water
+hub: 0,1 water
+
+tile: 0,2 water x4
+tile: 0,3 water x2

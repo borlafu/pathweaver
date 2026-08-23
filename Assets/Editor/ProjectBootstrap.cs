@@ -394,10 +394,9 @@ namespace Pathweaver.EditorTools
             camera.transform.position = new Vector3(0f, 0f, -10f);
             camera.orthographic = true;
 
-            // Sized to frame a radius-3 board with a margin, which is the largest MVP
-            // level. Fitting the board to the screen properly belongs with the game
-            // shell in #27.
-            camera.orthographicSize = 3.2f;
+            // The menu framing. BoardCameraFitter takes over per level, and GameFlow puts this
+            // back whenever a menu is shown, so the two agree on one value.
+            camera.orthographicSize = MenuCamera.OrthographicSize;
             camera.backgroundColor = new Color(0.08f, 0.09f, 0.11f);
             camera.clearFlags = CameraClearFlags.SolidColor;
 

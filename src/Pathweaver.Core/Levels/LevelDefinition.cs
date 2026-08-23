@@ -34,7 +34,8 @@ namespace Pathweaver.Core.Levels
             long baseRouteScore,
             long targetScore,
             int startingTokens,
-            int startingSkips)
+            int startingSkips,
+            ulong seed)
         {
             Id = id;
             Name = name;
@@ -45,6 +46,7 @@ namespace Pathweaver.Core.Levels
             TargetScore = targetScore;
             StartingTokens = startingTokens;
             StartingSkips = startingSkips;
+            Seed = seed;
         }
 
         /// <summary>Stable identifier, used by progression and save data.</summary>
@@ -79,8 +81,22 @@ namespace Pathweaver.Core.Levels
         public int StartingSkips { get; }
 
         /// <summary>
+        /// The seed this level is played at.
+        /// </summary>
+        /// <remarks>
+        /// A handcrafted level is authored against one tile order, and that order is part of the
+        /// puzzle: the same board with a different draw sequence is a different problem, and not
+        /// necessarily a solvable one. Endless Wayfare and the Daily Expedition take their seeds
+        /// from elsewhere, because generated boards must work for a seed nobody chose.
+        /// </remarks>
+        public ulong Seed { get; }
+
+        /// <summary>
         /// Builds a fresh game of this level for the given seed.
         /// </summary>
+        /// <summary>Builds a fresh game at the level's own seed.</summary>
+        public GameState CreateGame() => CreateGame(Seed);
+
         public GameState CreateGame(ulong seed)
             => GameState.Create(
                 HexGrid<ConduitTile>.FromShape(_shape),

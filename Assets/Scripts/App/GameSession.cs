@@ -34,9 +34,6 @@ namespace Pathweaver.Game.App
         private string _levelId = "biome1-01";
 
         [SerializeField]
-        private ulong _seed = 42UL;
-
-        [SerializeField]
         private BoardView _boardView;
 
         [SerializeField]
@@ -138,7 +135,7 @@ namespace Pathweaver.Game.App
             _level = LevelCatalogue.Load(_levelId);
             var resumed = saves?.Load(_levelId);
 
-            State = resumed ?? _level.CreateGame(_seed);
+            State = resumed ?? _level.CreateGame();
             WasResumed = resumed != null;
             HeldRotation = 0;
 
@@ -163,7 +160,7 @@ namespace Pathweaver.Game.App
             _saves?.Delete(_levelId);
 
             _level = LevelCatalogue.Load(_levelId);
-            State = _level.CreateGame(_seed);
+            State = _level.CreateGame();
             WasResumed = false;
             HeldRotation = 0;
             LastHarvestedTiles = Array.Empty<HexCoord>();
