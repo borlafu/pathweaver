@@ -76,9 +76,11 @@ builds a loop cannot claim the longer way round.
 Each spring-and-hub pair pays out **once**. The game records which pairs have already
 harvested, so retrieving a conduit and putting it back does not pay twice.
 
-A level is cleared by reaching its **target score**. Clearing does not end the board:
-extending routes is rewarded, so play continues and the completion notice is
-dismissable.
+A level is cleared by reaching its **target score**, and clearing it ends the board. Every
+control is withdrawn and one button, centred on screen, moves on. An earlier version let
+play continue so that routes could be extended for a bigger score, which meant a finished
+level looked exactly like an unfinished one: full bar, live tray, nothing to say it was
+over.
 
 ### Tokens
 
@@ -99,11 +101,14 @@ conduit, and that half is deliberately not implemented: a conduit was placed con
 to something, so turning it in place usually only disconnects it. A player who wants a
 different shape in that cell wants the cell back.
 
-To spend a Pivot Token, **tap the pip column** on the left of the board: the pips
-brighten and every conduit is marked. Then **tap a conduit** to take it off the board.
-Arming spends nothing, and a tap anywhere else cancels — the mode exists because the
-board is the one thing a thumb touches constantly, and a token is the scarcest thing a
-player holds.
+To spend a Pivot Token, **tap the remove button** below the pip column on the left: the
+pips brighten and every conduit is marked. Then **tap a conduit** to take it off the
+board. Arming spends nothing, and a tap anywhere else cancels — the mode exists because
+the board is the one thing a thumb touches constantly, and a token is the scarcest thing
+a player holds.
+
+Clearing the quota **ends the board**. Every control is withdrawn and one button, centred,
+moves on: the next level in the campaign, the next round in Endless.
 
 If the held tile fits nowhere in any rotation, the board is deadlocked, and a Pivot
 Token is the way out. With no tokens left the run is lost and restart is the only

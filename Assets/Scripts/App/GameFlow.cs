@@ -45,6 +45,16 @@ namespace Pathweaver.Game.App
         [SerializeField]
         private GameObject _hud;
 
+        /// <summary>
+        /// The controls a finished board no longer offers: restart, skip, remove, and the tile tray.
+        /// </summary>
+        /// <remarks>
+        /// Grouped so finishing a board is one call rather than five. The progress bar and the token
+        /// pips stay outside the group, because they report rather than act.
+        /// </remarks>
+        [SerializeField]
+        private GameObject _playControls;
+
         [SerializeField]
         private BoardView _boardView;
 
@@ -58,7 +68,7 @@ namespace Pathweaver.Game.App
         private EndlessRunStore _endlessStore;
         private EndlessRun _endlessRun;
         private HexButton _pauseButton;
-        private HexButton _nextRoundButton;
+        private HexButton _nextButton;
         private bool _hasRecordedThisClear;
 
         /// <summary>
@@ -92,9 +102,11 @@ namespace Pathweaver.Game.App
             _settings.Build(_camera, material);
             _levelSelect.Build(_camera, material, _campaign, _progress);
 
+            // Top right, opposite restart. The two controls that leave a board sit in the two
+            // corners furthest from the thumb's resting position, where a mis-tap costs the most.
             _pauseButton = HexButton.Create(
                 _hud.transform, "pause", _camera, material,
-                new Vector2(0.12f, 0.94f), 0.3f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.1f);
+                new Vector2(0.88f, 0.94f), 0.3f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.1f);
 
             // Two bars: the shape a pause control has had for fifty years.
             _pauseButton.AddGlyph(
@@ -102,14 +114,15 @@ namespace Pathweaver.Game.App
             _pauseButton.AddGlyph(
                 HexMeshFactory.CreateRectangle(0.05f, 0.2f), BoardPalette.MenuGlyph, new Vector3(0.06f, 0f, 0f));
 
-            // Only ever visible on a finished endless round. A campaign level has a level list to go
-            // back to; an endless run has nowhere to go but forward, so it needs a way to say so.
-            _nextRoundButton = HexButton.Create(
-                _hud.transform, "next-round", _camera, material,
-                new Vector2(0.86f, 0.94f), 0.3f, BoardPalette.MenuPrimary, touchRadiusFraction: 0.1f);
-            _nextRoundButton.AddGlyph(
-                HexMeshFactory.CreateRegularPolygon(3, 0.16f, rotationDegrees: -90f), BoardPalette.MenuGlyph);
-            _nextRoundButton.gameObject.SetActive(false);
+            // The only control a finished board offers, in either mode, and centred because it is
+            // the only one: nothing else on screen is worth aiming at. Green rather than blue,
+            // because reaching it is the win.
+            _nextButton = HexButton.Create(
+                _hud.transform, "next", _camera, material,
+                new Vector2(0.5f, 0.5f), 0.85f, BoardPalette.ProgressComplete, touchRadiusFraction: 0.22f);
+            _nextButton.AddGlyph(
+                HexMeshFactory.CreateRegularPolygon(3, 0.34f, rotationDegrees: -90f), BoardPalette.MenuGlyph);
+            _nextButton.gameObject.SetActive(false);
 
             _session.StateChanged += OnStateChanged;
             _router.ScreenChanged += OnScreenChanged;
@@ -153,11 +166,11 @@ namespace Pathweaver.Game.App
                         return true;
                     }
 
-                    if (_nextRoundButton != null
-                        && _nextRoundButton.gameObject.activeSelf
-                        && _nextRoundButton.IsPressed(screenPosition))
+                    if (_nextButton != null
+                        && _nextButton.gameObject.activeSelf
+                        && _nextButton.IsPressed(screenPosition))
                     {
-                        StartEndlessRound();
+                        MoveOn();
                         return true;
                     }
 
@@ -262,6 +275,33 @@ namespace Pathweaver.Game.App
         }
 
         /// <summary>
+        /// Leaves a finished board for whatever comes next.
+        /// </summary>
+        /// <remarks>
+        /// Endless goes to the next generated round. The campaign goes to the next level that is not
+        /// yet cleared, and to the level list once there are none — which is the honest answer at the
+        /// end of the biome, rather than offering the last level again and calling it progress.
+        /// </remarks>
+        private void MoveOn()
+        {
+            if (_isEndlessRound)
+            {
+                StartEndlessRound();
+                return;
+            }
+
+            var next = _campaign.NextLevel(_progress);
+
+            if (next == _session.LevelId)
+            {
+                ShowLevelSelect();
+                return;
+            }
+
+            StartLevel(next);
+        }
+
+        /// <summary>
         /// Plays the round the endless run is on, generating it now.
         /// </summary>
         /// <remarks>
@@ -339,11 +379,24 @@ namespace Pathweaver.Game.App
 
         private void OnStateChanged(Pathweaver.Core.State.GameState state)
         {
-            // Offered while the round is finished and withdrawn if a restart puts the player back
-            // below the target, so the control never claims a round is done when it is not.
-            if (_nextRoundButton != null)
+            // A finished board stops being a board: every control that plays it is withdrawn and
+            // the only one left is the button that moves on. Restarting puts the player back below
+            // the target, and everything comes back.
+            var isFinished = _session.IsComplete;
+
+            if (_nextButton != null)
             {
-                _nextRoundButton.gameObject.SetActive(_isEndlessRound && _session.IsComplete);
+                _nextButton.gameObject.SetActive(isFinished);
+            }
+
+            if (_playControls != null)
+            {
+                _playControls.SetActive(!isFinished);
+            }
+
+            if (_pauseButton != null)
+            {
+                _pauseButton.gameObject.SetActive(!isFinished);
             }
 
             if (!_session.IsComplete || _hasRecordedThisClear)

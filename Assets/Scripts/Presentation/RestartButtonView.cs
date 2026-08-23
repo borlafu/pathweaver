@@ -22,7 +22,7 @@ namespace Pathweaver.Game.Presentation
     internal sealed class RestartButtonView : MonoBehaviour
     {
         /// <summary>Where the button sits, in viewport coordinates.</summary>
-        private static readonly Vector2 ViewportPosition = new Vector2(0.12f, 0.10f);
+        private static readonly Vector2 ViewportPosition = new Vector2(0.12f, 0.94f);
 
         private const float ButtonRadius = 0.34f;
         private const float ArrowRadius = 0.21f;

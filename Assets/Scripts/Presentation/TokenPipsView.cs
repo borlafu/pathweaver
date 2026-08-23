@@ -48,42 +48,9 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private GameSession _session;
 
-        /// <summary>
-        /// How far from the pip column a tap still counts, as a fraction of the shorter screen edge.
-        /// </summary>
-        /// <remarks>
-        /// Generous, because the pips themselves are small and this is the only way to arm a Pivot
-        /// Token. A miss here reads as the control not existing.
-        /// </remarks>
-        private const float TouchRadiusFraction = 0.13f;
-
         private readonly List<MeshRenderer> _pips = new List<MeshRenderer>();
 
         private Camera ResolvedCamera => _camera != null ? _camera : Camera.main;
-
-        /// <summary>Whether this row can be tapped to arm a token.</summary>
-        /// <remarks>
-        /// Only the Pivot row. A skip is spent on the tile in hand and already has its own button;
-        /// there is nothing on the board for it to point at.
-        /// </remarks>
-        internal bool IsArmable => _kind == TokenKind.Pivot;
-
-        /// <summary>Whether a screen position lands on this row of pips.</summary>
-        internal bool IsPressed(Vector2 screenPosition)
-        {
-            if (_pips.Count == 0)
-            {
-                return false;
-            }
-
-            // Measured against the middle of the column rather than a single pip, so the whole row
-            // is one control however many pips are lit.
-            var centre = transform.position + new Vector3(0f, PipSpacing, 0f);
-            var pipScreen = ResolvedCamera.WorldToScreenPoint(centre);
-            var radius = Mathf.Min(Screen.width, Screen.height) * TouchRadiusFraction;
-
-            return Vector2.Distance(screenPosition, pipScreen) <= radius;
-        }
 
         private void OnEnable()
         {
@@ -124,7 +91,7 @@ namespace Pathweaver.Game.Presentation
                 ? 0
                 : _kind == TokenKind.Pivot ? state.PivotTokens.Count : state.SkipTokens.Count;
 
-            var armed = IsArmable && _session != null && _session.IsPivotArmed;
+            var armed = _kind == TokenKind.Pivot && _session != null && _session.IsPivotArmed;
 
             for (var index = 0; index < _pips.Count; index++)
             {
