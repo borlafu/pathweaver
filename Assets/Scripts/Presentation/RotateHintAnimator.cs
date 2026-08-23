@@ -65,6 +65,15 @@ namespace Pathweaver.Game.Presentation
                 return;
             }
 
+            // Reduced motion silences it entirely rather than slowing it. A hint that repeats every
+            // two seconds forever is exactly the kind of motion a player turns that setting on to
+            // stop, and a slower version is still motion.
+            if (GameSettings.ReduceMotion)
+            {
+                _heldTileView.SetHintTwist(0f);
+                return;
+            }
+
             // Never while the tile is under a thumb: the player is already interacting, and
             // twisting what they are holding would read as a glitch.
             if (_heldTileView.IsFollowingPointer)

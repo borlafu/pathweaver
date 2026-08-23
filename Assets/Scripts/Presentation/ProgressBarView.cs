@@ -49,6 +49,8 @@ namespace Pathweaver.Game.Presentation
             {
                 _session.StateChanged += OnStateChanged;
             }
+
+            CatchUp();
         }
 
         private void OnDisable()
@@ -62,6 +64,20 @@ namespace Pathweaver.Game.Presentation
         private void Start()
         {
             Build();
+            CatchUp();
+        }
+
+        /// <summary>
+        /// Reads the current state directly, for the case where this view was disabled when the
+        /// state last changed.
+        /// </summary>
+        private void CatchUp()
+        {
+            if (_session?.State != null)
+            {
+                OnStateChanged(_session.State);
+                _shownFraction = _targetFraction;
+            }
         }
 
         private void Update()

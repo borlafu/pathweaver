@@ -47,11 +47,20 @@ namespace Pathweaver.Game.Platform
         private const int Amplitude = 255;
 
         private Action<int[]> _vibrate;
+        private bool? _overrideEnabled;
 
         /// <summary>
         /// Whether haptics fire. Off means silent, not weaker.
         /// </summary>
-        internal bool IsEnabled { get; set; } = true;
+        /// <remarks>
+        /// Reads the player's setting unless a test has overridden it, so the switch in the settings
+        /// screen is the single place that decides.
+        /// </remarks>
+        internal bool IsEnabled
+        {
+            get => _overrideEnabled ?? Pathweaver.Game.App.GameSettings.HapticsEnabled;
+            set => _overrideEnabled = value;
+        }
 
         /// <summary>
         /// Replaces the platform call, so tests can observe what would have fired.

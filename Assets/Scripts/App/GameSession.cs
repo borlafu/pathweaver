@@ -73,6 +73,9 @@ namespace Pathweaver.Game.App
         /// <summary>Whether the current run was restored from a save.</summary>
         internal bool WasResumed { get; private set; }
 
+        /// <summary>The level being played.</summary>
+        internal string LevelId => _levelId;
+
         /// <summary>The score that clears this level.</summary>
         internal long TargetScore => _level?.TargetScore ?? 0;
 
@@ -116,6 +119,20 @@ namespace Pathweaver.Game.App
         /// </remarks>
         internal void Begin(SaveService saves)
         {
+            Begin(_levelId, saves);
+        }
+
+        /// <summary>
+        /// Starts or resumes a specific level.
+        /// </summary>
+        /// <remarks>
+        /// Which level to play is a decision for the screen the player came from, not a value baked
+        /// into the scene. The serialised field remains only as the default for a build that starts
+        /// straight into a board.
+        /// </remarks>
+        internal void Begin(string levelId, SaveService saves)
+        {
+            _levelId = levelId;
             _saves = saves;
 
             _level = LevelCatalogue.Load(_levelId);
@@ -309,15 +326,16 @@ namespace Pathweaver.Game.App
             StateChanged?.Invoke(State);
         }
 
+        /// <summary>
+        /// Deliberately does not start a level. The flow decides when a board appears, so the game
+        /// can open on a menu rather than dropping the player straight into a puzzle.
+        /// </summary>
         private void Start()
         {
             if (_boardView == null)
             {
                 Debug.LogError("[GameSession] No board view assigned.");
-                return;
             }
-
-            Begin();
         }
 
         /// <summary>
