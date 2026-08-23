@@ -15,7 +15,11 @@ namespace Pathweaver.Game.Presentation
     /// </remarks>
     internal sealed class CellView : MonoBehaviour
     {
-        private static readonly int[] EndpointMarkEdges = { 0, 3 };
+        /// <summary>A spring pushes outward, so it is marked on every edge.</summary>
+        private static readonly int[] SpringMarkEdges = { 0, 1, 2, 3, 4, 5 };
+
+        /// <summary>A hub receives, so it is marked only across.</summary>
+        private static readonly int[] HubMarkEdges = { 0, 3 };
 
         private TileVisual _visual;
 
@@ -37,6 +41,7 @@ namespace Pathweaver.Game.Presentation
         {
             _visual.SetBackground(BoardPalette.EmptyCell);
             _visual.ClearSpokes();
+            _visual.ClearMotif();
         }
 
         /// <summary>
@@ -46,19 +51,27 @@ namespace Pathweaver.Game.Presentation
         {
             _visual.SetBackground(BoardPalette.LegalCell);
             _visual.ClearSpokes();
+            _visual.ClearMotif();
         }
 
         internal void ShowEndpoint(FlowEndpoint endpoint)
         {
-            _visual.SetBackground(
-                endpoint.Role == EndpointRole.Spring ? BoardPalette.Spring : BoardPalette.Hub);
-            _visual.ShowEdges(EndpointMarkEdges, BoardPalette.ForKind(endpoint.Kind));
+            // A spring reaches outward on every edge, a hub only across. The pattern of marks
+            // says which role a cell plays without relying on its colour, so the two remain
+            // distinguishable when yellow and purple are not.
+            var isSpring = endpoint.Role == EndpointRole.Spring;
+
+            _visual.SetBackground(isSpring ? BoardPalette.Spring : BoardPalette.Hub);
+            _visual.ShowEdges(
+                isSpring ? SpringMarkEdges : HubMarkEdges, BoardPalette.ForKind(endpoint.Kind));
+            _visual.ShowResource(endpoint.Kind, BoardPalette.ForKind(endpoint.Kind));
         }
 
         internal void ShowConduit(ConduitTile tile)
         {
             _visual.SetBackground(BoardPalette.CellOutline);
             _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
+            _visual.ShowResource(tile.Kind, BoardPalette.ForKind(tile.Kind));
         }
 
         /// <summary>
@@ -72,6 +85,7 @@ namespace Pathweaver.Game.Presentation
         {
             _visual.SetBackground(BoardPalette.HarvestFlash);
             _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
+            _visual.ShowResource(tile.Kind, BoardPalette.ForKind(tile.Kind));
         }
     }
 }

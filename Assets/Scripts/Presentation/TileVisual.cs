@@ -22,6 +22,7 @@ namespace Pathweaver.Game.Presentation
         private Mesh _spokeMesh;
         private Material _material;
         private MeshRenderer _background;
+        private GameObject _motif;
 
         internal static float SpokeLength => HexMetrics.CellSpacing * 0.5f;
 
@@ -50,6 +51,33 @@ namespace Pathweaver.Game.Presentation
             foreach (var edge in edges.OpenDirections)
             {
                 AddSpoke(edge, colour);
+            }
+        }
+
+        /// <summary>
+        /// Marks which resource this is, by shape as well as by colour.
+        /// </summary>
+        /// <remarks>
+        /// Drawn at the centre where the spokes meet, so it reads as belonging to the conduit
+        /// rather than sitting on top of it.
+        /// </remarks>
+        internal void ShowResource(ResourceKind kind, Color colour)
+        {
+            ClearMotif();
+
+            _motif = AddQuad(
+                $"Motif{kind}",
+                ResourceMotif.Create(kind, HexMetrics.Size),
+                colour,
+                depth: -0.02f).gameObject;
+        }
+
+        internal void ClearMotif()
+        {
+            if (_motif != null)
+            {
+                Destroy(_motif);
+                _motif = null;
             }
         }
 
@@ -104,6 +132,7 @@ namespace Pathweaver.Game.Presentation
         private void OnDestroy()
         {
             ClearSpokes();
+            ClearMotif();
         }
 
         internal static float SpokeThickness => SpokeWidth;

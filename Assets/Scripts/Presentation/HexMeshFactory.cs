@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -43,6 +44,48 @@ namespace Pathweaver.Game.Presentation
             }
 
             var mesh = new Mesh { name = "Hexagon" };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            return mesh;
+        }
+
+        /// <summary>
+        /// A filled regular polygon centred on the origin.
+        /// </summary>
+        /// <remarks>
+        /// One helper covers every resource motif: a triangle, a square, a diamond (a square
+        /// turned 45 degrees) and a near-circle are all the same shape with different side
+        /// counts and rotations. Drawing them from one function keeps their sizes consistent,
+        /// which matters when the whole point is telling them apart at a glance.
+        /// </remarks>
+        internal static Mesh CreateRegularPolygon(int sides, float radius, float rotationDegrees = 0f)
+        {
+            if (sides < 3)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sides), sides, "A polygon needs three sides.");
+            }
+
+            var vertices = new List<Vector3>(sides + 1) { Vector3.zero };
+            var triangles = new List<int>(sides * 3);
+
+            for (var corner = 0; corner < sides; corner++)
+            {
+                var angle = Mathf.Deg2Rad * ((360f / sides * corner) + rotationDegrees + 90f);
+                vertices.Add(new Vector3(radius * Mathf.Cos(angle), radius * Mathf.Sin(angle), 0f));
+            }
+
+            // Wound to face the camera at negative Z, like every other mesh here.
+            for (var corner = 0; corner < sides; corner++)
+            {
+                triangles.Add(0);
+                triangles.Add(1 + ((corner + 1) % sides));
+                triangles.Add(1 + corner);
+            }
+
+            var mesh = new Mesh { name = $"Polygon{sides}" };
             mesh.SetVertices(vertices);
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
