@@ -121,6 +121,9 @@ namespace Pathweaver.EditorTools
             var restart = new GameObject("RestartButton").AddComponent<RestartButtonView>();
             Wire(restart, ("_boardView", board), ("_camera", camera), ("_session", session));
 
+            var restartConfirm = new GameObject("RestartConfirm").AddComponent<RestartConfirmView>();
+            Wire(restartConfirm, ("_boardView", board), ("_camera", camera));
+
             var platform = new GameObject("Platform");
             var frameRate = platform.AddComponent<FrameRateGovernor>();
             var haptics = platform.AddComponent<HapticsService>();
@@ -139,7 +142,8 @@ namespace Pathweaver.EditorTools
                 ("_camera", camera),
                 ("_frameRateGovernor", frameRate),
                 ("_haptics", haptics),
-                ("_restartButton", restart));
+                ("_restartButton", restart),
+                ("_restartConfirm", restartConfirm));
 
             EditorSceneManager.SaveScene(scene, path);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(path, true) };

@@ -52,6 +52,31 @@ namespace Pathweaver.Game.Presentation
         }
 
         /// <summary>
+        /// A rectangle centred on the origin, for panels and glyph strokes.
+        /// </summary>
+        internal static Mesh CreateRectangle(float width, float height)
+        {
+            var halfWidth = width * 0.5f;
+            var halfHeight = height * 0.5f;
+
+            var mesh = new Mesh { name = "Rectangle" };
+            mesh.SetVertices(new List<Vector3>
+            {
+                new Vector3(-halfWidth, -halfHeight, 0f),
+                new Vector3(-halfWidth, halfHeight, 0f),
+                new Vector3(halfWidth, halfHeight, 0f),
+                new Vector3(halfWidth, -halfHeight, 0f),
+            });
+
+            // Wound to face the camera at negative Z, like every other mesh here.
+            mesh.SetTriangles(new List<int> { 0, 1, 2, 0, 2, 3 }, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            return mesh;
+        }
+
+        /// <summary>
         /// A circular arrow: an arc with a head, for a restart symbol.
         /// </summary>
         /// <remarks>

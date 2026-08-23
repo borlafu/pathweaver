@@ -56,6 +56,9 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private RestartButtonView _restartButton;
 
+        [SerializeField]
+        private RestartConfirmView _restartConfirm;
+
         private bool _isPressed;
         private bool _startedOnRestart;
         private bool _startedOnTray;
@@ -117,6 +120,18 @@ namespace Pathweaver.Game.Presentation
             // frame rate rises before the first frame of a drag rather than after it.
             _frameRateGovernor?.NotifyActivity();
 
+            // While the question is up, nothing else can be pressed. A modal that lets the
+            // board be played behind it is not a question, it is decoration.
+            if (_restartConfirm != null && _restartConfirm.IsOpen)
+            {
+                _isPressed = true;
+                _pressPosition = screenPosition;
+                _travelled = 0f;
+                _startedOnRestart = false;
+                _startedOnTray = false;
+                return;
+            }
+
             _isPressed = true;
             _pressPosition = screenPosition;
             _travelled = 0f;
@@ -138,6 +153,11 @@ namespace Pathweaver.Game.Presentation
             _travelled = Mathf.Max(_travelled, Vector2.Distance(_pressPosition, screenPosition));
             _frameRateGovernor?.NotifyActivity();
 
+            if (_restartConfirm != null && _restartConfirm.IsOpen)
+            {
+                return;
+            }
+
             if (_startedOnTray && _travelled > TapThresholdPixels && _heldTileView != null)
             {
                 _heldTileView.FollowPointer(ToWorld(screenPosition));
@@ -155,6 +175,12 @@ namespace Pathweaver.Game.Presentation
 
             var wasTap = _travelled <= TapThresholdPixels;
 
+            if (_restartConfirm != null && _restartConfirm.IsOpen)
+            {
+                AnswerRestartQuestion(screenPosition, wasTap);
+                return;
+            }
+
             if (_heldTileView != null)
             {
                 _heldTileView.ReturnToTray();
@@ -168,8 +194,7 @@ namespace Pathweaver.Game.Presentation
                 // throw the board away.
                 if (wasTap && _restartButton.IsPressed(screenPosition))
                 {
-                    _session.Restart();
-                    _haptics?.TileLocked();
+                    RequestRestart();
                 }
 
                 return;
@@ -186,6 +211,41 @@ namespace Pathweaver.Game.Presentation
             {
                 _haptics?.TileLocked();
             }
+        }
+
+        /// <summary>
+        /// Asks before restarting, unless there is nothing left to lose.
+        /// </summary>
+        /// <remarks>
+        /// A dead-ended board has no run worth protecting, and a confirmation there would add a
+        /// tap to an already frustrating moment. Anywhere else, an accidental restart is
+        /// unrecoverable.
+        /// </remarks>
+        private void RequestRestart()
+        {
+            if (_session.State != null && _session.State.IsDeadlocked)
+            {
+                _session.Restart();
+                _haptics?.TileLocked();
+                return;
+            }
+
+            _restartConfirm?.Open();
+        }
+
+        private void AnswerRestartQuestion(Vector2 screenPosition, bool wasTap)
+        {
+            if (wasTap && _restartConfirm.IsConfirmPressed(screenPosition))
+            {
+                _restartConfirm.Close();
+                _session.Restart();
+                _haptics?.TileLocked();
+                return;
+            }
+
+            // Anything else dismisses. A question the player can back out of by tapping away is
+            // less likely to be answered by accident than one with a single exit.
+            _restartConfirm.Close();
         }
 
         private HexCoord CellUnder(Vector2 screenPosition)

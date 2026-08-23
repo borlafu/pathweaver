@@ -14,9 +14,13 @@ namespace Pathweaver.Game.Presentation
     /// </para>
     /// <para>
     /// The tile itself moves, rather than an icon appearing beside it. The thing that can be
-    /// rotated is the thing that demonstrates rotating, so there is nothing to interpret. It
-    /// stops for good at the first rotation, because a hint that keeps arriving after being
-    /// understood is just noise.
+    /// rotated is the thing that demonstrates rotating, so there is nothing to interpret.
+    /// </para>
+    /// <para>
+    /// It keeps going rather than retiring after the first rotation. A tile that is always
+    /// visibly turnable reads as a property of the tile, not as a tutorial that has been
+    /// completed and withdrawn — and a player returning after a few days should not have to
+    /// remember.
     /// </para>
     /// <para>
     /// This only touches the transform. The pending rotation is expressed by redrawing the
@@ -33,13 +37,14 @@ namespace Pathweaver.Game.Presentation
 
         private float _nextShakeTime;
         private float _shakeStartedAt = -1f;
-        private bool _isRetired;
 
         private void OnEnable()
         {
             if (_session != null)
             {
-                _session.HeldRotated += Retire;
+                // A rotation restarts the wait rather than stopping the hint, so the tile does
+                // not twist in the player's face immediately after they turned it themselves.
+                _session.HeldRotated += DeferNextShake;
             }
 
             _nextShakeTime = Time.unscaledTime + RotateHint.IntervalSeconds;
@@ -49,13 +54,13 @@ namespace Pathweaver.Game.Presentation
         {
             if (_session != null)
             {
-                _session.HeldRotated -= Retire;
+                _session.HeldRotated -= DeferNextShake;
             }
         }
 
         private void Update()
         {
-            if (_isRetired || _heldTileView == null)
+            if (_heldTileView == null)
             {
                 return;
             }
@@ -94,12 +99,12 @@ namespace Pathweaver.Game.Presentation
             _heldTileView.SetHintTwist(RotateHint.AngleAt(elapsed));
         }
 
-        private void Retire()
+        private void DeferNextShake()
         {
-            _isRetired = true;
             _shakeStartedAt = -1f;
+            _nextShakeTime = Time.unscaledTime + RotateHint.IntervalSeconds;
 
-            // Left exactly upright, so retiring the hint cannot leave the tile crooked.
+            // Left exactly upright, so interrupting a shake cannot leave the tile crooked.
             _heldTileView?.SetHintTwist(0f);
         }
     }

@@ -19,10 +19,10 @@ namespace Pathweaver.Game.Presentation
 
         /// <summary>The wait between shakes, in seconds.</summary>
         /// <remarks>
-        /// Long enough not to nag, short enough that a player who missed one sees the next
-        /// while still looking at the same board.
+        /// Short enough that a player who missed one sees the next while still looking at the
+        /// same board.
         /// </remarks>
-        internal const float IntervalSeconds = 2.5f;
+        internal const float IntervalSeconds = 2f;
 
         /// <summary>Back-and-forth twists within one shake.</summary>
         private const float Oscillations = 1.5f;
