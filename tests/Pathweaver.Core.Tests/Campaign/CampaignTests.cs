@@ -1,4 +1,5 @@
 using Pathweaver.Core.Campaign;
+using Pathweaver.Core.Levels;
 
 namespace Pathweaver.Core.Tests.Campaign;
 
@@ -186,6 +187,33 @@ public class CampaignProgressFormatTests
     }
 
     [Fact]
+    public void Carried_Pivot_Tokens_survive_a_round_trip()
+    {
+        // Arrange
+        var progress = CampaignProgress.Empty.WithCleared("biome1-01").WithPivotTokens(3);
+
+        // Act
+        var reloaded = CampaignProgressFormat.Read(CampaignProgressFormat.Write(progress));
+
+        // Assert
+        Assert.Equal(3, reloaded.PivotTokens);
+        Assert.True(reloaded.IsCleared("biome1-01"));
+    }
+
+    [Fact]
+    public void A_file_written_by_the_older_format_still_reads()
+    {
+        // Version 1 knew nothing about carried tokens. A player updating mid-campaign keeps every
+        // level they cleared; the tokens they were holding are the price of the update.
+        // Act
+        var progress = CampaignProgressFormat.Read("pathweaver-progress 1\nbiome1-01\nbiome1-02\n");
+
+        // Assert
+        Assert.Equal(2, progress.ClearedCount);
+        Assert.Equal(0, progress.PivotTokens);
+    }
+
+    [Fact]
     public void An_unrecognised_level_identifier_is_kept()
     {
         // A player moving between builds should not lose credit for a level that was renamed
@@ -203,6 +231,132 @@ public class CampaignProgressFormatTests
         var text = CampaignProgressFormat.Write(CampaignProgress.Empty.WithCleared("biome1-01"));
 
         Assert.Contains("biome1-01", text);
-        Assert.StartsWith("pathweaver-progress 1", text);
+        Assert.StartsWith("pathweaver-progress 2", text);
+    }
+}
+
+/// <summary>
+/// Pivot Tokens carried from one campaign level to the next.
+/// </summary>
+/// <remarks>
+/// A token is earned by building a route of four conduits or more, and clearing a level ends the
+/// board — so a token earned by the route that clears a level could never be spent unless it
+/// travelled. Endless rounds already carry them; the campaign now does too.
+/// </remarks>
+public class CampaignTokenCarryTests
+{
+    [Fact]
+    public void A_fresh_campaign_carries_nothing()
+    {
+        Assert.Equal(0, CampaignProgress.Empty.PivotTokens);
+    }
+
+    [Fact]
+    public void Tokens_are_recorded_without_disturbing_cleared_levels()
+    {
+        // Arrange
+        var progress = CampaignProgress.Empty.WithCleared("biome1-01");
+
+        // Act
+        var carrying = progress.WithPivotTokens(2);
+
+        // Assert
+        Assert.Equal(2, carrying.PivotTokens);
+        Assert.True(carrying.IsCleared("biome1-01"));
+
+        // The value it came from is untouched, as everything in the simulation is.
+        Assert.Equal(0, progress.PivotTokens);
+    }
+
+    [Fact]
+    public void A_negative_count_is_treated_as_none()
+    {
+        // Only a damaged file can produce one, and it is not worth losing a campaign over.
+        Assert.Equal(0, CampaignProgress.Empty.WithPivotTokens(-4).PivotTokens);
+    }
+
+    [Fact]
+    public void A_level_can_be_dealt_with_more_tokens_than_it_authored()
+    {
+        // Arrange — a level that grants none of its own
+        var level = LevelLoader.Parse(
+            """
+            id: carried
+            base-score: 100
+            target-score: 135
+            tokens: 0
+            cell: -2,0
+            cell: -1,0
+            cell: 0,0
+            cell: 1,0
+            cell: 2,0
+            spring: -2,0 water
+            hub: 2,0 water
+            tile: 0,3 water x3
+            """);
+
+        // Act
+        var carried = level.WithStartingTokens(2);
+
+        // Assert
+        Assert.Equal(2, carried.CreateGame().PivotTokens.Count);
+        Assert.Equal(0, level.CreateGame().PivotTokens.Count);
+    }
+
+    [Fact]
+    public void Everything_else_about_the_level_is_unchanged()
+    {
+        // Arrange
+        var level = LevelLoader.Parse(
+            """
+            id: carried
+            name: Carried
+            base-score: 100
+            target-score: 246
+            tokens: 1
+            skips: 2
+            seed: 9
+            shape: hexagon 2
+            spring: -2,0 water
+            hub: 2,0 water
+            tile: 0,3 water x3
+            """);
+
+        // Act
+        var carried = level.WithStartingTokens(5);
+
+        // Assert
+        Assert.Equal(level.Id, carried.Id);
+        Assert.Equal(level.Name, carried.Name);
+        Assert.Equal(level.TargetScore, carried.TargetScore);
+        Assert.Equal(level.BaseRouteScore, carried.BaseRouteScore);
+        Assert.Equal(level.StartingSkips, carried.StartingSkips);
+        Assert.Equal(level.Seed, carried.Seed);
+        Assert.Equal(level.Shape, carried.Shape);
+        Assert.Equal(level.Endpoints, carried.Endpoints);
+        Assert.Equal(level.BagTiles, carried.BagTiles);
+    }
+
+    [Fact]
+    public void Asking_for_fewer_tokens_than_the_level_grants_is_refused()
+    {
+        // The level's own allowance is a floor, exactly as in an endless round, and the caller
+        // taking the maximum is what enforces it. A silent downgrade here would be a way to lose
+        // tokens by clearing a generous level.
+        var level = LevelLoader.Parse(
+            """
+            id: generous
+            base-score: 100
+            target-score: 135
+            tokens: 2
+            cell: -1,0
+            cell: 0,0
+            cell: 1,0
+            spring: -1,0 water
+            hub: 1,0 water
+            tile: 0,3 water
+            """);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => level.WithStartingTokens(-1));
     }
 }

@@ -348,8 +348,14 @@ namespace Pathweaver.Game.App
             // its opening state. Starting the level first meant the quota bar was disabled when the
             // only state change it would ever see went past, and it sat empty on a board that was
             // already finished.
+            // Carried Pivot Tokens are handed to the level here, with its own allowance as a floor:
+            // clearing a level ends the board, so a token earned by the clearing route would be
+            // unspendable if it did not travel.
+            var level = LevelCatalogue.Load(levelId);
+            var tokens = Mathf.Max(level.StartingTokens, _progress.PivotTokens);
+
             _router.Show(GameScreen.Playing);
-            _session.Begin(levelId, _saves);
+            _session.Begin(level.WithStartingTokens(tokens), _saves);
         }
 
         private void OnScreenChanged(GameScreen screen)
@@ -423,7 +429,12 @@ namespace Pathweaver.Game.App
                 return;
             }
 
-            _progress = _progress.WithCleared(_session.LevelId);
+            // Banked at the same moment as the clear, so what the player still holds travels to the
+            // next level rather than being lost with the board.
+            _progress = _progress
+                .WithCleared(_session.LevelId)
+                .WithPivotTokens(state.PivotTokens.Count);
+
             _progressStore.Save(_progress);
         }
     }

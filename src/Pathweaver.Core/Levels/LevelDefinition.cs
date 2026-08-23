@@ -91,11 +91,31 @@ namespace Pathweaver.Core.Levels
         /// </remarks>
         public ulong Seed { get; }
 
-        /// <summary>
-        /// Builds a fresh game of this level for the given seed.
-        /// </summary>
         /// <summary>Builds a fresh game at the level's own seed.</summary>
         public GameState CreateGame() => CreateGame(Seed);
+
+        /// <summary>
+        /// The same level, dealt with a different number of Pivot Tokens in hand.
+        /// </summary>
+        /// <remarks>
+        /// How a carried token reaches a level. Progress holds the count that travels between levels
+        /// and hands it here, which keeps the level file describing what the level grants on its own
+        /// and keeps the carrying rule in one place. Callers take the larger of the two, so an
+        /// authored allowance is a floor rather than something a carried count can undercut.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown for a negative count.</exception>
+        public LevelDefinition WithStartingTokens(int startingTokens)
+        {
+            if (startingTokens < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(startingTokens), startingTokens, "A level cannot start with fewer than no tokens.");
+            }
+
+            return new LevelDefinition(
+                Id, Name, _shape, _endpoints, _bagTiles, BaseRouteScore, TargetScore,
+                startingTokens, StartingSkips, Seed);
+        }
 
         public GameState CreateGame(ulong seed)
             => GameState.Create(
