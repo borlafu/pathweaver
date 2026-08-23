@@ -28,6 +28,34 @@ namespace Pathweaver.Game.Presentation
         private Mesh _spokeMesh;
         private Material _material;
 
+        /// <summary>The meshes and material cells are drawn with, for other views.</summary>
+        internal Mesh HexMesh
+        {
+            get
+            {
+                EnsureResources();
+                return _hexMesh;
+            }
+        }
+
+        internal Mesh SpokeMesh
+        {
+            get
+            {
+                EnsureResources();
+                return _spokeMesh;
+            }
+        }
+
+        internal Material TileMaterial
+        {
+            get
+            {
+                EnsureResources();
+                return _material;
+            }
+        }
+
         /// <summary>How many cells are currently drawn.</summary>
         internal int CellCount => _cells.Count;
 
@@ -52,9 +80,10 @@ namespace Pathweaver.Game.Presentation
         }
 
         /// <summary>
-        /// Updates every cell to match the state.
+        /// Updates every cell to match the state, optionally marking where the held
+        /// tile could go.
         /// </summary>
-        internal void Refresh(GameState state)
+        internal void Refresh(GameState state, ISet<HexCoord> availableCells = null)
         {
             var endpoints = new Dictionary<HexCoord, FlowEndpoint>();
             foreach (var endpoint in state.Endpoints)
@@ -79,6 +108,12 @@ namespace Pathweaver.Game.Presentation
                     continue;
                 }
 
+                if (availableCells != null && availableCells.Contains(coordinate))
+                {
+                    cell.ShowAvailable();
+                    continue;
+                }
+
                 cell.ShowEmpty();
             }
         }
@@ -92,7 +127,7 @@ namespace Pathweaver.Game.Presentation
         private void EnsureResources()
         {
             _hexMesh ??= HexMeshFactory.CreateHexagon(HexMetrics.Size * 0.92f);
-            _spokeMesh ??= HexMeshFactory.CreateSpoke(CellView.SpokeLength, CellView.SpokeThickness);
+            _spokeMesh ??= HexMeshFactory.CreateSpoke(TileVisual.SpokeLength, TileVisual.SpokeThickness);
 
             // Unlit: the board is flat colour, and lighting it would cost frame time
             // for no visual gain until real art arrives.

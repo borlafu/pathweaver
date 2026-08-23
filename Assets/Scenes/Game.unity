@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &218881308
+--- !u!1 &137996675
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,34 +127,36 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 218881310}
-  - component: {fileID: 218881309}
+  - component: {fileID: 137996677}
+  - component: {fileID: 137996676}
   m_Layer: 0
-  m_Name: Board
+  m_Name: HeldTile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &218881309
+--- !u!114 &137996676
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 218881308}
+  m_GameObject: {fileID: 137996675}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1f87b8336ec6a44cdbc213cf772cc32f, type: 3}
+  m_Script: {fileID: 11500000, guid: cda0c4c3746194f5d8620030cadc63db, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Pathweaver.Game::Pathweaver.Game.Presentation.BoardView
---- !u!4 &218881310
+  m_EditorClassIdentifier: Pathweaver.Game::Pathweaver.Game.Presentation.HeldTileView
+  _boardView: {fileID: 173233352}
+  _camera: {fileID: 1571142169}
+--- !u!4 &137996677
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 218881308}
+  m_GameObject: {fileID: 137996675}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -163,7 +165,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &669456480
+--- !u!1 &138099338
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -171,22 +173,114 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 669456482}
-  - component: {fileID: 669456481}
+  - component: {fileID: 138099340}
+  - component: {fileID: 138099339}
   m_Layer: 0
-  m_Name: Camera
+  m_Name: Session
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!20 &669456481
+--- !u!114 &138099339
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 138099338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22d981d5c543b44a6889febc5606b8e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Pathweaver.Game::Pathweaver.Game.App.GameSession
+  _levelId: biome1-01
+  _seed: 42
+  _boardView: {fileID: 173233352}
+  _heldTileView: {fileID: 137996676}
+--- !u!4 &138099340
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 138099338}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &173233351
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 173233353}
+  - component: {fileID: 173233352}
+  m_Layer: 0
+  m_Name: Board
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &173233352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 173233351}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f87b8336ec6a44cdbc213cf772cc32f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Pathweaver.Game::Pathweaver.Game.Presentation.BoardView
+--- !u!4 &173233353
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 173233351}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1571142168
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1571142170}
+  - component: {fileID: 1571142169}
+  m_Layer: 0
+  m_Name: Camera
+  m_TagString: MainCamera
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!20 &1571142169
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 669456480}
+  m_GameObject: {fileID: 1571142168}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
@@ -231,13 +325,13 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!4 &669456482
+--- !u!4 &1571142170
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 669456480}
+  m_GameObject: {fileID: 1571142168}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -10}
@@ -246,7 +340,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1458120638
+--- !u!1 &1872168651
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -254,37 +348,38 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1458120640}
-  - component: {fileID: 1458120639}
+  - component: {fileID: 1872168653}
+  - component: {fileID: 1872168652}
   m_Layer: 0
-  m_Name: Boot
+  m_Name: Input
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1458120639
+--- !u!114 &1872168652
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1458120638}
+  m_GameObject: {fileID: 1872168651}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7eff0156a0b1e44a2b7e2bd167f88df1, type: 3}
+  m_Script: {fileID: 11500000, guid: af9eed3d9ab514585b9ad1a339a125ca, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Pathweaver.Game::Pathweaver.Game.App.BoardDemo
-  _levelId: biome1-01
-  _seed: 42
-  _boardView: {fileID: 218881309}
---- !u!4 &1458120640
+  m_EditorClassIdentifier: Pathweaver.Game::Pathweaver.Game.Presentation.InputController
+  _session: {fileID: 138099339}
+  _boardView: {fileID: 173233352}
+  _heldTileView: {fileID: 137996676}
+  _camera: {fileID: 1571142169}
+--- !u!4 &1872168653
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1458120638}
+  m_GameObject: {fileID: 1872168651}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -297,6 +392,8 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 669456482}
-  - {fileID: 218881310}
-  - {fileID: 1458120640}
+  - {fileID: 1571142170}
+  - {fileID: 173233353}
+  - {fileID: 137996677}
+  - {fileID: 138099340}
+  - {fileID: 1872168653}
