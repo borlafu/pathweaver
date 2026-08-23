@@ -110,12 +110,10 @@ namespace Pathweaver.Game.Presentation
 
         private void OnStateChanged(Pathweaver.Core.State.GameState state)
         {
-            // Stuck means no placement and nothing left to pay for a way out. A player holding
-            // a skip or a Pivot Token has options, so shouting at them would be wrong.
-            _isUrgent = state != null
-                        && state.IsDeadlocked
-                        && !state.SkipTokens.CanSpend
-                        && !state.PivotTokens.CanSpend;
+            // Asked of the simulation rather than worked out here. Counting tokens was the first
+            // attempt and it was wrong: on a board where no tile in the bag fits anywhere, holding
+            // skips is not an option, and the button stayed calm while the run was over.
+            _isUrgent = state != null && state.IsStuck;
 
             if (_backgroundRenderer != null)
             {

@@ -448,6 +448,92 @@ public class GameEngineTests
     }
 
     [Fact]
+    public void A_tile_that_fits_nowhere_is_a_deadlock_but_not_always_being_stuck()
+    {
+        // The distinction a player feels: this tile is useless, but the run may not be over.
+        // Arrange — a crystal tile on a water board, with a water tile also in the bag
+        var board = HexGrid<ConduitTile>.Hexagon(2);
+        var bag = TileBag.Create(
+            new[]
+            {
+                new ConduitTile(ResourceKind.Crystal, EdgeMask.FromDirections(0, 3)),
+                new ConduitTile(ResourceKind.Water, EdgeMask.FromDirections(0, 3)),
+            },
+            SeedSource.Stream(11UL, PathweaverStream.TileBag));
+
+        var endpoints = new[]
+        {
+            FlowEndpoint.Spring(new HexCoord(-2, 0), ResourceKind.Water),
+            FlowEndpoint.Hub(new HexCoord(2, 0), ResourceKind.Water),
+        };
+
+        var state = GameState.Create(
+            board, endpoints, bag, GameFixture.BaseRouteScore, TokenPool.Empty, TokenPool.Of(1));
+
+        // Act / Assert — whichever tile came first, a water tile exists to skip toward
+        Assert.True(state.CanAnyTileBePlaced);
+        Assert.False(state.IsStuck);
+    }
+
+    [Fact]
+    public void A_board_that_can_accept_nothing_is_stuck_even_holding_skips()
+    {
+        // The bug this fixes. Skips were treated as options in themselves, so a player on a board
+        // where no tile fits anywhere was told they had a way out and left to spend tokens
+        // discovering otherwise.
+        // Arrange — only crystal tiles, and only water endpoints
+        var board = HexGrid<ConduitTile>.Hexagon(2);
+        var bag = TileBag.Create(
+            new[] { new ConduitTile(ResourceKind.Crystal, EdgeMask.FromDirections(0, 3)) },
+            SeedSource.Stream(3UL, PathweaverStream.TileBag));
+
+        var endpoints = new[]
+        {
+            FlowEndpoint.Spring(new HexCoord(-2, 0), ResourceKind.Water),
+            FlowEndpoint.Hub(new HexCoord(2, 0), ResourceKind.Water),
+        };
+
+        var state = GameState.Create(
+            board, endpoints, bag, GameFixture.BaseRouteScore, TokenPool.Empty, TokenPool.Of(3));
+
+        // Act / Assert
+        Assert.True(state.IsDeadlocked);
+        Assert.False(state.CanAnyTileBePlaced);
+        Assert.True(state.IsStuck);
+    }
+
+    [Fact]
+    public void A_pivot_is_only_a_way_out_when_there_is_a_conduit_to_pivot()
+    {
+        // Arrange — an unplaceable tile, a Pivot Token, and an empty board
+        var board = HexGrid<ConduitTile>.Hexagon(2);
+        var bag = TileBag.Create(
+            new[] { new ConduitTile(ResourceKind.Crystal, EdgeMask.FromDirections(0, 3)) },
+            SeedSource.Stream(3UL, PathweaverStream.TileBag));
+
+        var endpoints = new[]
+        {
+            FlowEndpoint.Spring(new HexCoord(-2, 0), ResourceKind.Water),
+            FlowEndpoint.Hub(new HexCoord(2, 0), ResourceKind.Water),
+        };
+
+        var empty = GameState.Create(
+            board, endpoints, bag, GameFixture.BaseRouteScore, TokenPool.Of(1), TokenPool.Empty);
+
+        // Act / Assert — nothing placed means nothing to rotate or retrieve
+        Assert.True(empty.IsStuck);
+    }
+
+    [Fact]
+    public void A_playable_board_is_neither_deadlocked_nor_stuck()
+    {
+        var state = GameFixture.NewGame();
+
+        Assert.False(state.IsDeadlocked);
+        Assert.False(state.IsStuck);
+    }
+
+    [Fact]
     public void A_null_state_is_rejected()
     {
         Assert.Throws<ArgumentNullException>(
