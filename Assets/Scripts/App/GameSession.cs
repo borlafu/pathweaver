@@ -307,31 +307,17 @@ namespace Pathweaver.Game.App
         internal void DisarmPivot() => SetPivotArmed(false);
 
         /// <summary>
-        /// Spends a Pivot Token to turn a placed conduit one step clockwise.
-        /// </summary>
-        /// <returns>Whether the conduit turned.</returns>
-        internal bool TryPivotRotate(HexCoord coordinate)
-        {
-            if (!CanPivotAt(coordinate))
-            {
-                return false;
-            }
-
-            State = GameEngine.Apply(State, new PivotRotate(coordinate, rotation: 1));
-
-            SetPivotArmed(false);
-            Publish();
-            SaveNow();
-
-            return true;
-        }
-
-        /// <summary>
         /// Spends a Pivot Token to take a placed conduit off the board.
         /// </summary>
         /// <remarks>
-        /// The conduit is discarded rather than returned to hand, which is the rule recorded in
-        /// CLAUDE.md: the token buys back the space, not the tile.
+        /// The only thing a Pivot Token does. Turning a placed conduit was the other half of the
+        /// mechanic and has been dropped: a conduit was placed connected to something, so turning it
+        /// usually just disconnects it, and a player who wants a different shape in that cell wants
+        /// the cell back rather than the tile turned.
+        /// <para>
+        /// The conduit is discarded rather than returned to hand: the token buys back the space, not
+        /// the tile.
+        /// </para>
         /// </remarks>
         /// <returns>Whether the conduit was removed.</returns>
         internal bool TryPivotRetrieve(HexCoord coordinate)

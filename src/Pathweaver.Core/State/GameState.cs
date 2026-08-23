@@ -158,7 +158,7 @@ namespace Pathweaver.Core.State
         /// Distinct from <see cref="IsDeadlocked"/>, and the distinction matters. Holding a skip is
         /// only an option if some tile in the bag fits somewhere; on a board where none do, skipping
         /// spends a token to be told the same thing again. Holding a Pivot Token is only an option if
-        /// there is a placed conduit to rotate or retrieve.
+        /// there is a placed conduit to retrieve.
         /// </para>
         /// <para>
         /// This was originally judged by counting tokens, which meant a player with skips on a board

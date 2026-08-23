@@ -36,17 +36,6 @@ namespace Pathweaver.Game.Presentation
         /// </summary>
         private const float TapMovementFraction = 0.02f;
 
-        /// <summary>
-        /// How long a press on a conduit must last to retrieve it rather than turn it, while a
-        /// Pivot Token is armed.
-        /// </summary>
-        /// <remarks>
-        /// Two things a token can do, and only one board to do them on. A hold is the second verb:
-        /// slower than a tap on purpose, because retrieving discards the conduit and cannot be
-        /// undone, while turning it can be turned back for another token.
-        /// </remarks>
-        private const float PivotHoldSeconds = 0.45f;
-
         [SerializeField]
         private GameSession _session;
 
@@ -92,7 +81,6 @@ namespace Pathweaver.Game.Presentation
         private bool _startedOnPivotPips;
         private bool _startedOnTray;
         private Vector2 _pressPosition;
-        private float _pressStartedAt;
         private float _travelled;
 
         private float TapThresholdPixels => Mathf.Min(Screen.width, Screen.height) * TapMovementFraction;
@@ -174,8 +162,6 @@ namespace Pathweaver.Game.Presentation
 
             // Buttons are checked before the tray, so a press near a corner cannot be claimed
             // by two things at once.
-            _pressStartedAt = Time.unscaledTime;
-
             _startedOnRestart = _restartButton != null && _restartButton.IsPressed(screenPosition);
             _startedOnSkip = !_startedOnRestart
                              && _skipButton != null
@@ -325,23 +311,16 @@ namespace Pathweaver.Game.Presentation
         }
 
         /// <summary>
-        /// Spends the armed Pivot Token on the conduit under the pointer.
+        /// Spends the armed Pivot Token on the conduit under the pointer, taking it off the board.
         /// </summary>
         /// <remarks>
-        /// A tap turns the conduit one step; a hold takes it off the board. A press that lands
-        /// anywhere but a conduit cancels the mode rather than doing nothing, so a player who armed
-        /// a token by accident is one tap away from where they were — and the token is still theirs,
-        /// because arming does not spend it.
+        /// One verb, so one gesture. A press that lands anywhere but a conduit cancels the mode
+        /// rather than doing nothing, so a player who armed a token by accident is one tap away from
+        /// where they were — and the token is still theirs, because arming does not spend it.
         /// </remarks>
         private void SpendPivotAt(HexCoord cell)
         {
-            var wasHeld = Time.unscaledTime - _pressStartedAt >= PivotHoldSeconds;
-
-            var spent = wasHeld
-                ? _session.TryPivotRetrieve(cell)
-                : _session.TryPivotRotate(cell);
-
-            if (spent)
+            if (_session.TryPivotRetrieve(cell))
             {
                 _haptics?.TileLocked();
                 return;
