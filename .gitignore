@@ -55,11 +55,18 @@ sysinfo.txt
 *.gradle/
 local.properties
 
-# Crashlytics / Play signing keys — never commit signing material
+# Play signing material — never commit, anywhere, for any reason.
+#
+# There are deliberately no exceptions here. An earlier version of this file
+# un-ignored keystores under Assets/, copying the pattern used for Unity .meta
+# files, which meant a keystore placed in the Unity project would have been
+# committed silently. Unity's own Keystore Manager will happily create one inside
+# the project, so that exception was pointed straight at the likeliest mistake.
 *.keystore
 *.jks
-!/[Aa]ssets/**/*.keystore
-!/[Aa]ssets/**/*.jks
+*.p12
+*.pepk
+keystore.properties
 
 # macOS
 .DS_Store
