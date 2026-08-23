@@ -97,14 +97,35 @@ namespace Pathweaver.Game.Presentation
 
             foreach (var coordinate in state.Board.Coordinates)
             {
-                var cell = new GameObject($"Cell {coordinate}").AddComponent<CellView>();
-                cell.transform.SetParent(transform, worldPositionStays: false);
-                cell.Initialise(coordinate, _hexMesh, _spokeMesh, _material, _theme);
-
-                _cells.Add(coordinate, cell);
+                CreateCell(coordinate);
             }
 
             Refresh(state);
+        }
+
+        /// <summary>
+        /// Creates one cell view, replacing any cell already at that coordinate.
+        /// </summary>
+        /// <remarks>
+        /// Separated from <see cref="Build"/> so a caller with no game state can draw cells — the
+        /// store art renders arrangements that are tidy rather than reachable, and inventing a legal
+        /// position to promote the game would be the wrong way round.
+        /// </remarks>
+        internal CellView CreateCell(HexCoord coordinate)
+        {
+            EnsureResources();
+
+            if (_cells.TryGetValue(coordinate, out var existing))
+            {
+                return existing;
+            }
+
+            var cell = new GameObject($"Cell {coordinate}").AddComponent<CellView>();
+            cell.transform.SetParent(transform, worldPositionStays: false);
+            cell.Initialise(coordinate, _hexMesh, _spokeMesh, _material, _theme);
+
+            _cells.Add(coordinate, cell);
+            return cell;
         }
 
         /// <summary>
