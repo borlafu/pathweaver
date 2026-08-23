@@ -119,10 +119,56 @@ namespace Pathweaver.Core.State
             => PlacementRules.LegalPlacements(Board, _endpoints, HeldTile);
 
         /// <summary>
-        /// Whether the held tile fits nowhere, which is when a Pivot Token becomes
-        /// the player's way out.
+        /// Whether the held tile fits nowhere.
         /// </summary>
+        /// <remarks>
+        /// A deadlock is about this tile, not about the run. A player holding a skip may well have
+        /// a way forward — see <see cref="IsStuck"/> for whether they actually do.
+        /// </remarks>
         public bool IsDeadlocked => LegalPlacements.Count == 0;
+
+        /// <summary>
+        /// Whether any tile the bag could deal has a legal placement.
+        /// </summary>
+        /// <remarks>
+        /// The question a skip really asks. Every cycle deals the whole definition, so if nothing in
+        /// it fits, skipping only spends tokens on the same answer.
+        /// </remarks>
+        public bool CanAnyTileBePlaced
+        {
+            get
+            {
+                foreach (var tile in Bag.PossibleTiles)
+                {
+                    if (PlacementRules.LegalPlacements(Board, _endpoints, tile).Count > 0)
+                    {
+                        return true;
+                    }
+                }
+
+                return LegalPlacements.Count > 0;
+            }
+        }
+
+        /// <summary>
+        /// Whether the run is over: nothing can be placed and nothing the player holds changes that.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Distinct from <see cref="IsDeadlocked"/>, and the distinction matters. Holding a skip is
+        /// only an option if some tile in the bag fits somewhere; on a board where none do, skipping
+        /// spends a token to be told the same thing again. Holding a Pivot Token is only an option if
+        /// there is a placed conduit to rotate or retrieve.
+        /// </para>
+        /// <para>
+        /// This was originally judged by counting tokens, which meant a player with skips on a board
+        /// that could accept nothing was told they had options they did not have.
+        /// </para>
+        /// </remarks>
+        public bool IsStuck
+            => IsDeadlocked
+               && !(SkipTokens.CanSpend && CanAnyTileBePlaced)
+               && !(PivotTokens.CanSpend && Board.OccupiedCount > 0);
 
         /// <summary>
         /// Starts a game and draws the first tile.

@@ -48,6 +48,17 @@ namespace Pathweaver.Core.Tiles
         public int Remaining => _cycle.Length - _position;
 
         /// <summary>
+        /// The distinct tiles this bag can ever deal.
+        /// </summary>
+        /// <remarks>
+        /// Every cycle deals the whole definition, so this is what a player could reach by
+        /// skipping — which is what makes it possible to ask whether skipping would help at all.
+        /// Duplicates are collapsed because a repeated tile changes how often it appears, not
+        /// whether it can appear.
+        /// </remarks>
+        public IEnumerable<ConduitTile> PossibleTiles => _definition.Distinct();
+
+        /// <summary>
         /// Creates a bag from a tile definition and a generator.
         /// </summary>
         /// <param name="tiles">
