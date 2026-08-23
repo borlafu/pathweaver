@@ -1,5 +1,10 @@
 using System;
+using System.IO;
+using Pathweaver.Core.Levels;
+using Pathweaver.Game.App;
+using Pathweaver.Game.Presentation;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
@@ -70,6 +75,118 @@ namespace Pathweaver.EditorTools
             AssetDatabase.Refresh();
 
             Debug.Log($"[bootstrap] pipeline set to {GraphicsSettings.defaultRenderPipeline?.name ?? "none"}");
+        }
+
+        /// <summary>
+        /// Creates the game scene: a camera framing the board, and the objects that
+        /// draw it.
+        /// </summary>
+        /// <remarks>
+        /// Built in code rather than by hand so the scene is reproducible and its diff
+        /// is explainable. A scene assembled through the Editor is a binary-ish blob
+        /// nobody can review.
+        /// </remarks>
+        internal static void CreateGameScene()
+        {
+            const string folder = "Assets/Scenes";
+            const string path = folder + "/Game.unity";
+
+            if (!AssetDatabase.IsValidFolder(folder))
+            {
+                AssetDatabase.CreateFolder("Assets", "Scenes");
+            }
+
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var camera = BuildCamera();
+            var board = new GameObject("Board").AddComponent<BoardView>();
+
+            var boot = new GameObject("Boot").AddComponent<BoardDemo>();
+            var serialised = new SerializedObject(boot);
+            serialised.FindProperty("_boardView").objectReferenceValue = board;
+            serialised.ApplyModifiedPropertiesWithoutUndo();
+
+            EditorSceneManager.SaveScene(scene, path);
+
+            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(path, true) };
+
+            Debug.Log($"[bootstrap] created {path} with {camera.name} and {board.name}");
+        }
+
+        /// <summary>
+        /// Renders the opening position of a level to a PNG.
+        /// </summary>
+        /// <remarks>
+        /// Rendering is the part of this project tests cannot judge, so this exists to
+        /// make it reviewable: it produces an image from the command line, with no
+        /// device, no Editor window, and nobody having to describe what they saw.
+        /// </remarks>
+        internal static void CaptureBoardPreview()
+        {
+            const int width = 1080;
+            const int height = 1080;
+
+            var levelId = ArgumentOr("-levelId", "biome1-01");
+            var outputPath = ArgumentOr("-output", "Artifacts/board-preview.png");
+
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var camera = BuildCamera();
+            var board = new GameObject("Board").AddComponent<BoardView>();
+
+            var levelPath = Path.Combine("levels", levelId + ".pwlevel");
+            var level = LevelLoader.Parse(File.ReadAllText(levelPath));
+            var state = level.CreateGame(seed: 42UL);
+            board.Build(state);
+
+            var target = new RenderTexture(width, height, 24);
+            camera.targetTexture = target;
+            camera.Render();
+
+            var previous = RenderTexture.active;
+            RenderTexture.active = target;
+
+            var image = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false);
+            image.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            image.Apply();
+
+            RenderTexture.active = previous;
+            camera.targetTexture = null;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+            File.WriteAllBytes(outputPath, image.EncodeToPNG());
+
+            Debug.Log($"[bootstrap] wrote {outputPath} for {level.Id} ({state.Board.Coordinates.Count} cells)");
+        }
+
+        private static Camera BuildCamera()
+        {
+            var camera = new GameObject("Camera").AddComponent<Camera>();
+            camera.transform.position = new Vector3(0f, 0f, -10f);
+            camera.orthographic = true;
+
+            // Sized to frame a radius-3 board with a margin, which is the largest MVP
+            // level. Fitting the board to the screen properly belongs with the game
+            // shell in #27.
+            camera.orthographicSize = 3.2f;
+            camera.backgroundColor = new Color(0.08f, 0.09f, 0.11f);
+            camera.clearFlags = CameraClearFlags.SolidColor;
+
+            return camera;
+        }
+
+        private static string ArgumentOr(string name, string fallback)
+        {
+            var arguments = Environment.GetCommandLineArgs();
+            for (var index = 0; index < arguments.Length - 1; index++)
+            {
+                if (arguments[index] == name)
+                {
+                    return arguments[index + 1];
+                }
+            }
+
+            return fallback;
         }
 
         private static void AddPackage(string identifier)
