@@ -72,9 +72,13 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private GameFlow _flow;
 
+        [SerializeField]
+        private TokenPipsView _pivotPips;
+
         private bool _isPressed;
         private bool _startedOnRestart;
         private bool _startedOnSkip;
+        private bool _startedOnPivotPips;
         private bool _startedOnTray;
         private Vector2 _pressPosition;
         private float _travelled;
@@ -162,8 +166,14 @@ namespace Pathweaver.Game.Presentation
             _startedOnSkip = !_startedOnRestart
                              && _skipButton != null
                              && _skipButton.IsPressed(screenPosition);
+            _startedOnPivotPips = !_startedOnRestart
+                                  && !_startedOnSkip
+                                  && _pivotPips != null
+                                  && _pivotPips.IsArmable
+                                  && _pivotPips.IsPressed(screenPosition);
             _startedOnTray = !_startedOnRestart
                              && !_startedOnSkip
+                             && !_startedOnPivotPips
                              && _heldTileView != null
                              && _heldTileView.IsTrayTouch(screenPosition);
         }
@@ -268,6 +278,18 @@ namespace Pathweaver.Game.Presentation
                 return;
             }
 
+            if (_startedOnPivotPips)
+            {
+                // The pips are the only way in and the only way out of the pivot mode, so a tap
+                // there always answers, whether it arms or cancels.
+                if (wasTap && _pivotPips.IsPressed(screenPosition) && _session.TogglePivotArmed())
+                {
+                    _haptics?.TileLocked();
+                }
+
+                return;
+            }
+
             if (_startedOnTray && wasTap)
             {
                 _session.RotateHeld();
@@ -275,10 +297,36 @@ namespace Pathweaver.Game.Presentation
             }
 
             var cell = CellUnder(screenPosition);
+
+            if (_session.IsPivotArmed)
+            {
+                SpendPivotAt(cell);
+                return;
+            }
+
             if (_session.TryPlaceAt(cell))
             {
                 _haptics?.TileLocked();
             }
+        }
+
+        /// <summary>
+        /// Spends the armed Pivot Token on the conduit under the pointer, taking it off the board.
+        /// </summary>
+        /// <remarks>
+        /// One verb, so one gesture. A press that lands anywhere but a conduit cancels the mode
+        /// rather than doing nothing, so a player who armed a token by accident is one tap away from
+        /// where they were — and the token is still theirs, because arming does not spend it.
+        /// </remarks>
+        private void SpendPivotAt(HexCoord cell)
+        {
+            if (_session.TryPivotRetrieve(cell))
+            {
+                _haptics?.TileLocked();
+                return;
+            }
+
+            _session.DisarmPivot();
         }
 
         /// <summary>

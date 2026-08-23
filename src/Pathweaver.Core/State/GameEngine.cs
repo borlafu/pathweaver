@@ -36,8 +36,6 @@ namespace Pathweaver.Core.State
             {
                 case PlaceTile place:
                     return ApplyPlace(state, place);
-                case PivotRotate rotate:
-                    return ApplyRotate(state, rotate);
                 case PivotRetrieve retrieve:
                     return ApplyRetrieve(state, retrieve);
                 case SkipTile _:
@@ -83,28 +81,6 @@ namespace Pathweaver.Core.State
                 bag: bag,
                 heldTile: nextTile,
                 skipTokens: state.SkipTokens.Spend());
-        }
-
-        private static GameState ApplyRotate(GameState state, PivotRotate command)
-        {
-            RequireCellOnBoard(state, command.At);
-
-            if (!state.Board.TryGet(command.At, out var existing))
-            {
-                throw new InvalidOperationException($"No conduit at {command.At} to pivot.");
-            }
-
-            if (!state.PivotTokens.CanSpend)
-            {
-                throw new InvalidOperationException("A Pivot Token is required to turn a placed conduit.");
-            }
-
-            var rotated = existing.RotateClockwise(command.Rotation);
-            var board = state.Board.Remove(command.At).Place(command.At, rotated);
-
-            return Harvest(
-                state, board, bag: state.Bag, heldTile: state.HeldTile,
-                pivotTokens: state.PivotTokens.Spend(), skipTokens: state.SkipTokens);
         }
 
         private static GameState ApplyRetrieve(GameState state, PivotRetrieve command)

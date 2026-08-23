@@ -45,32 +45,6 @@ namespace Pathweaver.Core.State
     }
 
     /// <summary>
-    /// Spends a Pivot Token to turn a conduit already on the board.
-    /// </summary>
-    public sealed class PivotRotate : GameCommand
-    {
-        public PivotRotate(HexCoord at, int rotation)
-        {
-            // Zero and six are the same non-move, and would charge a token for
-            // nothing.
-            if (rotation < 1 || rotation > 5)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(rotation), rotation, "A pivot must turn the conduit by 1 to 5 steps.");
-            }
-
-            At = at;
-            Rotation = rotation;
-        }
-
-        public HexCoord At { get; }
-
-        public int Rotation { get; }
-
-        public override string ToString() => $"Pivot {At} by {Rotation}";
-    }
-
-    /// <summary>
     /// Spends a skip to discard the tile in hand and draw the next one.
     /// </summary>
     /// <remarks>

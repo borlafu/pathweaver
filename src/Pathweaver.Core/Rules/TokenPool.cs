@@ -6,9 +6,9 @@ namespace Pathweaver.Core.Rules
     /// A count of spendable tokens.
     /// </summary>
     /// <remarks>
-    /// Used for both currencies the player carries: Pivot Tokens, which rotate or
-    /// retrieve a placed tile per PRD section 3.2B, and skips, which discard the tile
-    /// in hand for the next one. They behave identically — earn, spend, never go
+    /// Used for both currencies the player carries: Pivot Tokens, which take a placed
+    /// conduit back off the board per PRD section 3.2B, and skips, which discard the
+    /// tile in hand for the next one. They behave identically — earn, spend, never go
     /// negative — so they share a type rather than duplicating one.
     /// <para>
     /// The pool is a value, so an earlier count is simply an earlier value and undo

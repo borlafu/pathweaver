@@ -16,7 +16,14 @@ namespace Pathweaver.Core.Endless
         private const string Marker = "pathweaver-endless";
 
         /// <summary>The version this build writes, and the newest it reads.</summary>
-        public const int FormatVersion = 1;
+        /// <remarks>
+        /// Version 2 appends the carried token counts. Version 1 files still read, with nothing
+        /// carried — a player updating mid-run keeps their round, which is what the mode counts.
+        /// </remarks>
+        public const int FormatVersion = 2;
+
+        /// <summary>The oldest version this build can still read.</summary>
+        public const int MinimumReadableVersion = 1;
 
         public static string Write(EndlessRun run)
         {
@@ -27,12 +34,14 @@ namespace Pathweaver.Core.Endless
 
             return string.Format(
                 CultureInfo.InvariantCulture,
-                "{0} {1}\n{2} {3} {4}\n",
+                "{0} {1}\n{2} {3} {4} {5} {6}\n",
                 Marker,
                 FormatVersion,
                 run.Seed,
                 run.Round,
-                run.BestRound);
+                run.BestRound,
+                run.CarriedPivotTokens,
+                run.CarriedSkips);
         }
 
         /// <summary>
@@ -64,14 +73,14 @@ namespace Pathweaver.Core.Endless
             }
 
             if (!int.TryParse(header[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var version)
-                || version < 1
+                || version < MinimumReadableVersion
                 || version > FormatVersion)
             {
                 return EndlessRun.Start(fallbackSeed);
             }
 
             var fields = lines[1].Trim().Split(' ');
-            if (fields.Length != 3)
+            if (fields.Length < 3)
             {
                 return EndlessRun.Start(fallbackSeed);
             }
@@ -83,6 +92,11 @@ namespace Pathweaver.Core.Endless
                 return EndlessRun.Start(fallbackSeed);
             }
 
+            // Absent in version 1, and a damaged count is not worth discarding a run for, so
+            // anything unreadable here means nothing carried rather than nothing at all.
+            var pivots = ReadCount(fields, index: 3);
+            var skips = ReadCount(fields, index: 4);
+
             // A stored round below one means a damaged file rather than a choice, so it is treated
             // as one: keep the seed, which is still usable, and start the run again.
             if (round < 1)
@@ -90,7 +104,20 @@ namespace Pathweaver.Core.Endless
                 return EndlessRun.Start(seed);
             }
 
-            return EndlessRun.Of(seed, round, best);
+            return EndlessRun.Of(seed, round, best, pivots, skips);
+        }
+
+        private static int ReadCount(string[] fields, int index)
+        {
+            if (index >= fields.Length)
+            {
+                return 0;
+            }
+
+            return int.TryParse(
+                fields[index], NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
+                ? Math.Max(0, value)
+                : 0;
         }
     }
 }

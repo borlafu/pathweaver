@@ -67,6 +67,18 @@ namespace Pathweaver.Game.Presentation
 
         internal static readonly Color TokenEmpty = new Color(0.24f, 0.26f, 0.30f);
 
+        /// <summary>
+        /// The backing of a conduit an armed Pivot Token could turn or retrieve.
+        /// </summary>
+        /// <remarks>
+        /// A dimmed version of <see cref="TokenHeld"/> rather than a new colour, so the armed pip
+        /// and the cells it reaches read as one thing without the board turning gold.
+        /// </remarks>
+        internal static readonly Color PivotTarget = new Color(0.55f, 0.46f, 0.24f);
+
+        /// <summary>A held Pivot Token that is armed and waiting for a conduit to be chosen.</summary>
+        internal static readonly Color TokenArmed = new Color(1f, 0.95f, 0.72f);
+
         /// <summary>A conduit on a route that has just paid out.</summary>
         internal static readonly Color HarvestFlash = new Color(0.95f, 0.97f, 1f);
 

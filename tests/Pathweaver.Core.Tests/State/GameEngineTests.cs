@@ -231,57 +231,9 @@ public class GameEngineTests
     }
 
     [Fact]
-    public void Rotating_a_placed_conduit_spends_a_token_and_turns_it()
+    public void A_route_stays_paid_after_one_of_its_conduits_is_retrieved()
     {
-        // Arrange — a bend on the board would show a visible turn, but a straight
-        // rotated once is enough to prove the tile changed
-        var state = GameFixture.PlayRow(GameFixture.NewGame(startingTokens: 1), 1);
-        var before = state.Board;
-
-        // Act
-        var after = GameEngine.Apply(state, new PivotRotate(GameFixture.RowCells[0], 1));
-
-        // Assert
-        Assert.True(before.TryGet(GameFixture.RowCells[0], out var original));
-        Assert.True(after.Board.TryGet(GameFixture.RowCells[0], out var rotated));
-        Assert.Equal(original.RotateClockwise(1), rotated);
-        Assert.Equal(0, after.PivotTokens.Count);
-    }
-
-    [Fact]
-    public void Rotating_without_a_token_is_refused()
-    {
-        // Arrange
-        var state = GameFixture.PlayRow(GameFixture.NewGame(), 1);
-
-        // Act / Assert
-        Assert.Throws<InvalidOperationException>(
-            () => GameEngine.Apply(state, new PivotRotate(GameFixture.RowCells[0], 1)));
-    }
-
-    [Fact]
-    public void Rotating_an_empty_cell_is_refused()
-    {
-        // Arrange
-        var state = GameFixture.NewGame(startingTokens: 1);
-
-        // Act / Assert
-        Assert.Throws<InvalidOperationException>(
-            () => GameEngine.Apply(state, new PivotRotate(GameFixture.RowCells[0], 1)));
-    }
-
-    [Fact]
-    public void Rotating_by_a_full_turn_is_refused()
-    {
-        // Six steps is no rotation at all, so it would spend a token for nothing.
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PivotRotate(GameFixture.RowCells[0], 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PivotRotate(GameFixture.RowCells[0], 6));
-    }
-
-    [Fact]
-    public void Rotating_a_conduit_can_complete_a_route_and_score_it()
-    {
-        // Arrange — build the row, but leave the third conduit facing the wrong way
+        // Arrange — build the row so it completes and pays
         var state = GameFixture.NewGame(startingTokens: 1);
         state = GameEngine.Apply(state, new PlaceTile(GameFixture.RowCells[0], 0));
         state = GameEngine.Apply(state, new PlaceTile(GameFixture.RowCells[1], 0));

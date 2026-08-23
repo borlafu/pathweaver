@@ -152,6 +152,10 @@ namespace Pathweaver.Game.App
             WasResumed = resumed != null;
             HeldRotation = 0;
 
+            // A token armed on the previous board must not still be armed on this one, or the
+            // player's first tap would spend it on a conduit they have not seen yet.
+            IsPivotArmed = false;
+
             _boardView.Build(State);
 
             // Framing depends on the board's extents, so it happens once the board exists
@@ -178,6 +182,7 @@ namespace Pathweaver.Game.App
             State = _level.CreateGame();
             WasResumed = false;
             HeldRotation = 0;
+            IsPivotArmed = false;
             LastHarvestedTiles = Array.Empty<HexCoord>();
 
             _boardView.Build(State);
@@ -245,6 +250,115 @@ namespace Pathweaver.Game.App
         /// Places the held tile, if the rules allow it.
         /// </summary>
         /// <returns>Whether the move happened.</returns>
+        /// <summary>
+        /// Whether the player has armed a Pivot Token, so the next tap on a conduit spends it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A mode rather than a bare gesture. Tapping a placed conduit was the obvious way to spend
+        /// a token, and it is also the obvious way to spend one by accident: the board is the one
+        /// thing a player taps constantly, and a token is the scarcest thing they hold.
+        /// </para>
+        /// <para>
+        /// Arming is what makes the mechanic findable at all. Tokens were being earned, counted and
+        /// displayed with no way to use them, which is the state the first ten levels shipped in.
+        /// </para>
+        /// </remarks>
+        internal bool IsPivotArmed { get; private set; }
+
+        /// <summary>Raised when the Pivot Token mode is armed or disarmed.</summary>
+        internal event Action<bool> PivotArmedChanged;
+
+        /// <summary>Conduits a pivot could act on, which is every conduit while armed.</summary>
+        internal ISet<HexCoord> PivotableCells
+        {
+            get
+            {
+                var cells = new HashSet<HexCoord>();
+
+                if (!IsPivotArmed || State == null)
+                {
+                    return cells;
+                }
+
+                foreach (var occupied in State.Board.OccupiedCells)
+                {
+                    cells.Add(occupied.Coordinate);
+                }
+
+                return cells;
+            }
+        }
+
+        /// <summary>
+        /// Arms or disarms the Pivot Token mode.
+        /// </summary>
+        /// <returns>Whether the mode is armed afterwards.</returns>
+        internal bool TogglePivotArmed()
+        {
+            // Nothing to arm without a token to spend or a conduit to spend it on, and an armed
+            // mode that can do nothing is a control that appears broken.
+            var canPivot = State != null && State.PivotTokens.CanSpend && State.Board.OccupiedCount > 0;
+
+            SetPivotArmed(!IsPivotArmed && canPivot);
+            return IsPivotArmed;
+        }
+
+        internal void DisarmPivot() => SetPivotArmed(false);
+
+        /// <summary>
+        /// Spends a Pivot Token to take a placed conduit off the board.
+        /// </summary>
+        /// <remarks>
+        /// The only thing a Pivot Token does. Turning a placed conduit was the other half of the
+        /// mechanic and has been dropped: a conduit was placed connected to something, so turning it
+        /// usually just disconnects it, and a player who wants a different shape in that cell wants
+        /// the cell back rather than the tile turned.
+        /// <para>
+        /// The conduit is discarded rather than returned to hand: the token buys back the space, not
+        /// the tile.
+        /// </para>
+        /// </remarks>
+        /// <returns>Whether the conduit was removed.</returns>
+        internal bool TryPivotRetrieve(HexCoord coordinate)
+        {
+            if (!CanPivotAt(coordinate))
+            {
+                return false;
+            }
+
+            State = GameEngine.Apply(State, new PivotRetrieve(coordinate));
+
+            SetPivotArmed(false);
+            Publish();
+            SaveNow();
+
+            return true;
+        }
+
+        private bool CanPivotAt(HexCoord coordinate)
+            => IsPivotArmed
+               && State != null
+               && State.PivotTokens.CanSpend
+               && State.Board.TryGet(coordinate, out _);
+
+        private void SetPivotArmed(bool armed)
+        {
+            if (IsPivotArmed == armed)
+            {
+                return;
+            }
+
+            IsPivotArmed = armed;
+            PivotArmedChanged?.Invoke(armed);
+
+            // Republished so the board can light the conduits, or stop lighting them.
+            if (State != null)
+            {
+                Publish();
+            }
+        }
+
         internal bool TryPlaceAt(HexCoord coordinate)
         {
             if (!CanPlaceAt(coordinate))
@@ -328,7 +442,13 @@ namespace Pathweaver.Game.App
                 .Select(placement => placement.Coordinate)
                 .ToHashSet();
 
-            _boardView.Refresh(State, AvailableCells);
+            // While a token is armed the board shows what the token can act on instead of where the
+            // held tile could go. Showing both at once made the board a field of highlights that
+            // said nothing about which tap did what.
+            _boardView.Refresh(
+                State,
+                IsPivotArmed ? PivotableCells : AvailableCells,
+                pivotArmed: IsPivotArmed);
 
             if (_heldTileView != null)
             {

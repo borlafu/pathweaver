@@ -86,14 +86,24 @@ Every completed route pays out in one of two currencies, so none feels wasted:
 
 | Route length | Reward | What it buys |
 |---|---|---|
-| 4 or more conduits | 1 **Pivot Token** | Rotate a conduit already on the board, or retrieve one to free its cell |
+| 4 or more conduits | 1 **Pivot Token** | Take a conduit back off the board, freeing its cell |
 | 1 to 3 conduits | 1 **skip** | Discard the tile in hand and draw the next one |
 
 Neither strategy dominates. Power comes from length; room to manoeuvre comes from
 closing early; a player who only ever does one runs short of the other. A retrieved
 conduit is **discarded, not returned to hand** — the token buys back the space, not
-the tile. A Pivot Token rotation must turn the tile by 1 to 5 steps, because 0 and 6
-are the same non-move and would charge a token for nothing.
+the tile.
+
+A token frees a cell and nothing else. PRD section 3.2B also allows turning a placed
+conduit, and that half is deliberately not implemented: a conduit was placed connected
+to something, so turning it in place usually only disconnects it. A player who wants a
+different shape in that cell wants the cell back.
+
+To spend a Pivot Token, **tap the pip column** on the left of the board: the pips
+brighten and every conduit is marked. Then **tap a conduit** to take it off the board.
+Arming spends nothing, and a tap anywhere else cancels — the mode exists because the
+board is the one thing a thumb touches constantly, and a token is the scarcest thing a
+player holds.
 
 If the held tile fits nowhere in any rotation, the board is deadlocked, and a Pivot
 Token is the way out. With no tokens left the run is lost and restart is the only

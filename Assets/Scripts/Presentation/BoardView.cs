@@ -165,12 +165,27 @@ namespace Pathweaver.Game.Presentation
             Refresh(_lastState, _lastAvailable);
         }
 
-        internal void Refresh(GameState state, ISet<HexCoord> availableCells = null)
+        /// <summary>
+        /// Updates every cell to match the state.
+        /// </summary>
+        /// <param name="state">The state to draw.</param>
+        /// <param name="markedCells">
+        /// Cells to mark: where the held tile could go, or — while a Pivot Token is armed — the
+        /// conduits the token could act on.
+        /// </param>
+        /// <param name="pivotArmed">
+        /// Whether the marks are pivot targets. Occupied cells are drawn as conduits, so a marked
+        /// conduit needs a different treatment from a marked empty cell, which is simply lit.
+        /// </param>
+        internal void Refresh(
+            GameState state, ISet<HexCoord> markedCells = null, bool pivotArmed = false)
         {
             if (state == null)
             {
                 return;
             }
+
+            var availableCells = markedCells;
 
             // Remembered so a flash starting or ending can redraw without the caller having to
             // hand the state over again.
@@ -199,6 +214,10 @@ namespace Pathweaver.Game.Presentation
                     if (_flashing.Contains(coordinate))
                     {
                         cell.ShowHarvestedConduit(tile);
+                    }
+                    else if (pivotArmed && availableCells != null && availableCells.Contains(coordinate))
+                    {
+                        cell.ShowPivotable(tile);
                     }
                     else
                     {
