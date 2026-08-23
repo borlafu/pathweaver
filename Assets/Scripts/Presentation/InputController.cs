@@ -53,7 +53,11 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private HapticsService _haptics;
 
+        [SerializeField]
+        private RestartButtonView _restartButton;
+
         private bool _isPressed;
+        private bool _startedOnRestart;
         private bool _startedOnTray;
         private Vector2 _pressPosition;
         private float _travelled;
@@ -116,7 +120,12 @@ namespace Pathweaver.Game.Presentation
             _isPressed = true;
             _pressPosition = screenPosition;
             _travelled = 0f;
-            _startedOnTray = _heldTileView != null && _heldTileView.IsTrayTouch(screenPosition);
+
+            // Checked before the tray, so the two cannot both claim a press near the corner.
+            _startedOnRestart = _restartButton != null && _restartButton.IsPressed(screenPosition);
+            _startedOnTray = !_startedOnRestart
+                             && _heldTileView != null
+                             && _heldTileView.IsTrayTouch(screenPosition);
         }
 
         private void ContinuePress(Vector2 screenPosition)
@@ -152,6 +161,19 @@ namespace Pathweaver.Game.Presentation
             }
 
             _frameRateGovernor?.NotifyActivity();
+
+            if (_startedOnRestart)
+            {
+                // Only on a tap, so a drag that happens to begin on the button does not
+                // throw the board away.
+                if (wasTap && _restartButton.IsPressed(screenPosition))
+                {
+                    _session.Restart();
+                    _haptics?.TileLocked();
+                }
+
+                return;
+            }
 
             if (_startedOnTray && wasTap)
             {

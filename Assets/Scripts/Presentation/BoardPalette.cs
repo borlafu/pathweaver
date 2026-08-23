@@ -28,8 +28,16 @@ namespace Pathweaver.Game.Presentation
         /// </remarks>
         internal static readonly Color LegalCell = new Color(0.30f, 0.36f, 0.44f);
 
-        /// <summary>The rotation hint around the tile in hand.</summary>
-        internal static readonly Color Hint = new Color(0.62f, 0.66f, 0.74f);
+        /// <summary>The restart button at rest.</summary>
+        internal static readonly Color RestartIdle = new Color(0.28f, 0.30f, 0.35f);
+
+        /// <summary>
+        /// The restart button when the board has no moves left, at which point it is not one
+        /// option among several but the only thing left to press.
+        /// </summary>
+        internal static readonly Color RestartUrgent = new Color(0.78f, 0.36f, 0.30f);
+
+        internal static readonly Color RestartArrow = new Color(0.88f, 0.90f, 0.94f);
 
         internal static readonly Color Spring = new Color(0.95f, 0.85f, 0.35f);
         internal static readonly Color Hub = new Color(0.55f, 0.40f, 0.85f);

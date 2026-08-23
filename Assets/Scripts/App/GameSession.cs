@@ -118,6 +118,29 @@ namespace Pathweaver.Game.App
         }
 
         /// <summary>
+        /// Abandons the current run and deals a fresh board.
+        /// </summary>
+        /// <remarks>
+        /// The save is deleted rather than left behind, or the next launch would resume the
+        /// board the player just walked away from.
+        /// </remarks>
+        internal void Restart()
+        {
+            _saves?.Delete(_levelId);
+
+            var level = LevelCatalogue.Load(_levelId);
+            State = level.CreateGame(_seed);
+            WasResumed = false;
+            HeldRotation = 0;
+
+            _boardView.Build(State);
+            _cameraFitter?.Fit(State);
+
+            Publish();
+            SaveNow();
+        }
+
+        /// <summary>
         /// Writes the run out, if there is one.
         /// </summary>
         internal void SaveNow()
