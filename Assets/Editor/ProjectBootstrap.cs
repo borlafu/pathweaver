@@ -166,7 +166,8 @@ namespace Pathweaver.EditorTools
                 ("_restartButton", restart),
                 ("_restartConfirm", restartConfirm),
                 ("_levelComplete", levelComplete),
-                ("_skipButton", skip));
+                ("_skipButton", skip),
+                ("_pivotPips", pivotPips));
 
             // Grouped so a single object can hide everything that belongs to play while a menu is
             // up. The board itself stays outside the group, because pausing should not blank the

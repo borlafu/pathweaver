@@ -274,6 +274,14 @@ namespace Pathweaver.Game.App
             _hasRecordedThisClear = false;
             _isEndlessRound = true;
 
+            // A finished board stays playable, so tokens can change after the round was banked.
+            // Taking the live counts here means what the player actually holds is what travels.
+            if (_isEndlessRound && _session.State != null)
+            {
+                _endlessRun = _endlessRun.Carrying(
+                    _session.State.PivotTokens.Count, _session.State.SkipTokens.Count);
+            }
+
             var round = _endlessRun.CurrentRound();
 
             // The board just left behind is finished and will never be dealt again, so its save is
@@ -351,7 +359,13 @@ namespace Pathweaver.Game.App
             {
                 // Advanced as soon as the quota is met rather than when the player taps onward, so
                 // the furthest round reached survives closing the app on a finished board.
-                _endlessRun = _endlessRun.Cleared();
+                // Whatever is still in hand comes with the player. A Pivot Token is earned by
+                // building a long route, and taking it back at a round boundary made the counter
+                // look broken as well as being unfair.
+                _endlessRun = _endlessRun.Cleared(
+                    pivotTokensLeft: state.PivotTokens.Count,
+                    skipsLeft: state.SkipTokens.Count);
+
                 _endlessStore.Save(_endlessRun);
                 return;
             }

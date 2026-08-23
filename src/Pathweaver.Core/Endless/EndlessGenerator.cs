@@ -69,8 +69,11 @@ namespace Pathweaver.Core.Endless
         /// </summary>
         /// <param name="round">The round number, counted from one.</param>
         /// <param name="seed">The seed for the whole run.</param>
+        /// <param name="carriedPivotTokens">Pivot Tokens brought from the previous round.</param>
+        /// <param name="carriedSkips">Skips brought from the previous round.</param>
         /// <exception cref="ArgumentOutOfRangeException">Thrown for a round below one.</exception>
-        public static EndlessRound Generate(int round, ulong seed)
+        public static EndlessRound Generate(
+            int round, ulong seed, int carriedPivotTokens = 0, int carriedSkips = 0)
         {
             var difficulty = EndlessDifficulty.ForRound(round);
             var roundSeed = SeedSource.ForRound(seed, round);
@@ -132,8 +135,11 @@ namespace Pathweaver.Core.Endless
                 bagTiles: bag,
                 baseRouteScore: BaseRouteScore,
                 targetScore: target,
-                startingTokens: difficulty.StartingTokens,
-                startingSkips: difficulty.StartingSkips,
+                // The round's own allowance is a floor rather than a replacement: a player who
+                // hoarded tokens keeps the surplus, and a player who spent everything still starts
+                // with what the round grants.
+                startingTokens: Math.Max(difficulty.StartingTokens, carriedPivotTokens),
+                startingSkips: Math.Max(difficulty.StartingSkips, carriedSkips),
                 seed: roundSeed);
 
             return new EndlessRound(level, solution);

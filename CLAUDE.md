@@ -281,6 +281,8 @@ lose.
 | What happens on a deadlock with no tokens? | The run is lost, and restart is the only way out. A rewarded video granting a token is the intended softener later, alongside the rewarded hints in PRD section 6.2. |
 | Does clearing the quota end the board? | No. Extending routes is rewarded, so play continues and the completion notice is dismissable. |
 | Is a retrieved conduit returned to hand? | No, it is discarded. The token buys back the space, not the tile. |
+| How is a Pivot Token spent? | Tap the pip column to arm it, then tap a conduit to turn it one step, or hold for about half a second to retrieve it. Arming is a mode rather than a bare tap on a conduit, because the board is the one thing a thumb touches constantly and a token is the scarcest thing the player holds. Arming spends nothing, and a tap anywhere else cancels. |
+| Do tokens survive an endless round boundary? | Yes, both Pivot Tokens and skips carry into the next round, and the round's own allowance is a floor rather than a replacement. They are earned, so taking them back at a boundary is taking back a reward. A fresh run keeps none of them. |
 
 ## Hard constraints from the PRD
 

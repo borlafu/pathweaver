@@ -36,6 +36,17 @@ namespace Pathweaver.Game.Presentation
         /// </summary>
         private const float TapMovementFraction = 0.02f;
 
+        /// <summary>
+        /// How long a press on a conduit must last to retrieve it rather than turn it, while a
+        /// Pivot Token is armed.
+        /// </summary>
+        /// <remarks>
+        /// Two things a token can do, and only one board to do them on. A hold is the second verb:
+        /// slower than a tap on purpose, because retrieving discards the conduit and cannot be
+        /// undone, while turning it can be turned back for another token.
+        /// </remarks>
+        private const float PivotHoldSeconds = 0.45f;
+
         [SerializeField]
         private GameSession _session;
 
@@ -72,11 +83,16 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private GameFlow _flow;
 
+        [SerializeField]
+        private TokenPipsView _pivotPips;
+
         private bool _isPressed;
         private bool _startedOnRestart;
         private bool _startedOnSkip;
+        private bool _startedOnPivotPips;
         private bool _startedOnTray;
         private Vector2 _pressPosition;
+        private float _pressStartedAt;
         private float _travelled;
 
         private float TapThresholdPixels => Mathf.Min(Screen.width, Screen.height) * TapMovementFraction;
@@ -158,12 +174,20 @@ namespace Pathweaver.Game.Presentation
 
             // Buttons are checked before the tray, so a press near a corner cannot be claimed
             // by two things at once.
+            _pressStartedAt = Time.unscaledTime;
+
             _startedOnRestart = _restartButton != null && _restartButton.IsPressed(screenPosition);
             _startedOnSkip = !_startedOnRestart
                              && _skipButton != null
                              && _skipButton.IsPressed(screenPosition);
+            _startedOnPivotPips = !_startedOnRestart
+                                  && !_startedOnSkip
+                                  && _pivotPips != null
+                                  && _pivotPips.IsArmable
+                                  && _pivotPips.IsPressed(screenPosition);
             _startedOnTray = !_startedOnRestart
                              && !_startedOnSkip
+                             && !_startedOnPivotPips
                              && _heldTileView != null
                              && _heldTileView.IsTrayTouch(screenPosition);
         }
@@ -268,6 +292,18 @@ namespace Pathweaver.Game.Presentation
                 return;
             }
 
+            if (_startedOnPivotPips)
+            {
+                // The pips are the only way in and the only way out of the pivot mode, so a tap
+                // there always answers, whether it arms or cancels.
+                if (wasTap && _pivotPips.IsPressed(screenPosition) && _session.TogglePivotArmed())
+                {
+                    _haptics?.TileLocked();
+                }
+
+                return;
+            }
+
             if (_startedOnTray && wasTap)
             {
                 _session.RotateHeld();
@@ -275,10 +311,43 @@ namespace Pathweaver.Game.Presentation
             }
 
             var cell = CellUnder(screenPosition);
+
+            if (_session.IsPivotArmed)
+            {
+                SpendPivotAt(cell);
+                return;
+            }
+
             if (_session.TryPlaceAt(cell))
             {
                 _haptics?.TileLocked();
             }
+        }
+
+        /// <summary>
+        /// Spends the armed Pivot Token on the conduit under the pointer.
+        /// </summary>
+        /// <remarks>
+        /// A tap turns the conduit one step; a hold takes it off the board. A press that lands
+        /// anywhere but a conduit cancels the mode rather than doing nothing, so a player who armed
+        /// a token by accident is one tap away from where they were — and the token is still theirs,
+        /// because arming does not spend it.
+        /// </remarks>
+        private void SpendPivotAt(HexCoord cell)
+        {
+            var wasHeld = Time.unscaledTime - _pressStartedAt >= PivotHoldSeconds;
+
+            var spent = wasHeld
+                ? _session.TryPivotRetrieve(cell)
+                : _session.TryPivotRotate(cell);
+
+            if (spent)
+            {
+                _haptics?.TileLocked();
+                return;
+            }
+
+            _session.DisarmPivot();
         }
 
         /// <summary>

@@ -91,5 +91,21 @@ namespace Pathweaver.Game.Presentation
             _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
             _visual.ShowResource(tile.Kind, BoardPalette.ForKind(tile.Kind));
         }
+
+        /// <summary>
+        /// Draws a conduit a Pivot Token could act on.
+        /// </summary>
+        /// <remarks>
+        /// Backed in the token's own colour, so an armed token and the cells it can reach are
+        /// recognisably the same thing. Without a mark, arming a token would change nothing on
+        /// screen and the mode would be invisible.
+        /// </remarks>
+        internal void ShowPivotable(ConduitTile tile)
+        {
+            _visual.SetBackground(BoardPalette.PivotTarget);
+            _visual.UseResourceArt(tile.Kind);
+            _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
+            _visual.ShowResource(tile.Kind, BoardPalette.ForKind(tile.Kind));
+        }
     }
 }

@@ -95,6 +95,12 @@ conduit is **discarded, not returned to hand** — the token buys back the space
 the tile. A Pivot Token rotation must turn the tile by 1 to 5 steps, because 0 and 6
 are the same non-move and would charge a token for nothing.
 
+To spend a Pivot Token, **tap the pip column** on the left of the board: the pips
+brighten and every conduit is marked. Then **tap a conduit** to turn it one step, or
+**hold it** for about half a second to retrieve it. Arming spends nothing, and a tap
+anywhere else cancels — the mode exists because the board is the one thing a thumb
+touches constantly, and a token is the scarcest thing a player holds.
+
 If the held tile fits nowhere in any rotation, the board is deadlocked, and a Pivot
 Token is the way out. With no tokens left the run is lost and restart is the only
 exit; a rewarded video granting a token is the intended softener later.
