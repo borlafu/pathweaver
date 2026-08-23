@@ -73,12 +73,22 @@ namespace Pathweaver.Game.Presentation
         internal static readonly Color Spring = new Color(0.95f, 0.85f, 0.35f);
         internal static readonly Color Hub = new Color(0.55f, 0.40f, 0.85f);
 
+        /// <summary>
+        /// The colour of a resource.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately spread across brightness as well as hue. The first attempt put water
+        /// and crystal within 0.002 of the same relative luminance — distinguishable only by
+        /// hue, which is precisely what the most common forms of colour blindness remove. A
+        /// test now enforces a brightness gap between every pair, so the palette carries some
+        /// of the information even before the motifs do.
+        /// </remarks>
         internal static Color ForKind(ResourceKind kind) => kind switch
         {
-            ResourceKind.Water => new Color(0.25f, 0.60f, 0.90f),
-            ResourceKind.Wind => new Color(0.60f, 0.85f, 0.75f),
-            ResourceKind.Crystal => new Color(0.85f, 0.45f, 0.65f),
-            ResourceKind.Trade => new Color(0.90f, 0.60f, 0.25f),
+            ResourceKind.Water => new Color(0.20f, 0.45f, 0.85f),
+            ResourceKind.Crystal => new Color(0.80f, 0.50f, 0.75f),
+            ResourceKind.Trade => new Color(0.95f, 0.65f, 0.30f),
+            ResourceKind.Wind => new Color(0.70f, 0.92f, 0.82f),
             _ => Color.magenta,
         };
     }

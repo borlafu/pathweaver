@@ -59,6 +59,7 @@ namespace Pathweaver.Game.Presentation
 
             _visual.SetBackground(BoardPalette.CellOutline);
             _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
+            _visual.ShowResource(tile.Kind, BoardPalette.ForKind(tile.Kind));
 
             if (!_isFollowingPointer)
             {
