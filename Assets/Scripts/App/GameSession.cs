@@ -43,6 +43,19 @@ namespace Pathweaver.Game.App
         /// <summary>Raised whenever the state changes, including at the start.</summary>
         internal event Action<GameState> StateChanged;
 
+        /// <summary>
+        /// Raised when placing a tile completes routes, with how many.
+        /// </summary>
+        /// <remarks>
+        /// A separate signal because feedback needs the moment, not the total. Watching
+        /// the score would mean every listener re-deriving "did something just pay out",
+        /// and each would get it subtly differently.
+        /// </remarks>
+        internal event Action<int> RoutesHarvested;
+
+        /// <summary>Raised after a tile is placed, whatever it did or did not complete.</summary>
+        internal event Action TilePlaced;
+
         internal GameState State { get; private set; }
 
         /// <summary>Clockwise turns applied to the held tile before placing it.</summary>
@@ -91,6 +104,8 @@ namespace Pathweaver.Game.App
                 return false;
             }
 
+            var harvestedBefore = State.CompletedRoutes.Count;
+
             State = GameEngine.Apply(State, new PlaceTile(coordinate, HeldRotation));
 
             // A fresh tile arrives unturned: carrying the previous rotation over would
@@ -98,6 +113,15 @@ namespace Pathweaver.Game.App
             HeldRotation = 0;
 
             Publish();
+
+            TilePlaced?.Invoke();
+
+            var harvested = State.CompletedRoutes.Count - harvestedBefore;
+            if (harvested > 0)
+            {
+                RoutesHarvested?.Invoke(harvested);
+            }
+
             return true;
         }
 

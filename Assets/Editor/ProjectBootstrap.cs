@@ -4,6 +4,7 @@ using System.IO;
 using Pathweaver.Core.Hex;
 using Pathweaver.Core.Levels;
 using Pathweaver.Game.App;
+using Pathweaver.Game.Platform;
 using Pathweaver.Game.Presentation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -106,6 +107,10 @@ namespace Pathweaver.EditorTools
             var session = new GameObject("Session").AddComponent<GameSession>();
             var input = new GameObject("Input").AddComponent<InputController>();
 
+            var platform = new GameObject("Platform");
+            var frameRate = platform.AddComponent<FrameRateGovernor>();
+            var haptics = platform.AddComponent<HapticsService>();
+
             Wire(heldTile, ("_boardView", board), ("_camera", camera));
             Wire(session, ("_boardView", board), ("_heldTileView", heldTile));
             Wire(
@@ -113,7 +118,9 @@ namespace Pathweaver.EditorTools
                 ("_session", session),
                 ("_boardView", board),
                 ("_heldTileView", heldTile),
-                ("_camera", camera));
+                ("_camera", camera),
+                ("_frameRateGovernor", frameRate),
+                ("_haptics", haptics));
 
             EditorSceneManager.SaveScene(scene, path);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(path, true) };
