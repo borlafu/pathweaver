@@ -135,15 +135,15 @@ namespace Pathweaver.EditorTools
             Wire(pivotPips, ("_boardView", board), ("_camera", camera), ("_session", session));
             SetPips(pivotPips, TokenKind.Pivot, new Vector2(0.12f, 0.26f));
 
+            var pivotButton = new GameObject("PivotButton").AddComponent<PivotButtonView>();
+            Wire(pivotButton, ("_boardView", board), ("_camera", camera), ("_session", session));
+
             var skip = new GameObject("SkipButton").AddComponent<SkipButtonView>();
             Wire(skip, ("_boardView", board), ("_camera", camera), ("_session", session));
 
             var skipPips = new GameObject("SkipPips").AddComponent<TokenPipsView>();
             Wire(skipPips, ("_boardView", board), ("_camera", camera), ("_session", session));
             SetPips(skipPips, TokenKind.Skip, new Vector2(0.86f, 0.26f));
-
-            var levelComplete = new GameObject("LevelComplete").AddComponent<LevelCompleteView>();
-            Wire(levelComplete, ("_boardView", board), ("_camera", camera), ("_session", session));
 
             var platform = new GameObject("Platform");
             var frameRate = platform.AddComponent<FrameRateGovernor>();
@@ -165,18 +165,28 @@ namespace Pathweaver.EditorTools
                 ("_haptics", haptics),
                 ("_restartButton", restart),
                 ("_restartConfirm", restartConfirm),
-                ("_levelComplete", levelComplete),
                 ("_skipButton", skip),
-                ("_pivotPips", pivotPips));
+                ("_pivotButton", pivotButton));
 
-            // Grouped so a single object can hide everything that belongs to play while a menu is
-            // up. The board itself stays outside the group, because pausing should not blank the
-            // puzzle the player is looking at.
+            // Two groups, because they are hidden for different reasons. The HUD goes away while a
+            // menu is up; the controls inside it also go away when a board is finished, leaving the
+            // counters and the bar to report what happened. The board itself stays outside both,
+            // because pausing should not blank the puzzle the player is looking at.
+            var playControls = new GameObject("Controls");
+            playControls.transform.SetParent(hud.transform, worldPositionStays: true);
+
+            foreach (var controlObject in new[]
+                     {
+                         skip.gameObject, restart.gameObject, pivotButton.gameObject,
+                         heldTile.gameObject, rotateHint.gameObject, restartConfirm.gameObject,
+                     })
+            {
+                controlObject.transform.SetParent(playControls.transform, worldPositionStays: true);
+            }
+
             foreach (var playObject in new[]
                      {
-                         progress.gameObject, pivotPips.gameObject, skip.gameObject,
-                         skipPips.gameObject, restart.gameObject, heldTile.gameObject,
-                         rotateHint.gameObject, restartConfirm.gameObject, levelComplete.gameObject,
+                         progress.gameObject, pivotPips.gameObject, skipPips.gameObject,
                      })
             {
                 playObject.transform.SetParent(hud.transform, worldPositionStays: true);
@@ -210,6 +220,7 @@ namespace Pathweaver.EditorTools
 
             var flowSerialised = new SerializedObject(flow);
             flowSerialised.FindProperty("_hud").objectReferenceValue = hud;
+            flowSerialised.FindProperty("_playControls").objectReferenceValue = playControls;
             flowSerialised.ApplyModifiedPropertiesWithoutUndo();
 
             Wire(input, ("_router", router), ("_flow", flow));

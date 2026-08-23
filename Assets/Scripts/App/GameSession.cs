@@ -148,6 +148,16 @@ namespace Pathweaver.Game.App
 
             var resumed = saves?.Load(_levelId);
 
+            // A finished board is not a run. Restoring one would open the level in the state where
+            // every control is withdrawn and the only button moves on, so a level already cleared
+            // could never be replayed. Saves written by an older build can still hold one, which is
+            // why this checks the position rather than trusting that none were written.
+            if (resumed != null && _level.IsClearedBy(resumed.Score))
+            {
+                saves?.Delete(_levelId);
+                resumed = null;
+            }
+
             State = resumed ?? _level.CreateGame();
             WasResumed = resumed != null;
             HeldRotation = 0;
@@ -199,6 +209,16 @@ namespace Pathweaver.Game.App
         {
             if (State == null || _saves == null)
             {
+                return;
+            }
+
+            // A finished board is not a run to resume, and its save is deleted rather than written.
+            // Without this, opening a level that had already been cleared restored the finished
+            // position — where every control is withdrawn and the only button moves on — so a
+            // cleared level could never be played again.
+            if (IsComplete)
+            {
+                _saves.Delete(_levelId);
                 return;
             }
 

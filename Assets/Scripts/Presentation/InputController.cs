@@ -61,9 +61,6 @@ namespace Pathweaver.Game.Presentation
         private RestartConfirmView _restartConfirm;
 
         [SerializeField]
-        private LevelCompleteView _levelComplete;
-
-        [SerializeField]
         private SkipButtonView _skipButton;
 
         [SerializeField]
@@ -73,12 +70,12 @@ namespace Pathweaver.Game.Presentation
         private GameFlow _flow;
 
         [SerializeField]
-        private TokenPipsView _pivotPips;
+        private PivotButtonView _pivotButton;
 
         private bool _isPressed;
         private bool _startedOnRestart;
         private bool _startedOnSkip;
-        private bool _startedOnPivotPips;
+        private bool _startedOnPivot;
         private bool _startedOnTray;
         private Vector2 _pressPosition;
         private float _travelled;
@@ -166,14 +163,13 @@ namespace Pathweaver.Game.Presentation
             _startedOnSkip = !_startedOnRestart
                              && _skipButton != null
                              && _skipButton.IsPressed(screenPosition);
-            _startedOnPivotPips = !_startedOnRestart
-                                  && !_startedOnSkip
-                                  && _pivotPips != null
-                                  && _pivotPips.IsArmable
-                                  && _pivotPips.IsPressed(screenPosition);
+            _startedOnPivot = !_startedOnRestart
+                              && !_startedOnSkip
+                              && _pivotButton != null
+                              && _pivotButton.IsPressed(screenPosition);
             _startedOnTray = !_startedOnRestart
                              && !_startedOnSkip
-                             && !_startedOnPivotPips
+                             && !_startedOnPivot
                              && _heldTileView != null
                              && _heldTileView.IsTrayTouch(screenPosition);
         }
@@ -234,13 +230,6 @@ namespace Pathweaver.Game.Presentation
                 return;
             }
 
-            // The completion notice is dismissed by any tap and blocks nothing else, since
-            // clearing the quota does not end the board.
-            if (wasTap && _levelComplete != null && _levelComplete.IsOpen)
-            {
-                _levelComplete.Dismiss();
-            }
-
             if (_restartConfirm != null && _restartConfirm.IsOpen)
             {
                 AnswerRestartQuestion(screenPosition, wasTap);
@@ -253,6 +242,14 @@ namespace Pathweaver.Game.Presentation
             }
 
             _frameRateGovernor?.NotifyActivity();
+
+            // A finished board takes no further play. Every control except the button that moves on
+            // is hidden by GameFlow, and this is what stops the board itself from answering: without
+            // it a tap on a cell would keep placing tiles behind the notice.
+            if (_session.IsComplete)
+            {
+                return;
+            }
 
             if (_startedOnRestart)
             {
@@ -278,11 +275,11 @@ namespace Pathweaver.Game.Presentation
                 return;
             }
 
-            if (_startedOnPivotPips)
+            if (_startedOnPivot)
             {
-                // The pips are the only way in and the only way out of the pivot mode, so a tap
-                // there always answers, whether it arms or cancels.
-                if (wasTap && _pivotPips.IsPressed(screenPosition) && _session.TogglePivotArmed())
+                // The remove button is the only way in and out of the pivot mode, so a tap there
+                // always answers, whether it arms or cancels.
+                if (wasTap && _pivotButton.IsPressed(screenPosition) && _session.TogglePivotArmed())
                 {
                     _haptics?.TileLocked();
                 }

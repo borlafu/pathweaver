@@ -22,7 +22,15 @@ namespace Pathweaver.Game.Presentation
     internal sealed class ProgressBarView : MonoBehaviour
     {
         private const float ViewportY = 0.94f;
-        private const float WidthFraction = 0.8f;
+
+        /// <summary>
+        /// How much of the screen width the bar spans.
+        /// </summary>
+        /// <remarks>
+        /// Narrowed from 0.8 when restart moved to the top left and pause to the top right. The bar
+        /// now runs between them rather than under them.
+        /// </remarks>
+        private const float WidthFraction = 0.52f;
         private const float Height = 0.12f;
         private const float FillEase = 6f;
 

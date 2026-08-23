@@ -79,6 +79,15 @@ namespace Pathweaver.Game.Presentation
         /// <summary>A held Pivot Token that is armed and waiting for a conduit to be chosen.</summary>
         internal static readonly Color TokenArmed = new Color(1f, 0.95f, 0.72f);
 
+        /// <summary>The remove button with a token to spend.</summary>
+        internal static readonly Color PivotReady = new Color(0.46f, 0.39f, 0.20f);
+
+        /// <summary>The remove button with nothing to spend, or nothing to spend it on.</summary>
+        internal static readonly Color PivotSpent = new Color(0.19f, 0.20f, 0.23f);
+
+        /// <summary>The little hexagon on the remove button, standing for the cell being freed.</summary>
+        internal static readonly Color PivotGlyphCell = new Color(0.72f, 0.62f, 0.36f);
+
         /// <summary>A conduit on a route that has just paid out.</summary>
         internal static readonly Color HarvestFlash = new Color(0.95f, 0.97f, 1f);
 
