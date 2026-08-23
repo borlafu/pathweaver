@@ -209,14 +209,23 @@ begin working once `Assets/` exists:
 On-device checks once a build exists:
 
 ```bash
-adb install -r <path-to-apk>
-adb shell am start -W -n es.borlafu.pathweaver/com.unity3d.player.UnityPlayerActivity
-adb logcat -s Unity
+./scripts/deploy.sh              # build, install, launch, and report cold boot
+./scripts/deploy.sh --no-build   # reinstall the existing APK
+```
+
+The launch activity is `com.unity3d.player.UnityPlayerGameActivity`. Unity 6 renamed
+it from `UnityPlayerActivity`; the old name silently fails to start.
+
+`adb` is not on PATH. Use the one from the Editor install, which matches the SDK the
+game is built against:
+
+```
+/Applications/Unity/Hub/Editor/6000.5.9f1/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb
 ```
 
 The `am start -W` output carries the cold-boot timing the 1.5 second budget is
-measured against. Confirm the activity name against the generated manifest — a
-custom activity would change it.
+measured against, and `deploy.sh` force-stops first so the measurement is a genuine
+cold start.
 
 Unity holds an exclusive lock on the project while the Editor is open; batchmode
 commands fail until it is closed.

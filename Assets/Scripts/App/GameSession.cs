@@ -40,6 +40,9 @@ namespace Pathweaver.Game.App
         [SerializeField]
         private HeldTileView _heldTileView;
 
+        [SerializeField]
+        private BoardCameraFitter _cameraFitter;
+
         private SaveService _saves;
 
         /// <summary>Raised whenever the state changes, including at the start.</summary>
@@ -97,6 +100,11 @@ namespace Pathweaver.Game.App
             HeldRotation = 0;
 
             _boardView.Build(State);
+
+            // Framing depends on the board's extents, so it happens once the board exists
+            // rather than being guessed at design time.
+            _cameraFitter?.Fit(State);
+
             Publish();
         }
 

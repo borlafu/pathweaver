@@ -104,15 +104,27 @@ namespace Pathweaver.EditorTools
             var camera = BuildCamera();
             var board = new GameObject("Board").AddComponent<BoardView>();
             var heldTile = new GameObject("HeldTile").AddComponent<HeldTileView>();
+
+            var tileMaterial = CreateTileMaterial();
+            var boardSerialised = new SerializedObject(board);
+            boardSerialised.FindProperty("_tileMaterial").objectReferenceValue = tileMaterial;
+            boardSerialised.ApplyModifiedPropertiesWithoutUndo();
             var session = new GameObject("Session").AddComponent<GameSession>();
             var input = new GameObject("Input").AddComponent<InputController>();
+
+            var fitter = new GameObject("CameraFitter").AddComponent<BoardCameraFitter>();
+            Wire(fitter, ("_camera", camera), ("_boardView", board));
 
             var platform = new GameObject("Platform");
             var frameRate = platform.AddComponent<FrameRateGovernor>();
             var haptics = platform.AddComponent<HapticsService>();
 
             Wire(heldTile, ("_boardView", board), ("_camera", camera));
-            Wire(session, ("_boardView", board), ("_heldTileView", heldTile));
+            Wire(
+                session,
+                ("_boardView", board),
+                ("_heldTileView", heldTile),
+                ("_cameraFitter", fitter));
             Wire(
                 input,
                 ("_session", session),
@@ -162,8 +174,10 @@ namespace Pathweaver.EditorTools
         /// </remarks>
         internal static void CaptureBoardPreview()
         {
+            // Phone aspect, not square. A square preview showed a correctly framed board
+            // while the real portrait screen cut it off at both edges.
             const int width = 1080;
-            const int height = 1080;
+            const int height = 2376;
 
             var levelId = ArgumentOr("-levelId", "biome1-01");
             var outputPath = ArgumentOr("-output", "Artifacts/board-preview.png");
@@ -172,6 +186,13 @@ namespace Pathweaver.EditorTools
 
             var camera = BuildCamera();
             var board = new GameObject("Board").AddComponent<BoardView>();
+
+            var previewSerialised = new SerializedObject(board);
+            previewSerialised.FindProperty("_tileMaterial").objectReferenceValue = CreateTileMaterial();
+            previewSerialised.ApplyModifiedPropertiesWithoutUndo();
+
+            var previewFitter = new GameObject("CameraFitter").AddComponent<BoardCameraFitter>();
+            Wire(previewFitter, ("_camera", camera), ("_boardView", board));
 
             var levelPath = Path.Combine("levels", levelId + ".pwlevel");
             var level = LevelLoader.Parse(File.ReadAllText(levelPath));
@@ -188,6 +209,11 @@ namespace Pathweaver.EditorTools
             }
 
             board.Refresh(state, available);
+
+            // Match the aspect the image is rendered at, or the fit is computed for the
+            // Editor's game view instead.
+            camera.aspect = (float)width / height;
+            previewFitter.Fit(state);
 
             var target = new RenderTexture(width, height, 24);
             camera.targetTexture = target;
@@ -207,6 +233,41 @@ namespace Pathweaver.EditorTools
             File.WriteAllBytes(outputPath, image.EncodeToPNG());
 
             Debug.Log($"[bootstrap] wrote {outputPath} for {level.Id} ({state.Board.Coordinates.Count} cells)");
+        }
+
+        /// <summary>
+        /// Creates the material the board is drawn with, as an asset.
+        /// </summary>
+        /// <remarks>
+        /// It has to be an asset rather than a runtime <c>Shader.Find</c>: a shader nothing
+        /// references is stripped from a player build, so the game renders in the Editor and
+        /// comes up blank on a phone.
+        /// </remarks>
+        private static Material CreateTileMaterial()
+        {
+            const string path = "Assets/Settings/TileMaterial.mat";
+
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                Debug.LogError("[bootstrap] URP unlit shader not found.");
+                EditorApplication.Exit(1);
+                return null;
+            }
+
+            // Unlit: the board is flat colour, and lighting it would cost frame time for no
+            // visual gain until real art arrives.
+            var material = new Material(shader) { name = "TileMaterial" };
+            AssetDatabase.CreateAsset(material, path);
+            AssetDatabase.SaveAssets();
+
+            return material;
         }
 
         private static Camera BuildCamera()
