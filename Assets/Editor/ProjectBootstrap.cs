@@ -174,7 +174,7 @@ namespace Pathweaver.EditorTools
                      {
                          progress.gameObject, pivotPips.gameObject, skip.gameObject,
                          skipPips.gameObject, restart.gameObject, heldTile.gameObject,
-                         rotateHint.gameObject,
+                         rotateHint.gameObject, restartConfirm.gameObject, levelComplete.gameObject,
                      })
             {
                 playObject.transform.SetParent(hud.transform, worldPositionStays: true);

@@ -15,9 +15,10 @@ namespace Pathweaver.Game.App
     /// another.
     /// </para>
     /// <para>
-    /// The board is left visible behind the pause and settings screens rather than hidden. A player
-    /// who pauses mid-puzzle is usually still looking at the board, and clearing the screen would
-    /// make pausing feel like abandoning the level.
+    /// The board stays visible behind the pause panel, because a player who pauses mid-puzzle is
+    /// usually still looking at it and clearing the screen would make pausing feel like abandoning
+    /// the level. It is hidden behind the menus, which are whole screens rather than overlays: a
+    /// half-built board showing through a level list reads as a rendering fault.
     /// </para>
     /// </remarks>
     internal sealed class GameFlow : MonoBehaviour
@@ -224,6 +225,14 @@ namespace Pathweaver.Game.App
             if (_hud != null)
             {
                 _hud.SetActive(screen == GameScreen.Playing);
+            }
+
+            // Visible while playing and while paused, hidden behind the menus. Pausing is looking
+            // at the board; opening the level list is leaving it.
+            if (_boardView != null)
+            {
+                var showBoard = screen == GameScreen.Playing || screen == GameScreen.Paused;
+                _boardView.gameObject.SetActive(showBoard);
             }
         }
 
