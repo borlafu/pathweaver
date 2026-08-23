@@ -1,5 +1,6 @@
 using Pathweaver.Core.Hex;
 using Pathweaver.Game.App;
+using Pathweaver.Game.Platform;
 using UnityEngine;
 
 namespace Pathweaver.Game.Presentation
@@ -46,12 +47,41 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private Camera _camera;
 
+        [SerializeField]
+        private FrameRateGovernor _frameRateGovernor;
+
+        [SerializeField]
+        private HapticsService _haptics;
+
         private bool _isPressed;
         private bool _startedOnTray;
         private Vector2 _pressPosition;
         private float _travelled;
 
         private float TapThresholdPixels => Mathf.Min(Screen.width, Screen.height) * TapMovementFraction;
+
+        private void OnEnable()
+        {
+            if (_session != null)
+            {
+                _session.RoutesHarvested += OnRoutesHarvested;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_session != null)
+            {
+                _session.RoutesHarvested -= OnRoutesHarvested;
+            }
+        }
+
+        private void OnRoutesHarvested(int count)
+        {
+            // One buzz per harvest, not per route: several routes completing at once is a
+            // good moment, not a reason to rattle the phone.
+            _haptics?.RouteCompleted();
+        }
 
         private void Update()
         {
@@ -79,6 +109,10 @@ namespace Pathweaver.Game.Presentation
 
         private void BeginPress(Vector2 screenPosition)
         {
+            // Touching the screen is activity even if it turns out to do nothing, so the
+            // frame rate rises before the first frame of a drag rather than after it.
+            _frameRateGovernor?.NotifyActivity();
+
             _isPressed = true;
             _pressPosition = screenPosition;
             _travelled = 0f;
@@ -93,6 +127,7 @@ namespace Pathweaver.Game.Presentation
             }
 
             _travelled = Mathf.Max(_travelled, Vector2.Distance(_pressPosition, screenPosition));
+            _frameRateGovernor?.NotifyActivity();
 
             if (_startedOnTray && _travelled > TapThresholdPixels && _heldTileView != null)
             {
@@ -116,6 +151,8 @@ namespace Pathweaver.Game.Presentation
                 _heldTileView.ReturnToTray();
             }
 
+            _frameRateGovernor?.NotifyActivity();
+
             if (_startedOnTray && wasTap)
             {
                 _session.RotateHeld();
@@ -123,7 +160,10 @@ namespace Pathweaver.Game.Presentation
             }
 
             var cell = CellUnder(screenPosition);
-            _session.TryPlaceAt(cell);
+            if (_session.TryPlaceAt(cell))
+            {
+                _haptics?.TileLocked();
+            }
         }
 
         private HexCoord CellUnder(Vector2 screenPosition)
