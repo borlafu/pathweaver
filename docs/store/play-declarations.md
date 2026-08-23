@@ -28,17 +28,28 @@ consent flow. That is the main reason the MVP ships without one.
 
 Play requires a policy URL for every app, including one that collects nothing.
 
-The text is in `docs/store/privacy-policy.md`. It needs a public URL; GitHub Pages on this
-repository is sufficient and free.
-
-To publish it: repository **Settings → Pages**, source **Deploy from a branch**, branch `main`,
-folder `/docs`. The policy is then at:
+**Published at:**
 
 ```
-https://borlafu.github.io/pathweaver/store/privacy-policy
+https://gist.github.com/borlafu/e633c5adaf432168db92969dd876ffba
 ```
 
-Check the URL loads before pasting it into the Console — Play validates that it resolves.
+Verified publicly readable without a login. Paste the page URL rather than the raw one: the page
+renders the headings, and a reviewer opening a wall of plain text is a reviewer looking for a
+reason to ask a question.
+
+### Two copies, and which one wins
+
+`docs/store/privacy-policy.md` in this repository is the source of truth. The gist is the
+published copy.
+
+That is a drift risk with real consequences: a policy that contradicts what the app does is a
+policy violation, and two copies will not stay identical by good intentions. **Any edit goes to
+the repository first, then to the gist.** If the two ever disagree, the repository is what was
+reviewed and the gist is what players were shown, which is the worse half to have wrong.
+
+Play also requires the URL to keep resolving after review. Deleting or privatising the gist
+would breach that quietly, with no warning from either side.
 
 ## Content rating (IARC questionnaire)
 

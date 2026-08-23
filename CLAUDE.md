@@ -51,6 +51,12 @@ for the value above.
 Release builds read the passwords from the macOS Keychain via `scripts/build-release.sh`. Never enter
 them in the Editor: Unity writes keystore passwords into `ProjectSettings.asset`, which is committed.
 
+The privacy policy is published at
+`https://gist.github.com/borlafu/e633c5adaf432168db92969dd876ffba`, and its source of truth is
+`docs/store/privacy-policy.md`. Edit the repository copy first and then the gist: a published
+policy that contradicts what the app does is a policy violation, and Play requires the URL to keep
+resolving after review.
+
 There is no `assetlinks.json` and no need for one. Digital Asset Links proves domain ownership so that
 `https://` links open in the app rather than a browser; this game is offline-first with no website and
 no deep links, so there is nothing to verify and nowhere to host it. If a site ever exists, the file
