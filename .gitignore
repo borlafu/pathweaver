@@ -78,3 +78,10 @@ local.properties
 # It is a build output, so it is not committed; run the script on a fresh clone.
 /Assets/Plugins/Pathweaver.Core.dll
 /Assets/Plugins/Pathweaver.Core.dll.meta
+
+# Levels are copied from levels/ into Resources by scripts/build-core.sh.
+/Assets/Resources/Levels/
+/Assets/Resources/Levels.meta
+
+# Rendered previews from ProjectBootstrap.CaptureBoardPreview
+/Artifacts/

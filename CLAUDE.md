@@ -174,6 +174,26 @@ unity -batchmode -quit -projectPath . -executeMethod <Type>.<Method> ...  # run 
 that route, so project configuration is reproducible rather than a sequence of
 remembered clicks.
 
+Rendering can be reviewed without opening the Editor or a device:
+
+```bash
+unity -batchmode -quit -projectPath . \
+  -executeMethod Pathweaver.EditorTools.ProjectBootstrap.CaptureBoardPreview \
+  -levelId biome1-01 -output Artifacts/board-preview.png -logFile /tmp/unity.log
+```
+
+Worth using after any change to the presentation layer. It caught back-face culling
+silently hiding every hexagon, which no test would have noticed.
+
+Unity tests, which CI cannot run because it has no licence:
+
+```bash
+unity -batchmode -runTests -projectPath . -testPlatform EditMode \
+  -testResults /tmp/unity-tests.xml -logFile /tmp/unity.log
+```
+
+Results go to the XML file rather than stdout.
+
 Unity generates its own `.sln` and `.csproj` files under the project root when
 an `Assets/` folder exists. Those are gitignored; never hand-edit them. The
 hand-authored `src/` and `tests/` projects are tracked, via negation rules in
