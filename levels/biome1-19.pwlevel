@@ -1,0 +1,32 @@
+# Biome 1, level 19 — The Junction
+#
+# One spring, two hubs, and a trunk that belongs to both routes. A conduit counts in the length of
+# every route that runs through it, so the two cells below the spring are paid for twice: 182 to one
+# hub and 182 to the other, from five conduits rather than six.
+#
+# The three-way conduits are what make it possible. They are the only tile that can be the branch,
+# and there are two of them in a bag of seven, so the moment one arrives decides where the fork goes.
+
+id: biome1-19
+name: The Junction
+
+base-score: 100
+target-score: 360
+tokens: 0
+skips: 3
+
+cell: 0,-2
+cell: 0,-1
+cell: 0,0
+cell: 0,1
+cell: 0,2
+cell: -1,1
+cell: -2,2
+
+spring: 0,-2 water
+hub: 0,2 water
+hub: -2,2 water
+
+tile: 0,3 water x4
+tile: 0,1,3 water x2
+tile: 0,2 water

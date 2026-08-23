@@ -1,0 +1,39 @@
+# Biome 1, level 15 — Crosswinds
+#
+# Wind and crystal descend side by side down a board three cells wide. Each has exactly one way
+# through, and the two ways touch along their whole length, so a conduit placed one cell out of line
+# does not merely waste a tile — it takes a cell the other network needed.
+#
+# Both routes are three conduits, 182 each. The target of 355 leaves nine points of slack against
+# 364, which is another way of saying there is no second attempt at either.
+
+id: biome1-15
+name: Crosswinds
+
+base-score: 100
+target-score: 355
+tokens: 0
+skips: 3
+
+cell: 0,-2
+cell: 1,-2
+cell: 0,-1
+cell: 1,-1
+cell: -1,0
+cell: 0,0
+cell: 1,0
+cell: -1,1
+cell: 0,1
+cell: 1,1
+cell: -1,2
+cell: 0,2
+
+spring: 0,-2 crystal
+hub: -1,2 crystal
+spring: 1,-2 wind
+hub: 0,2 wind
+
+tile: 0,2 crystal x3
+tile: 0,3 crystal x2
+tile: 0,3 wind x3
+tile: 0,2 wind x2

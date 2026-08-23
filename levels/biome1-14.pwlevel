@@ -1,0 +1,33 @@
+# Biome 1, level 14 — Confluence
+#
+# Two springs, one hub, and the hub is the only place either of them can go. A hub serves every
+# spring that reaches it, so this is the first board where two routes are paid for arriving at the
+# same cell from opposite sides.
+#
+# The line is nine cells long and straight, so the bends in the bag are the waste this time — the
+# mirror of level 12, where the straights were.
+
+id: biome1-14
+name: Confluence
+
+base-score: 100
+target-score: 360
+tokens: 0
+skips: 3
+
+cell: 0,-4
+cell: 0,-3
+cell: 0,-2
+cell: 0,-1
+cell: 0,0
+cell: 0,1
+cell: 0,2
+cell: 0,3
+cell: 0,4
+
+spring: 0,-4 water
+spring: 0,4 water
+hub: 0,0 water
+
+tile: 0,3 water x6
+tile: 0,2 water x2
