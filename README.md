@@ -110,6 +110,11 @@ a player holds.
 Clearing the quota **ends the board**. Every control is withdrawn and one button, centred,
 moves on: the next level in the campaign, the next round in Endless.
 
+Unspent Pivot Tokens **travel with you** — to the next campaign level, or the next endless
+round, where the board's own allowance acts as a floor rather than a replacement. Without
+that, a token earned by the very route that clears a board could never be spent. Skips
+travel between endless rounds only; in the campaign each level grants its own three.
+
 If the held tile fits nowhere in any rotation, the board is deadlocked, and a Pivot
 Token is the way out. With no tokens left the run is lost and restart is the only
 exit; a rewarded video granting a token is the intended softener later.

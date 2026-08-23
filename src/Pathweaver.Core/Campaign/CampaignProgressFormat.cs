@@ -23,7 +23,18 @@ namespace Pathweaver.Core.Campaign
         private const string Marker = "pathweaver-progress";
 
         /// <summary>The version this build writes, and the newest it reads.</summary>
-        public const int FormatVersion = 1;
+        /// <remarks>
+        /// Version 2 adds a line for the Pivot Tokens the player is carrying between levels. Version
+        /// 1 files still read, with nothing carried: a player updating mid-campaign keeps every level
+        /// they cleared, which is the part that took time.
+        /// </remarks>
+        public const int FormatVersion = 2;
+
+        /// <summary>The oldest version this build can still read.</summary>
+        public const int MinimumReadableVersion = 1;
+
+        /// <summary>Prefix of the line carrying the token count.</summary>
+        private const string TokensPrefix = "tokens ";
 
         public static string Write(CampaignProgress progress)
         {
@@ -34,6 +45,10 @@ namespace Pathweaver.Core.Campaign
 
             var text = new StringBuilder();
             text.Append(Marker).Append(' ').Append(FormatVersion).Append('\n');
+
+            // Prefixed rather than positional, so a level identifier can never be mistaken for the
+            // count and the file stays repairable by hand.
+            text.Append(TokensPrefix).Append(progress.PivotTokens).Append('\n');
 
             foreach (var id in progress.ClearedLevels)
             {
@@ -65,22 +80,35 @@ namespace Pathweaver.Core.Campaign
                 return CampaignProgress.Empty;
             }
 
-            if (!int.TryParse(header[1], out var version) || version < 1 || version > FormatVersion)
+            if (!int.TryParse(header[1], out var version)
+                || version < MinimumReadableVersion
+                || version > FormatVersion)
             {
                 return CampaignProgress.Empty;
             }
 
             var cleared = new List<string>();
+            var pivotTokens = 0;
+
             for (var index = 1; index < lines.Length; index++)
             {
-                var id = lines[index].Trim();
-                if (id.Length > 0)
+                var line = lines[index].Trim();
+                if (line.Length == 0)
                 {
-                    cleared.Add(id);
+                    continue;
                 }
+
+                if (line.StartsWith(TokensPrefix, StringComparison.Ordinal))
+                {
+                    // A damaged count means nothing carried, not a lost campaign.
+                    int.TryParse(line.Substring(TokensPrefix.Length).Trim(), out pivotTokens);
+                    continue;
+                }
+
+                cleared.Add(line);
             }
 
-            return CampaignProgress.Of(cleared);
+            return CampaignProgress.Of(cleared, pivotTokens);
         }
     }
 }
