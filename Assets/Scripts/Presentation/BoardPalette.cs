@@ -70,6 +70,35 @@ namespace Pathweaver.Game.Presentation
         /// <summary>A conduit on a route that has just paid out.</summary>
         internal static readonly Color HarvestFlash = new Color(0.95f, 0.97f, 1f);
 
+        /// <summary>The action a player is most likely to want.</summary>
+        internal static readonly Color MenuPrimary = new Color(0.30f, 0.55f, 0.72f);
+
+        internal static readonly Color MenuSecondary = new Color(0.26f, 0.28f, 0.33f);
+
+        /// <summary>The hole in the settings ring: darker than the button, or it disappears.</summary>
+        internal static readonly Color MenuGearHole = new Color(0.13f, 0.14f, 0.17f);
+
+        internal static readonly Color MenuGlyph = new Color(0.92f, 0.94f, 0.97f);
+
+        /// <summary>A level that can be played but has not been cleared.</summary>
+        internal static readonly Color LevelOpen = new Color(0.28f, 0.34f, 0.42f);
+
+        internal static readonly Color LevelCleared = new Color(0.30f, 0.52f, 0.38f);
+
+        /// <summary>
+        /// A level not yet reachable: dimmed rather than hidden, so the length of the campaign is
+        /// visible from the first screen.
+        /// </summary>
+        internal static readonly Color LevelLocked = new Color(0.17f, 0.18f, 0.21f);
+
+        internal static readonly Color LevelLockedGlyph = new Color(0.30f, 0.32f, 0.36f);
+
+        internal static readonly Color SwitchOn = new Color(0.30f, 0.55f, 0.72f);
+
+        internal static readonly Color SwitchOff = new Color(0.22f, 0.23f, 0.27f);
+
+        internal static readonly Color SwitchOffGlyph = new Color(0.45f, 0.47f, 0.52f);
+
         internal static readonly Color Spring = new Color(0.95f, 0.85f, 0.35f);
         internal static readonly Color Hub = new Color(0.55f, 0.40f, 0.85f);
 

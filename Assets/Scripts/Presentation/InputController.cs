@@ -1,6 +1,7 @@
 using Pathweaver.Core.Hex;
 using Pathweaver.Game.App;
 using Pathweaver.Game.Platform;
+using Pathweaver.Game.Presentation.Menus;
 using UnityEngine;
 
 namespace Pathweaver.Game.Presentation
@@ -65,6 +66,12 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private SkipButtonView _skipButton;
 
+        [SerializeField]
+        private ScreenRouter _router;
+
+        [SerializeField]
+        private GameFlow _flow;
+
         private bool _isPressed;
         private bool _startedOnRestart;
         private bool _startedOnSkip;
@@ -102,7 +109,10 @@ namespace Pathweaver.Game.Presentation
 
         private void Update()
         {
-            if (_session == null || _session.State == null)
+            // Only the session itself is required. Menus are live before any level has been
+            // started, so refusing input while the board is empty would make the main menu
+            // untappable — which is exactly what it did.
+            if (_session == null)
             {
                 return;
             }
@@ -173,6 +183,11 @@ namespace Pathweaver.Game.Presentation
                 return;
             }
 
+            if (_session.State == null)
+            {
+                return;
+            }
+
             if (_startedOnTray && _travelled > TapThresholdPixels && _heldTileView != null)
             {
                 _heldTileView.FollowPointer(ToWorld(screenPosition));
@@ -189,6 +204,25 @@ namespace Pathweaver.Game.Presentation
             _isPressed = false;
 
             var wasTap = _travelled <= TapThresholdPixels;
+
+            // A menu takes the tap before the board sees it. Without this the board would react to
+            // presses landing on a screen drawn in front of it.
+            if (wasTap && _flow != null && _flow.HandleTap(screenPosition))
+            {
+                return;
+            }
+
+            if (_router != null && !_router.IsPlaying)
+            {
+                return;
+            }
+
+            // Past this point everything touches the board, which does not exist until a level
+            // has been started.
+            if (_session.State == null)
+            {
+                return;
+            }
 
             // The completion notice is dismissed by any tap and blocks nothing else, since
             // clearing the quota does not end the board.

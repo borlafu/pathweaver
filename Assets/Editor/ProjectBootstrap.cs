@@ -6,6 +6,7 @@ using Pathweaver.Core.Levels;
 using Pathweaver.Game.App;
 using Pathweaver.Game.Platform;
 using Pathweaver.Game.Presentation;
+using Pathweaver.Game.Presentation.Menus;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEditor.PackageManager;
@@ -124,6 +125,8 @@ namespace Pathweaver.EditorTools
             var restartConfirm = new GameObject("RestartConfirm").AddComponent<RestartConfirmView>();
             Wire(restartConfirm, ("_boardView", board), ("_camera", camera));
 
+            var hud = new GameObject("Hud");
+
             var progress = new GameObject("ProgressBar").AddComponent<ProgressBarView>();
             Wire(progress, ("_boardView", board), ("_camera", camera), ("_session", session));
 
@@ -163,6 +166,51 @@ namespace Pathweaver.EditorTools
                 ("_restartConfirm", restartConfirm),
                 ("_levelComplete", levelComplete),
                 ("_skipButton", skip));
+
+            // Grouped so a single object can hide everything that belongs to play while a menu is
+            // up. The board itself stays outside the group, because pausing should not blank the
+            // puzzle the player is looking at.
+            foreach (var playObject in new[]
+                     {
+                         progress.gameObject, pivotPips.gameObject, skip.gameObject,
+                         skipPips.gameObject, restart.gameObject, heldTile.gameObject,
+                         rotateHint.gameObject, restartConfirm.gameObject, levelComplete.gameObject,
+                     })
+            {
+                playObject.transform.SetParent(hud.transform, worldPositionStays: true);
+            }
+
+            var router = new GameObject("ScreenRouter").AddComponent<ScreenRouter>();
+
+            var mainMenu = new GameObject("MainMenu").AddComponent<MainMenuView>();
+            var levelSelect = new GameObject("LevelSelect").AddComponent<LevelSelectView>();
+            var pauseScreen = new GameObject("PauseScreen").AddComponent<PauseView>();
+            var settingsScreen = new GameObject("SettingsScreen").AddComponent<SettingsView>();
+
+            var routerSerialised = new SerializedObject(router);
+            routerSerialised.FindProperty("_mainMenu").objectReferenceValue = mainMenu.gameObject;
+            routerSerialised.FindProperty("_levelSelect").objectReferenceValue = levelSelect.gameObject;
+            routerSerialised.FindProperty("_paused").objectReferenceValue = pauseScreen.gameObject;
+            routerSerialised.FindProperty("_settings").objectReferenceValue = settingsScreen.gameObject;
+            routerSerialised.ApplyModifiedPropertiesWithoutUndo();
+
+            var flow = new GameObject("GameFlow").AddComponent<GameFlow>();
+            Wire(
+                flow,
+                ("_router", router),
+                ("_session", session),
+                ("_mainMenu", mainMenu),
+                ("_levelSelect", levelSelect),
+                ("_pause", pauseScreen),
+                ("_settings", settingsScreen),
+                ("_boardView", board),
+                ("_camera", camera));
+
+            var flowSerialised = new SerializedObject(flow);
+            flowSerialised.FindProperty("_hud").objectReferenceValue = hud;
+            flowSerialised.ApplyModifiedPropertiesWithoutUndo();
+
+            Wire(input, ("_router", router), ("_flow", flow));
 
             EditorSceneManager.SaveScene(scene, path);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(path, true) };
