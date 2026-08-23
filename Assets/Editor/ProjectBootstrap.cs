@@ -127,8 +127,16 @@ namespace Pathweaver.EditorTools
             var progress = new GameObject("ProgressBar").AddComponent<ProgressBarView>();
             Wire(progress, ("_boardView", board), ("_camera", camera), ("_session", session));
 
-            var tokens = new GameObject("TokenPips").AddComponent<TokenPipsView>();
-            Wire(tokens, ("_boardView", board), ("_camera", camera), ("_session", session));
+            var pivotPips = new GameObject("PivotPips").AddComponent<TokenPipsView>();
+            Wire(pivotPips, ("_boardView", board), ("_camera", camera), ("_session", session));
+            SetPips(pivotPips, TokenKind.Pivot, new Vector2(0.12f, 0.26f));
+
+            var skip = new GameObject("SkipButton").AddComponent<SkipButtonView>();
+            Wire(skip, ("_boardView", board), ("_camera", camera), ("_session", session));
+
+            var skipPips = new GameObject("SkipPips").AddComponent<TokenPipsView>();
+            Wire(skipPips, ("_boardView", board), ("_camera", camera), ("_session", session));
+            SetPips(skipPips, TokenKind.Skip, new Vector2(0.86f, 0.26f));
 
             var levelComplete = new GameObject("LevelComplete").AddComponent<LevelCompleteView>();
             Wire(levelComplete, ("_boardView", board), ("_camera", camera), ("_session", session));
@@ -153,12 +161,24 @@ namespace Pathweaver.EditorTools
                 ("_haptics", haptics),
                 ("_restartButton", restart),
                 ("_restartConfirm", restartConfirm),
-                ("_levelComplete", levelComplete));
+                ("_levelComplete", levelComplete),
+                ("_skipButton", skip));
 
             EditorSceneManager.SaveScene(scene, path);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(path, true) };
 
             Debug.Log($"[bootstrap] created {path}");
+        }
+
+        /// <summary>
+        /// Sets a pip row's currency and where it sits.
+        /// </summary>
+        private static void SetPips(Component pips, TokenKind kind, Vector2 viewportPosition)
+        {
+            var serialised = new SerializedObject(pips);
+            serialised.FindProperty("_kind").enumValueIndex = (int)kind;
+            serialised.FindProperty("_viewportPosition").vector2Value = viewportPosition;
+            serialised.ApplyModifiedPropertiesWithoutUndo();
         }
 
         /// <summary>

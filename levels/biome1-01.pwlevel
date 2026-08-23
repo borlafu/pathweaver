@@ -16,6 +16,9 @@ target-score: 246
 
 tokens: 0
 
+# Three skips, so an awkward opening draw is not a dead end before any route exists.
+skips: 3
+
 shape: hexagon 3
 
 spring: -3,0 water

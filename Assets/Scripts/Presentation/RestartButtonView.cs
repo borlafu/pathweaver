@@ -110,7 +110,12 @@ namespace Pathweaver.Game.Presentation
 
         private void OnStateChanged(Pathweaver.Core.State.GameState state)
         {
-            _isUrgent = state != null && state.IsDeadlocked;
+            // Stuck means no placement and nothing left to pay for a way out. A player holding
+            // a skip or a Pivot Token has options, so shouting at them would be wrong.
+            _isUrgent = state != null
+                        && state.IsDeadlocked
+                        && !state.SkipTokens.CanSpend
+                        && !state.PivotTokens.CanSpend;
 
             if (_backgroundRenderer != null)
             {

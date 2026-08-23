@@ -33,7 +33,8 @@ namespace Pathweaver.Core.Levels
             ConduitTile[] bagTiles,
             long baseRouteScore,
             long targetScore,
-            int startingTokens)
+            int startingTokens,
+            int startingSkips)
         {
             Id = id;
             Name = name;
@@ -43,6 +44,7 @@ namespace Pathweaver.Core.Levels
             BaseRouteScore = baseRouteScore;
             TargetScore = targetScore;
             StartingTokens = startingTokens;
+            StartingSkips = startingSkips;
         }
 
         /// <summary>Stable identifier, used by progression and save data.</summary>
@@ -68,6 +70,15 @@ namespace Pathweaver.Core.Levels
         public int StartingTokens { get; }
 
         /// <summary>
+        /// Skips the player starts with.
+        /// </summary>
+        /// <remarks>
+        /// Granted up front rather than earned first, because the first awkward draw can
+        /// arrive before the first completed route.
+        /// </remarks>
+        public int StartingSkips { get; }
+
+        /// <summary>
         /// Builds a fresh game of this level for the given seed.
         /// </summary>
         public GameState CreateGame(ulong seed)
@@ -76,7 +87,8 @@ namespace Pathweaver.Core.Levels
                 _endpoints,
                 TileBag.Create(_bagTiles, SeedSource.Stream(seed, PathweaverStream.TileBag)),
                 BaseRouteScore,
-                PivotTokenPool.Of(StartingTokens));
+                TokenPool.Of(StartingTokens),
+                TokenPool.Of(StartingSkips));
 
         public override string ToString() => $"{Id} ({Shape.Count} cells, target {TargetScore})";
     }

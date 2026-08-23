@@ -6,7 +6,16 @@ using UnityEngine;
 namespace Pathweaver.Game.Presentation
 {
     /// <summary>
-    /// Shows how many Pivot Tokens the player holds.
+    /// Which resource a pip row counts.
+    /// </summary>
+    internal enum TokenKind
+    {
+        Pivot,
+        Skip,
+    }
+
+    /// <summary>
+    /// Shows how many of a token the player holds.
     /// </summary>
     /// <remarks>
     /// Counted as pips rather than written as a number, for the same reason the progress bar is
@@ -23,7 +32,12 @@ namespace Pathweaver.Game.Presentation
         private const int MaximumPips = 6;
         private const float PipRadius = 0.11f;
         private const float PipSpacing = 0.3f;
-        private static readonly Vector2 ViewportPosition = new Vector2(0.86f, 0.10f);
+
+        [SerializeField]
+        private TokenKind _kind = TokenKind.Pivot;
+
+        [SerializeField]
+        private Vector2 _viewportPosition = new Vector2(0.12f, 0.26f);
 
         [SerializeField]
         private BoardView _boardView;
@@ -67,20 +81,22 @@ namespace Pathweaver.Game.Presentation
         private void Update()
         {
             var world = ResolvedCamera.ViewportToWorldPoint(
-                new Vector3(ViewportPosition.x, ViewportPosition.y, 0f));
+                new Vector3(_viewportPosition.x, _viewportPosition.y, 0f));
             transform.position = new Vector3(world.x, world.y, -0.4f);
         }
 
         private void OnStateChanged(GameState state)
         {
-            var held = state?.PivotTokens.Count ?? 0;
+            var held = state == null
+                ? 0
+                : _kind == TokenKind.Pivot ? state.PivotTokens.Count : state.SkipTokens.Count;
 
             for (var index = 0; index < _pips.Count; index++)
             {
                 // Empty slots stay visible but dim, so the player can see there is something
                 // to earn rather than only noticing tokens once they have one.
                 _pips[index].material.color = index < held
-                    ? BoardPalette.TokenHeld
+                    ? (_kind == TokenKind.Pivot ? BoardPalette.TokenHeld : BoardPalette.SkipHeld)
                     : BoardPalette.TokenEmpty;
 
                 _pips[index].gameObject.SetActive(index < Mathf.Max(held, 3));
@@ -100,7 +116,9 @@ namespace Pathweaver.Game.Presentation
             {
                 var pip = new GameObject($"Pip{index}");
                 pip.transform.SetParent(transform, worldPositionStays: false);
-                pip.transform.localPosition = new Vector3(0f, -index * PipSpacing, 0f);
+                // Stacked upward from the anchor, so a growing count never collides with the
+                // controls below it.
+                pip.transform.localPosition = new Vector3(0f, index * PipSpacing, 0f);
 
                 pip.AddComponent<MeshFilter>().sharedMesh = mesh;
 

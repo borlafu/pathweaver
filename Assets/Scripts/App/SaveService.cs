@@ -62,7 +62,7 @@ namespace Pathweaver.Game.App
             var destination = PathFor(levelId);
             var temporary = destination + TemporaryExtension;
 
-            File.WriteAllBytes(temporary, SaveGameV1.Write(state));
+            File.WriteAllBytes(temporary, SaveGame.Write(state));
 
             if (File.Exists(destination))
             {
@@ -93,7 +93,7 @@ namespace Pathweaver.Game.App
 
             try
             {
-                return SaveGameV1.Read(File.ReadAllBytes(path));
+                return SaveGame.Read(File.ReadAllBytes(path));
             }
             catch (Exception error) when (error is SaveFormatException || error is IOException)
             {

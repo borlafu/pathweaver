@@ -172,6 +172,29 @@ namespace Pathweaver.Game.App
         }
 
         /// <summary>
+        /// Discards the tile in hand for the next one, if a skip is available.
+        /// </summary>
+        /// <returns>Whether the skip happened.</returns>
+        internal bool TrySkipHeld()
+        {
+            if (State == null || !State.SkipTokens.CanSpend)
+            {
+                return false;
+            }
+
+            State = GameEngine.Apply(State, new SkipTile());
+
+            // The new tile arrives unturned, for the same reason a placed one resets it: the
+            // player has not looked at this tile yet.
+            HeldRotation = 0;
+
+            Publish();
+            SaveNow();
+
+            return true;
+        }
+
+        /// <summary>
         /// Turns the held tile one step clockwise.
         /// </summary>
         internal void RotateHeld()

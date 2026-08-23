@@ -60,7 +60,8 @@ namespace Pathweaver.Core.State
             FlowEndpoint[] endpoints,
             TileBag bag,
             ConduitTile heldTile,
-            PivotTokenPool pivotTokens,
+            TokenPool pivotTokens,
+            TokenPool skipTokens,
             long score,
             long baseRouteScore,
             HashSet<CompletedRoute> completedRoutes)
@@ -70,6 +71,7 @@ namespace Pathweaver.Core.State
             Bag = bag;
             HeldTile = heldTile;
             PivotTokens = pivotTokens;
+            SkipTokens = skipTokens;
             Score = score;
             BaseRouteScore = baseRouteScore;
             _completedRoutes = completedRoutes;
@@ -84,7 +86,17 @@ namespace Pathweaver.Core.State
         /// <summary>The tile awaiting placement. A game always holds one.</summary>
         public ConduitTile HeldTile { get; }
 
-        public PivotTokenPool PivotTokens { get; }
+        public TokenPool PivotTokens { get; }
+
+        /// <summary>
+        /// Skips available, each discarding the tile in hand for the next one.
+        /// </summary>
+        /// <remarks>
+        /// A second way out of an awkward draw, alongside rotation. Without it the only
+        /// answer to a tile that fits nowhere useful is to place it somewhere wasteful,
+        /// which is a decision with no thought in it.
+        /// </remarks>
+        public TokenPool SkipTokens { get; }
 
         public long Score { get; }
 
@@ -127,7 +139,8 @@ namespace Pathweaver.Core.State
             IEnumerable<FlowEndpoint> endpoints,
             TileBag bag,
             long baseRouteScore,
-            PivotTokenPool startingTokens)
+            TokenPool startingPivotTokens,
+            TokenPool startingSkipTokens)
         {
             if (board is null)
             {
@@ -180,7 +193,8 @@ namespace Pathweaver.Core.State
                 materialised,
                 remainingBag,
                 heldTile,
-                startingTokens,
+                startingPivotTokens,
+                startingSkipTokens,
                 score: 0,
                 baseRouteScore,
                 new HashSet<CompletedRoute>());
@@ -199,7 +213,8 @@ namespace Pathweaver.Core.State
             FlowEndpoint[] endpoints,
             TileBag bag,
             ConduitTile heldTile,
-            PivotTokenPool pivotTokens,
+            TokenPool pivotTokens,
+            TokenPool skipTokens,
             long score,
             long baseRouteScore,
             IEnumerable<CompletedRoute> completedRoutes)
@@ -209,6 +224,7 @@ namespace Pathweaver.Core.State
                 bag,
                 heldTile,
                 pivotTokens,
+                skipTokens,
                 score,
                 baseRouteScore,
                 new HashSet<CompletedRoute>(completedRoutes));
@@ -221,7 +237,8 @@ namespace Pathweaver.Core.State
             HexGrid<ConduitTile>? board = null,
             TileBag? bag = null,
             ConduitTile? heldTile = null,
-            PivotTokenPool? pivotTokens = null,
+            TokenPool? pivotTokens = null,
+            TokenPool? skipTokens = null,
             long? score = null,
             IEnumerable<CompletedRoute>? completedRoutes = null)
             => new GameState(
@@ -230,6 +247,7 @@ namespace Pathweaver.Core.State
                 bag ?? Bag,
                 heldTile ?? HeldTile,
                 pivotTokens ?? PivotTokens,
+                skipTokens ?? SkipTokens,
                 score ?? Score,
                 BaseRouteScore,
                 completedRoutes is null

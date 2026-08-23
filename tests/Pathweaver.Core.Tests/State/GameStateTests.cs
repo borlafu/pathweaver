@@ -81,7 +81,8 @@ public class GameStateTests
             endpoints,
             GameFixture.StraightBag(),
             GameFixture.BaseRouteScore,
-            PivotTokenPool.Empty));
+            TokenPool.Empty,
+            TokenPool.Empty));
     }
 
     [Fact]
@@ -100,7 +101,8 @@ public class GameStateTests
             endpoints,
             GameFixture.StraightBag(),
             GameFixture.BaseRouteScore,
-            PivotTokenPool.Empty));
+            TokenPool.Empty,
+            TokenPool.Empty));
     }
 
     [Fact]
@@ -112,7 +114,8 @@ public class GameStateTests
             Array.Empty<FlowEndpoint>(),
             GameFixture.StraightBag(),
             GameFixture.BaseRouteScore,
-            PivotTokenPool.Empty));
+            TokenPool.Empty,
+            TokenPool.Empty));
     }
 
     [Theory]
@@ -125,7 +128,8 @@ public class GameStateTests
             GameFixture.Endpoints,
             GameFixture.StraightBag(),
             baseScore,
-            PivotTokenPool.Empty));
+            TokenPool.Empty,
+            TokenPool.Empty));
     }
 
     [Fact]
@@ -136,7 +140,8 @@ public class GameStateTests
             GameFixture.Endpoints,
             null!,
             GameFixture.BaseRouteScore,
-            PivotTokenPool.Empty));
+            TokenPool.Empty,
+            TokenPool.Empty));
     }
 
     [Fact]
@@ -147,6 +152,7 @@ public class GameStateTests
             GameFixture.Endpoints,
             GameFixture.StraightBag(),
             GameFixture.BaseRouteScore,
-            PivotTokenPool.Empty));
+            TokenPool.Empty,
+            TokenPool.Empty));
     }
 }

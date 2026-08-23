@@ -37,6 +37,12 @@ namespace Pathweaver.Game.Presentation
         /// </summary>
         internal static readonly Color RestartUrgent = new Color(0.78f, 0.36f, 0.30f);
 
+        /// <summary>The skip button with skips remaining.</summary>
+        internal static readonly Color SkipReady = new Color(0.26f, 0.38f, 0.46f);
+
+        /// <summary>The skip button with none left: dimmed, not hidden.</summary>
+        internal static readonly Color SkipSpent = new Color(0.19f, 0.20f, 0.23f);
+
         internal static readonly Color RestartArrow = new Color(0.88f, 0.90f, 0.94f);
 
         /// <summary>The confirmation panel behind the question.</summary>
@@ -55,6 +61,9 @@ namespace Pathweaver.Game.Presentation
         internal static readonly Color ProgressComplete = new Color(0.42f, 0.78f, 0.48f);
 
         internal static readonly Color TokenHeld = new Color(0.92f, 0.78f, 0.38f);
+
+        /// <summary>A held skip, kept distinct from a Pivot Token at a glance.</summary>
+        internal static readonly Color SkipHeld = new Color(0.55f, 0.80f, 0.90f);
 
         internal static readonly Color TokenEmpty = new Color(0.24f, 0.26f, 0.30f);
 
