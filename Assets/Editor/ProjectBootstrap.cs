@@ -115,6 +115,13 @@ namespace Pathweaver.EditorTools
             var fitter = new GameObject("CameraFitter").AddComponent<BoardCameraFitter>();
             Wire(fitter, ("_camera", camera), ("_boardView", board));
 
+            var rotateHint = new GameObject("RotateHint").AddComponent<RotateHintView>();
+            Wire(
+                rotateHint,
+                ("_boardView", board),
+                ("_heldTileView", heldTile),
+                ("_session", session));
+
             var platform = new GameObject("Platform");
             var frameRate = platform.AddComponent<FrameRateGovernor>();
             var haptics = platform.AddComponent<HapticsService>();

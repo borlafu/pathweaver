@@ -28,6 +28,9 @@ namespace Pathweaver.Game.Presentation
         /// </remarks>
         internal static readonly Color LegalCell = new Color(0.30f, 0.36f, 0.44f);
 
+        /// <summary>The rotation hint around the tile in hand.</summary>
+        internal static readonly Color Hint = new Color(0.62f, 0.66f, 0.74f);
+
         internal static readonly Color Spring = new Color(0.95f, 0.85f, 0.35f);
         internal static readonly Color Hub = new Color(0.55f, 0.40f, 0.85f);
 

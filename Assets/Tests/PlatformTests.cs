@@ -54,14 +54,14 @@ namespace Pathweaver.Game.EditorTests
     {
         private GameObject _host;
         private HapticsService _haptics;
-        private List<int> _fired;
+        private List<int[]> _fired;
 
         [SetUp]
         public void SetUp()
         {
             _host = new GameObject("Haptics");
             _haptics = _host.AddComponent<HapticsService>();
-            _fired = new List<int>();
+            _fired = new List<int[]>();
             _haptics.OverrideVibrate(_fired.Add);
         }
 
@@ -72,37 +72,57 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
-        public void Locking_a_tile_fires_a_short_pulse()
+        public void Locking_a_tile_fires_a_single_pulse()
         {
             _haptics.TileLocked();
 
-            Assert.That(_fired, Is.EqualTo(new[] { HapticsService.TileLockMilliseconds }));
+            Assert.That(_fired.Count, Is.EqualTo(1));
+            Assert.That(_fired[0], Is.EqualTo(HapticsService.TileLockPattern));
+            Assert.That(_fired[0].Length, Is.EqualTo(1), "A placement is one tap.");
         }
 
         [Test]
-        public void Completing_a_route_fires_a_longer_pulse()
+        public void Completing_a_route_fires_two_pulses()
         {
+            // Distinguishable by count rather than by duration: length alone is hard to
+            // judge through a pocket, a count is not.
             _haptics.RouteCompleted();
 
-            Assert.That(_fired, Is.EqualTo(new[] { HapticsService.RouteCompleteMilliseconds }));
+            Assert.That(_fired[0], Is.EqualTo(HapticsService.RouteCompletePattern));
+            Assert.That(_fired[0].Length, Is.EqualTo(3), "On, off, on.");
+        }
+
+        [Test]
+        public void A_placement_pulse_is_strong_enough_to_notice()
+        {
+            // The first attempt used 12 ms at default amplitude and was reported as barely
+            // noticeable on a real phone. A confirmation nobody feels costs battery and
+            // delivers nothing.
+            Assert.That(HapticsService.TileLockPattern[0], Is.GreaterThanOrEqualTo(20));
         }
 
         [Test]
         public void A_route_feels_more_significant_than_a_placement()
         {
-            // The two have to be distinguishable through a pocket, or the reward reads as
-            // just another placement.
-            Assert.That(
-                HapticsService.RouteCompleteMilliseconds,
-                Is.GreaterThan(HapticsService.TileLockMilliseconds));
+            var routeTotal = 0;
+            foreach (var duration in HapticsService.RouteCompletePattern)
+            {
+                routeTotal += duration;
+            }
+
+            Assert.That(routeTotal, Is.GreaterThan(HapticsService.TileLockPattern[0] * 2));
         }
 
         [Test]
-        public void Both_pulses_stay_short_enough_to_read_as_confirmation()
+        public void No_single_pulse_lasts_long_enough_to_read_as_an_error()
         {
-            // Anything approaching Handheld.Vibrate's half second reads as an error.
-            Assert.That(HapticsService.TileLockMilliseconds, Is.LessThan(50));
-            Assert.That(HapticsService.RouteCompleteMilliseconds, Is.LessThan(50));
+            // Anything approaching Handheld.Vibrate's half second reads as a fault.
+            Assert.That(HapticsService.TileLockPattern[0], Is.LessThan(100));
+
+            foreach (var duration in HapticsService.RouteCompletePattern)
+            {
+                Assert.That(duration, Is.LessThan(100));
+            }
         }
 
         [Test]

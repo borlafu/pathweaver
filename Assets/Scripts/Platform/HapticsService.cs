@@ -8,48 +8,64 @@ namespace Pathweaver.Game.Platform
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A tile locking into place and a route completing are the two moments worth
-    /// feeling: one confirms an action the player took, the other rewards it. Anything
-    /// more and the game buzzes constantly, which is why the vocabulary stays at two.
+    /// Two events are worth feeling: a tile locking into place, which confirms an action,
+    /// and a route completing, which rewards one. Keeping the vocabulary at two is what
+    /// stops the phone buzzing constantly.
     /// </para>
     /// <para>
-    /// Durations are in milliseconds and deliberately short. <c>Handheld.Vibrate</c> is
-    /// avoided because it runs for roughly half a second on Android, which reads as an
-    /// error rather than a confirmation.
+    /// Durations were raised and amplitudes made explicit after device testing: the first
+    /// values, 12 and 30 milliseconds at default amplitude, were reported as barely
+    /// noticeable. A confirmation nobody feels is worse than none, because it costs battery
+    /// and delivers nothing.
+    /// </para>
+    /// <para>
+    /// A route now plays two pulses rather than one longer one. Length alone is hard to
+    /// judge through a pocket, while a count is not: two buzzes read as different in kind
+    /// from one, rather than as the same buzz held slightly longer.
     /// </para>
     /// </remarks>
     internal sealed class HapticsService : MonoBehaviour
     {
-        /// <summary>A tile settling onto the board.</summary>
-        internal const int TileLockMilliseconds = 12;
-
-        /// <summary>A route completing and paying out.</summary>
-        internal const int RouteCompleteMilliseconds = 30;
-
-        private Action<int> _vibrate;
+        /// <summary>
+        /// A tile settling onto the board: one firm tap.
+        /// </summary>
+        internal static readonly int[] TileLockPattern = { 25 };
 
         /// <summary>
-        /// Whether haptics fire. Off means silent, not shorter.
+        /// A route completing: two pulses, so it is distinguishable by count rather than
+        /// by duration.
         /// </summary>
         /// <remarks>
-        /// Some players find vibration unpleasant and some devices have poor motors, so
-        /// this is a setting rather than a constant, exposed in #27.
+        /// Read as on, off, on in milliseconds.
         /// </remarks>
+        internal static readonly int[] RouteCompletePattern = { 45, 55, 70 };
+
+        /// <summary>
+        /// Full strength. The default amplitude is device-defined and was too weak to
+        /// notice on the phone this was tested on.
+        /// </summary>
+        private const int Amplitude = 255;
+
+        private Action<int[]> _vibrate;
+
+        /// <summary>
+        /// Whether haptics fire. Off means silent, not weaker.
+        /// </summary>
         internal bool IsEnabled { get; set; } = true;
 
         /// <summary>
         /// Replaces the platform call, so tests can observe what would have fired.
         /// </summary>
-        internal void OverrideVibrate(Action<int> vibrate)
+        internal void OverrideVibrate(Action<int[]> vibrate)
         {
             _vibrate = vibrate;
         }
 
-        internal void TileLocked() => Fire(TileLockMilliseconds);
+        internal void TileLocked() => Fire(TileLockPattern);
 
-        internal void RouteCompleted() => Fire(RouteCompleteMilliseconds);
+        internal void RouteCompleted() => Fire(RouteCompletePattern);
 
-        private void Fire(int milliseconds)
+        private void Fire(int[] pattern)
         {
             if (!IsEnabled)
             {
@@ -58,14 +74,14 @@ namespace Pathweaver.Game.Platform
 
             if (_vibrate != null)
             {
-                _vibrate(milliseconds);
+                _vibrate(pattern);
                 return;
             }
 
-            Vibrate(milliseconds);
+            Vibrate(pattern);
         }
 
-        private static void Vibrate(int milliseconds)
+        private static void Vibrate(int[] pattern)
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
@@ -80,23 +96,42 @@ namespace Pathweaver.Game.Platform
                 }
 
                 // VibrationEffect arrived in API 26, far below the API 36 this ships
-                // against, so the legacy path is not worth carrying.
+                // against, so no legacy path is needed.
                 using var effectClass = new AndroidJavaClass("android.os.VibrationEffect");
-                using var effect = effectClass.CallStatic<AndroidJavaObject>(
-                    "createOneShot", (long)milliseconds, -1);
+                using var effect = pattern.Length == 1
+                    ? effectClass.CallStatic<AndroidJavaObject>("createOneShot", (long)pattern[0], Amplitude)
+                    : CreateWaveform(effectClass, pattern);
 
                 vibrator.Call("vibrate", effect);
             }
             catch (Exception error)
             {
-                // A device without a motor, or a manufacturer that moved the service,
-                // must not take the game down over a buzz.
+                // A device without a motor, or a manufacturer that moved the service, must
+                // not take the game down over a buzz.
                 Debug.LogWarning($"[haptics] vibration unavailable: {error.Message}");
             }
 #else
             // Nothing to do off-device; the Editor has no motor.
-            _ = milliseconds;
+            _ = pattern;
 #endif
         }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        private static AndroidJavaObject CreateWaveform(AndroidJavaClass effectClass, int[] pattern)
+        {
+            // Waveforms start with a delay, so the leading entry is zero and the pattern
+            // alternates on and off from there.
+            var timings = new long[pattern.Length + 1];
+            var amplitudes = new int[pattern.Length + 1];
+
+            for (var index = 0; index < pattern.Length; index++)
+            {
+                timings[index + 1] = pattern[index];
+                amplitudes[index + 1] = index % 2 == 0 ? Amplitude : 0;
+            }
+
+            return effectClass.CallStatic<AndroidJavaObject>("createWaveform", timings, amplitudes, -1);
+        }
+#endif
     }
 }

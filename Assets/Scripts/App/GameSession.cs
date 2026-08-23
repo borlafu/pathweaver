@@ -61,6 +61,15 @@ namespace Pathweaver.Game.App
         /// <summary>Raised after a tile is placed, whatever it did or did not complete.</summary>
         internal event Action TilePlaced;
 
+        /// <summary>
+        /// Raised when the player turns the held tile.
+        /// </summary>
+        /// <remarks>
+        /// The rotation hint listens for this to stop advertising itself once the player has
+        /// clearly found the gesture.
+        /// </remarks>
+        internal event Action HeldRotated;
+
         /// <summary>Whether the current run was restored from a save.</summary>
         internal bool WasResumed { get; private set; }
 
@@ -128,6 +137,7 @@ namespace Pathweaver.Game.App
         {
             HeldRotation = (HeldRotation + 1) % 6;
             Publish();
+            HeldRotated?.Invoke();
         }
 
         /// <summary>
