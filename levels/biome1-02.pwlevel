@@ -1,0 +1,27 @@
+# Biome 1, level 2 — The Falling Spring
+#
+# A corridor running straight down the screen. Because pointy-top hexes have no
+# northern or southern neighbour, "down" alternates south-east and south-west, so
+# the corridor is built entirely from bends and cannot be solved without turning
+# them. Every cell is forced, which leaves rotation as the only thing to discover.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east,
+# 2 south-west, 3 west, 4 north-west, 5 north-east.
+
+id: biome1-02
+
+base-score: 100
+target-score: 182
+tokens: 0
+skips: 3
+
+cell: 1,-2
+cell: 1,-1
+cell: 0,0
+cell: 0,1
+cell: -1,2
+
+spring: 1,-2 water
+hub: -1,2 water
+
+tile: 0,2 water x4

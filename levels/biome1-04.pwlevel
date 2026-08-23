@@ -1,0 +1,40 @@
+# Biome 1, level 4 — The Long Way Round
+#
+# A compact field with the spring and hub set diagonally apart. The direct line
+# scores least; the multiplier rewards the longer route the open cells allow, which
+# is the risk-and-certainty choice of PRD section 3.2A stated as a board rather
+# than as a rule.
+
+id: biome1-04
+
+base-score: 100
+target-score: 332
+tokens: 0
+skips: 3
+
+cell: 0,-2
+cell: 1,-2
+cell: 2,-2
+cell: -1,-1
+cell: 0,-1
+cell: 1,-1
+cell: 2,-1
+cell: -2,0
+cell: -1,0
+cell: 0,0
+cell: 1,0
+cell: 2,0
+cell: -2,1
+cell: -1,1
+cell: 0,1
+cell: 1,1
+cell: -2,2
+cell: -1,2
+cell: 0,2
+
+spring: -2,0 water
+hub: 1,1 water
+
+tile: 0,3 water x4
+tile: 0,2 water x3
+tile: 0,1 water x2
