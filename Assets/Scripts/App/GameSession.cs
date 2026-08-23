@@ -40,6 +40,8 @@ namespace Pathweaver.Game.App
         [SerializeField]
         private HeldTileView _heldTileView;
 
+        private SaveService _saves;
+
         /// <summary>Raised whenever the state changes, including at the start.</summary>
         internal event Action<GameState> StateChanged;
 
@@ -56,6 +58,9 @@ namespace Pathweaver.Game.App
         /// <summary>Raised after a tile is placed, whatever it did or did not complete.</summary>
         internal event Action TilePlaced;
 
+        /// <summary>Whether the current run was restored from a save.</summary>
+        internal bool WasResumed { get; private set; }
+
         internal GameState State { get; private set; }
 
         /// <summary>Clockwise turns applied to the held tile before placing it.</summary>
@@ -69,11 +74,43 @@ namespace Pathweaver.Game.App
 
         internal void Begin()
         {
-            State = LevelCatalogue.Load(_levelId).CreateGame(_seed);
+            Begin(SaveService.ForPlayer());
+        }
+
+        /// <summary>
+        /// Starts or resumes a run, using the given store.
+        /// </summary>
+        /// <remarks>
+        /// Resuming is the default rather than an option: PRD section 2.1 describes three
+        /// to six minute transit sessions, so being dropped back exactly where the player
+        /// left off is the normal case, not a recovery path.
+        /// </remarks>
+        internal void Begin(SaveService saves)
+        {
+            _saves = saves;
+
+            var level = LevelCatalogue.Load(_levelId);
+            var resumed = saves?.Load(_levelId);
+
+            State = resumed ?? level.CreateGame(_seed);
+            WasResumed = resumed != null;
             HeldRotation = 0;
 
             _boardView.Build(State);
             Publish();
+        }
+
+        /// <summary>
+        /// Writes the run out, if there is one.
+        /// </summary>
+        internal void SaveNow()
+        {
+            if (State == null || _saves == null)
+            {
+                return;
+            }
+
+            _saves.Save(_levelId, State);
         }
 
         /// <summary>
@@ -122,6 +159,10 @@ namespace Pathweaver.Game.App
                 RoutesHarvested?.Invoke(harvested);
             }
 
+            // Saved per move rather than on a timer. A save is a few hundred bytes, and
+            // the alternative is choosing which moves a player is allowed to lose.
+            SaveNow();
+
             return true;
         }
 
@@ -151,6 +192,31 @@ namespace Pathweaver.Game.App
             }
 
             Begin();
+        }
+
+        /// <summary>
+        /// Android can kill a backgrounded process without warning, and OnApplicationQuit
+        /// is not guaranteed to arrive. Pausing is the last reliable moment to write.
+        /// </summary>
+        private void OnApplicationPause(bool isPaused)
+        {
+            if (isPaused)
+            {
+                SaveNow();
+            }
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus)
+            {
+                SaveNow();
+            }
+        }
+
+        private void OnApplicationQuit()
+        {
+            SaveNow();
         }
     }
 }
