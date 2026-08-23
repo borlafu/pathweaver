@@ -1,0 +1,26 @@
+# Biome 1, level 1 — First Waters
+#
+# The tutorial shape: a spring on the western rim, a hub five cells east, and a
+# straight run between them. Clearing the target needs one route of four
+# conduits, which is also the Pivot Token threshold, so a player who finishes
+# the level earns their first token by doing so.
+#
+# Edge directions are clockwise from due east: 0 east, 1 north-east,
+# 2 north-west, 3 west, 4 south-west, 5 south-east.
+
+id: biome1-01
+name: First Waters
+
+base-score: 100
+target-score: 246
+
+tokens: 0
+
+shape: hexagon 3
+
+spring: -3,0 water
+hub: 2,0 water
+
+# Mostly straights, with bends so the board is not a single forced line.
+tile: 0,3 water x6
+tile: 0,2 water x3
