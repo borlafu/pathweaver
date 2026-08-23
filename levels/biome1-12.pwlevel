@@ -1,0 +1,31 @@
+# Biome 1, level 12 — The Long Haul
+#
+# A corridor that turns at every single cell. Six conduits, every one of them a bend, and the length
+# curve pays 448 for the whole run — more than four times what the first conduit is worth. This is
+# the level that argues for length: there is no short answer here, only the long one.
+#
+# The two straights in the bag fit nowhere on a board this crooked, so they are what the skip tokens
+# are for.
+
+id: biome1-12
+name: The Long Haul
+
+base-score: 100
+target-score: 448
+tokens: 0
+skips: 3
+
+cell: 0,-3
+cell: 0,-2
+cell: 1,-2
+cell: 1,-1
+cell: 0,0
+cell: 0,1
+cell: 1,1
+cell: 1,2
+
+spring: 0,-3 water
+hub: 1,2 water
+
+tile: 0,2 water x6
+tile: 0,3 water x2

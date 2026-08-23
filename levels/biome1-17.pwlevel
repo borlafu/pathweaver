@@ -1,0 +1,36 @@
+# Biome 1, level 17 — The Long Way Round
+#
+# Spring and hub sit two cells apart on a ring, and the cell between them would connect the two with
+# a single conduit for 100 points. The target is 800. The only way to reach it is to leave that cell
+# empty and go the other way — nine conduits around the whole ring, worth 817.
+#
+# This is the length curve as a decision rather than as a table: the short answer is available at
+# every moment and it is never the right one. A Pivot Token is granted because the temptation is a
+# single placement away and the board has no room to absorb it.
+
+id: biome1-17
+name: The Long Way Round
+
+base-score: 100
+target-score: 800
+tokens: 1
+skips: 3
+
+cell: 2,0
+cell: 1,1
+cell: 0,2
+cell: -1,2
+cell: -2,2
+cell: -2,1
+cell: -2,0
+cell: -1,-1
+cell: 0,-2
+cell: 1,-2
+cell: 2,-2
+cell: 2,-1
+
+spring: 2,0 water
+hub: 2,-2 water
+
+tile: 0,3 water x6
+tile: 0,2 water x5

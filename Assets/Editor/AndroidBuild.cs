@@ -152,7 +152,11 @@ namespace Pathweaver.EditorTools
                 target = BuildTarget.Android,
 
                 // No Development flag: a release bundle carries no debug symbols and no profiler.
-                options = BuildOptions.None,
+                //
+                // LZ4HC compresses the data files harder than LZ4 at no runtime cost — it is slower
+                // to compress and identical to decompress — so it is the right trade for a build
+                // made once and downloaded many times.
+                options = BuildOptions.CompressWithLz4HC,
             };
 
             BuildReport report;

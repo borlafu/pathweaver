@@ -1,0 +1,37 @@
+# Biome 1, level 13 — Watershed
+#
+# One spring, three hubs, three arms of different length. Two arms pay 270 between them and the
+# target is 450, so every hub has to be served — including the long arm, which is worth more than
+# the two short ones put together are short of the goal.
+#
+# The board is only the arms. There is nowhere to put a conduit that is not part of an answer, which
+# makes this a level about order rather than about placement: the arm a tile can reach depends on
+# what has already been built.
+
+id: biome1-13
+name: Watershed
+
+base-score: 100
+target-score: 450
+tokens: 0
+skips: 3
+
+cell: 0,0
+cell: 1,0
+cell: 2,0
+cell: 3,0
+cell: 0,1
+cell: 0,2
+cell: 0,3
+cell: -1,1
+cell: -1,2
+cell: -1,3
+cell: -1,4
+
+spring: 0,0 water
+hub: 3,0 water
+hub: 0,3 water
+hub: -1,4 water
+
+tile: 0,3 water x6
+tile: 0,2 water x3

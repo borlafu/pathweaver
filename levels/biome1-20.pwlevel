@@ -1,0 +1,48 @@
+# Biome 1, level 20 — The Whole Valley
+#
+# The last board of the biome asks for everything it has taught. A crooked water run four conduits
+# long on the right, a wind trunk on the left that forks to two hubs and is paid for twice, and a
+# short crystal pair between them.
+#
+# Everything together is 745 and the target is 600, so one of the three can be left alone — but only
+# one, and not the wind. Its fork is worth 364 by itself, more than the other two combined.
+
+id: biome1-20
+name: The Whole Valley
+
+base-score: 100
+target-score: 600
+tokens: 1
+skips: 3
+
+cell: 0,-3
+cell: 0,-2
+cell: 1,-2
+cell: 1,-1
+cell: 1,0
+cell: 1,1
+cell: -2,-1
+cell: -2,0
+cell: -2,1
+cell: -2,2
+cell: -2,3
+cell: -1,2
+cell: 3,-1
+cell: 3,0
+cell: 2,1
+cell: 2,2
+
+spring: 0,-3 water
+hub: 1,1 water
+spring: -2,-1 wind
+hub: -2,3 wind
+hub: -1,2 wind
+spring: 3,-1 crystal
+hub: 2,2 crystal
+
+tile: 0,3 water x2
+tile: 0,2 water x2
+tile: 0,3 wind x3
+tile: 0,2,3 wind x2
+tile: 0,2 crystal x2
+tile: 0,3 crystal
