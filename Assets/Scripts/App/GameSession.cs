@@ -61,9 +61,6 @@ namespace Pathweaver.Game.App
         /// </remarks>
         internal event Action<int> RoutesHarvested;
 
-        /// <summary>Raised after a tile is placed, whatever it did or did not complete.</summary>
-        internal event Action TilePlaced;
-
         /// <summary>
         /// Raised when the player turns the held tile.
         /// </summary>
@@ -212,8 +209,6 @@ namespace Pathweaver.Game.App
             HeldRotation = 0;
 
             Publish();
-
-            TilePlaced?.Invoke();
 
             var harvested = State.CompletedRoutes.Count - paidBefore.Count;
             if (harvested > 0)

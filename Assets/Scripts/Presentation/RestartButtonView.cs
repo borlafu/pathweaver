@@ -42,7 +42,6 @@ namespace Pathweaver.Game.Presentation
 
         private Transform _body;
         private MeshRenderer _backgroundRenderer;
-        private MeshRenderer _arrowRenderer;
         private bool _isUrgent;
 
         private Camera ResolvedCamera => _camera != null ? _camera : Camera.main;
@@ -134,7 +133,7 @@ namespace Pathweaver.Game.Presentation
                 _body, "Background", HexMeshFactory.CreateHexagon(ButtonRadius),
                 BoardPalette.RestartIdle, 0f);
 
-            _arrowRenderer = AddPart(
+            AddPart(
                 _body,
                 "Arrow",
                 HexMeshFactory.CreateCircularArrow(ArrowRadius, ArrowThickness, ArrowSweepDegrees),
