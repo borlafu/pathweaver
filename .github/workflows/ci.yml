@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 # Pathweaver.Core is deliberately free of UnityEngine references, so the whole
 # simulation builds and tests on a plain Linux runner with no Unity licence.
 jobs:
