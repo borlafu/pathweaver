@@ -1,0 +1,29 @@
+# The World Atlas, first region.
+#
+# Eight nodes, 51 essence to unlock everything. Clearing all twenty shipped levels once pays at least
+# 77 — one essence per base score harvested — so the whole region is reachable by playing the campaign,
+# with Endless Wayfare as a top-up rather than a requirement. The gate in AtlasPackTests checks that
+# relationship, so a node made dearer than the game can pay for fails CI.
+#
+# Effects are additive on every board, and deliberately small: three skips and three tokens at full
+# unlock, against the three skips a level already grants. A relic should ease a board, not answer it.
+
+pack: biome1
+
+# The root, and the cheapest thing in the region: somewhere to start.
+node: spring-well cost 3 at 0,0 gives skip 1
+
+# The two directions the region opens into — one buys room to manoeuvre, the other buys a mistake back.
+node: deep-channel cost 5 at 1,0 gives token 1 needs spring-well
+node: ley-line cost 4 at 0,1 gives essence 1 needs spring-well
+
+# Second ring.
+node: tide-lens cost 6 at 2,0 gives skip 1 needs deep-channel
+node: crystal-facet cost 6 at 0,2 gives token 1 needs ley-line
+
+# The join: a node reachable only by going both ways first, which is what a non-linear map is for.
+node: glass-siphon cost 8 at 1,1 gives essence 1 needs deep-channel,ley-line
+
+# Outer edge. A second region docks here by naming these in its own docks line.
+node: storm-eye cost 9 at 2,1 gives skip 1 needs tide-lens
+node: wayfarer-mark cost 10 at 1,2 gives token 1 needs glass-siphon,crystal-facet

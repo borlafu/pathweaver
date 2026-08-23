@@ -12,6 +12,7 @@ namespace Pathweaver.Game.Presentation.Menus
         Playing,
         Paused,
         Settings,
+        Atlas,
     }
 
     /// <summary>
@@ -49,6 +50,9 @@ namespace Pathweaver.Game.Presentation.Menus
         [SerializeField]
         private GameObject _settings;
 
+        [SerializeField]
+        private GameObject _atlas;
+
         private readonly Dictionary<GameScreen, GameObject> _screens = new Dictionary<GameScreen, GameObject>();
 
         /// <summary>Raised after the screen changes.</summary>
@@ -65,6 +69,7 @@ namespace Pathweaver.Game.Presentation.Menus
             _screens[GameScreen.LevelSelect] = _levelSelect;
             _screens[GameScreen.Paused] = _paused;
             _screens[GameScreen.Settings] = _settings;
+            _screens[GameScreen.Atlas] = _atlas;
 
             // Everything off until something is shown, so a screen left enabled in the scene cannot
             // appear over whatever the game opens on.

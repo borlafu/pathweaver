@@ -1,3 +1,4 @@
+using Pathweaver.Core.Atlas;
 using Pathweaver.Core.Campaign;
 using Pathweaver.Core.Endless;
 using Pathweaver.Game.Presentation;
@@ -43,6 +44,9 @@ namespace Pathweaver.Game.App
         private SettingsView _settings;
 
         [SerializeField]
+        private AtlasView _atlas;
+
+        [SerializeField]
         private GameObject _hud;
 
         /// <summary>
@@ -67,6 +71,9 @@ namespace Pathweaver.Game.App
         private CampaignProgress _progress;
         private EndlessRunStore _endlessStore;
         private EndlessRun _endlessRun;
+        private AtlasProgressStore _atlasStore;
+        private AtlasProgress _atlasProgress;
+        private AtlasMap _atlasMap;
         private HexButton _pauseButton;
         private HexButton _nextButton;
         private bool _hasRecordedThisClear;
@@ -92,6 +99,9 @@ namespace Pathweaver.Game.App
             _campaign = CampaignCatalogue.Load();
             _endlessStore = EndlessRunStore.ForPlayer();
             _endlessRun = _endlessStore.Load();
+            _atlasStore = AtlasProgressStore.ForPlayer();
+            _atlasProgress = _atlasStore.Load();
+            _atlasMap = AtlasCatalogue.Load();
 
             var material = _boardView.TileMaterial;
 
@@ -101,6 +111,7 @@ namespace Pathweaver.Game.App
             _pause.Build(_camera, material);
             _settings.Build(_camera, material);
             _levelSelect.Build(_camera, material, _campaign, _progress);
+            _atlas.Build(_camera, material, _atlasMap, _atlasProgress);
 
             // Top right, opposite restart. The two controls that leave a board sit in the two
             // corners furthest from the thumb's resting position, where a mis-tap costs the most.
@@ -159,6 +170,8 @@ namespace Pathweaver.Game.App
                     return HandlePause(_pause.ButtonAt(screenPosition));
                 case GameScreen.Settings:
                     return HandleSettings(_settings.ButtonAt(screenPosition));
+                case GameScreen.Atlas:
+                    return HandleAtlas(_atlas.ButtonAt(screenPosition));
                 case GameScreen.Playing:
                     if (_pauseButton != null && _pauseButton.IsPressed(screenPosition))
                     {
@@ -194,6 +207,9 @@ namespace Pathweaver.Game.App
                     return true;
                 case MainMenuView.EndlessId:
                     StartEndlessRound();
+                    return true;
+                case MainMenuView.AtlasId:
+                    ShowAtlas();
                     return true;
                 case MainMenuView.SettingsId:
                     _settings.Refresh();
@@ -238,6 +254,72 @@ namespace Pathweaver.Game.App
                 default:
                     return false;
             }
+        }
+
+        /// <summary>
+        /// Buys a node, or leaves the atlas.
+        /// </summary>
+        /// <remarks>
+        /// A tap on a node the player cannot afford does nothing rather than explaining itself: the
+        /// node already shows its cost in pips and its colour already says whether it is within reach,
+        /// so a refusal would be repeating what is on screen.
+        /// </remarks>
+        private bool HandleAtlas(string button)
+        {
+            if (button == null)
+            {
+                return false;
+            }
+
+            if (button == AtlasView.BackId)
+            {
+                _router.Show(GameScreen.MainMenu);
+                return true;
+            }
+
+            if (!_atlasMap.CanUnlock(button, _atlasProgress))
+            {
+                return true;
+            }
+
+            _atlasProgress = _atlasProgress.WithUnlocked(button, _atlasMap.Node(button).Cost);
+            _atlasStore.Save(_atlasProgress);
+
+            // Rebuilt rather than patched: the node just bought changes its own colour, its links, the
+            // essence row, and whatever it unlocked next, and redrawing the screen cannot get that
+            // combination wrong.
+            _atlas.Build(_camera, _boardView.TileMaterial, _atlasMap, _atlasProgress);
+            return true;
+        }
+
+        /// <summary>
+        /// Pays Star Essence for a cleared board.
+        /// </summary>
+        /// <remarks>
+        /// Every clear pays, in both modes, because the essence relic and the length curve should pull
+        /// the same way: a longer route is worth more points and more essence. A campaign level replayed
+        /// pays again — the alternative is a rule a player cannot see, and the campaign is finite while
+        /// Endless is not, so there is nothing here worth farming.
+        /// </remarks>
+        private void AwardEssence(Pathweaver.Core.State.GameState state)
+        {
+            var bonus = _atlasMap.BonusesFor(_atlasProgress).EssencePerClear;
+            var harvested = AtlasEssence.ForClear(state.Score, state.BaseRouteScore, bonus);
+
+            if (harvested <= 0)
+            {
+                return;
+            }
+
+            _atlasProgress = _atlasProgress.WithEssence(harvested);
+            _atlasStore.Save(_atlasProgress);
+        }
+
+        private void ShowAtlas()
+        {
+            MenuCamera.Frame(_camera);
+            _atlas.Build(_camera, _boardView.TileMaterial, _atlasMap, _atlasProgress);
+            _router.Show(GameScreen.Atlas);
         }
 
         private bool HandleSettings(string button)
@@ -322,7 +404,14 @@ namespace Pathweaver.Game.App
                     _session.State.PivotTokens.Count, _session.State.SkipTokens.Count);
             }
 
-            var round = _endlessRun.CurrentRound();
+            // Relics reach a generated round the same way carried tokens do, by raising what the round
+            // deals. The generator treats both as a floor under its own allowance.
+            var bonuses = _atlasMap.BonusesFor(_atlasProgress);
+            var round = _endlessRun
+                .Carrying(
+                    _endlessRun.CarriedPivotTokens + bonuses.Tokens,
+                    _endlessRun.CarriedSkips + bonuses.Skips)
+                .CurrentRound();
 
             // The board just left behind is finished and will never be dealt again, so its save is
             // dead weight in the player's storage. Cleared here rather than on completion, because a
@@ -350,12 +439,14 @@ namespace Pathweaver.Game.App
             // already finished.
             // Carried Pivot Tokens are handed to the level here, with its own allowance as a floor:
             // clearing a level ends the board, so a token earned by the clearing route would be
-            // unspendable if it did not travel.
+            // unspendable if it did not travel. Atlas relics are added on top of that, because a
+            // permanent upgrade that replaced an allowance would make a generous level worse.
             var level = LevelCatalogue.Load(levelId);
-            var tokens = Mathf.Max(level.StartingTokens, _progress.PivotTokens);
+            var bonuses = _atlasMap.BonusesFor(_atlasProgress);
+            var tokens = Mathf.Max(level.StartingTokens, _progress.PivotTokens) + bonuses.Tokens;
 
             _router.Show(GameScreen.Playing);
-            _session.Begin(level.WithStartingTokens(tokens), _saves);
+            _session.Begin(level.WithStartingResources(tokens, level.StartingSkips + bonuses.Skips), _saves);
         }
 
         private void OnScreenChanged(GameScreen screen)
@@ -413,6 +504,8 @@ namespace Pathweaver.Game.App
             // Recorded once per run, not once per state change: clearing the quota does not end the
             // board, so the state keeps changing afterwards.
             _hasRecordedThisClear = true;
+
+            AwardEssence(state);
 
             if (_isEndlessRound)
             {

@@ -82,6 +82,18 @@ play continue so that routes could be extended for a bigger score, which meant a
 level looked exactly like an unfinished one: full bar, live tray, nothing to say it was
 over.
 
+### The World Atlas
+
+Every cleared board harvests **Star Essence**: one per base score, so a level with a base of 100
+finished on 246 pays two. Essence buys nodes on a constellation reached from the main menu — relics
+that add a skip, a Pivot Token, or extra essence to every board from then on. Bonuses are added to
+what a board already grants rather than replacing it.
+
+The first region is eight nodes costing 51 essence in total, against at least 77 from clearing the
+twenty levels once, so it is reachable by playing rather than by grinding — and a test enforces that
+relationship. Nodes are authored under `atlas/` as one line each, and a future biome pack docks onto
+the outer edge by adding a file that names the nodes it attaches to.
+
 ### Tokens
 
 Every completed route pays out in one of two currencies, so none feels wasted:

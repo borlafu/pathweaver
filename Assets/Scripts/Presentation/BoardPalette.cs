@@ -114,6 +114,33 @@ namespace Pathweaver.Game.Presentation
 
         internal static readonly Color LevelLockedGlyph = new Color(0.30f, 0.32f, 0.36f);
 
+        /// <summary>An atlas node already bought.</summary>
+        internal static readonly Color AtlasUnlocked = new Color(0.30f, 0.52f, 0.38f);
+
+        /// <summary>An atlas node reachable and affordable right now.</summary>
+        internal static readonly Color AtlasAffordable = new Color(0.30f, 0.55f, 0.72f);
+
+        /// <summary>An atlas node whose prerequisites are met but whose cost is not.</summary>
+        internal static readonly Color AtlasReachable = new Color(0.24f, 0.27f, 0.33f);
+
+        /// <summary>The mark on a node not yet bought.</summary>
+        internal static readonly Color AtlasGlyphLocked = new Color(0.44f, 0.47f, 0.53f);
+
+        /// <summary>Star Essence, as a pip or a cost.</summary>
+        internal static readonly Color AtlasEssence = new Color(0.86f, 0.82f, 0.52f);
+
+        /// <summary>Essence pips when the balance has run past what the row can show.</summary>
+        internal static readonly Color AtlasEssenceFull = new Color(0.98f, 0.94f, 0.70f);
+
+        /// <summary>A cost the player cannot yet meet.</summary>
+        internal static readonly Color AtlasCostUnaffordable = new Color(0.40f, 0.40f, 0.42f);
+
+        /// <summary>A link between two nodes, both of them bought.</summary>
+        internal static readonly Color AtlasLinkLit = new Color(0.32f, 0.50f, 0.40f);
+
+        /// <summary>A link waiting on one of its ends.</summary>
+        internal static readonly Color AtlasLinkDim = new Color(0.20f, 0.22f, 0.26f);
+
         internal static readonly Color SwitchOn = new Color(0.30f, 0.55f, 0.72f);
 
         internal static readonly Color SwitchOff = new Color(0.22f, 0.23f, 0.27f);
