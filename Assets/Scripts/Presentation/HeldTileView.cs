@@ -58,6 +58,7 @@ namespace Pathweaver.Game.Presentation
             EnsureVisual();
 
             _visual.SetBackground(BoardPalette.CellOutline);
+            _visual.UseResourceArt(tile.Kind);
             _visual.ShowEdges(tile.Edges, BoardPalette.ForKind(tile.Kind));
             _visual.ShowResource(tile.Kind, BoardPalette.ForKind(tile.Kind));
 
@@ -106,7 +107,8 @@ namespace Pathweaver.Game.Presentation
 
             _visual = new GameObject("Visual").AddComponent<TileVisual>();
             _visual.transform.SetParent(transform, worldPositionStays: false);
-            _visual.Initialise(_boardView.HexMesh, _boardView.SpokeMesh, _boardView.TileMaterial);
+            _visual.Initialise(
+                _boardView.HexMesh, _boardView.SpokeMesh, _boardView.TileMaterial, _boardView.Theme);
         }
     }
 }

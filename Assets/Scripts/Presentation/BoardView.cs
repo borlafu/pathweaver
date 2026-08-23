@@ -34,6 +34,12 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private Material _tileMaterial;
 
+        /// <summary>
+        /// Artwork for the board. Optional: without one, everything is generated geometry.
+        /// </summary>
+        [SerializeField]
+        private BoardTheme _theme;
+
         private readonly Dictionary<HexCoord, CellView> _cells = new Dictionary<HexCoord, CellView>();
 
         /// <summary>How long a harvested route stays lit, in seconds.</summary>
@@ -66,6 +72,9 @@ namespace Pathweaver.Game.Presentation
             }
         }
 
+        /// <summary>The board's artwork, or null while it is still placeholder geometry.</summary>
+        internal BoardTheme Theme => _theme;
+
         internal Material TileMaterial
         {
             get
@@ -90,7 +99,7 @@ namespace Pathweaver.Game.Presentation
             {
                 var cell = new GameObject($"Cell {coordinate}").AddComponent<CellView>();
                 cell.transform.SetParent(transform, worldPositionStays: false);
-                cell.Initialise(coordinate, _hexMesh, _spokeMesh, _material);
+                cell.Initialise(coordinate, _hexMesh, _spokeMesh, _material, _theme);
 
                 _cells.Add(coordinate, cell);
             }

@@ -109,6 +109,7 @@ namespace Pathweaver.EditorTools
             var tileMaterial = CreateTileMaterial();
             var boardSerialised = new SerializedObject(board);
             boardSerialised.FindProperty("_tileMaterial").objectReferenceValue = tileMaterial;
+            boardSerialised.FindProperty("_theme").objectReferenceValue = CreateBoardTheme();
             boardSerialised.ApplyModifiedPropertiesWithoutUndo();
             var session = new GameObject("Session").AddComponent<GameSession>();
             var input = new GameObject("Input").AddComponent<InputController>();
@@ -357,6 +358,33 @@ namespace Pathweaver.EditorTools
             AssetDatabase.SaveAssets();
 
             return material;
+        }
+
+        /// <summary>
+        /// Creates the board theme asset if it does not exist, and leaves it empty.
+        /// </summary>
+        /// <remarks>
+        /// Empty on purpose. Every field is optional, so an empty theme renders exactly the
+        /// placeholder geometry the game ships with today — but the asset exists and is wired
+        /// up, so dropping in the first sprite is a change to an asset rather than a change to
+        /// the game.
+        /// </remarks>
+        private static BoardTheme CreateBoardTheme()
+        {
+            const string path = "Assets/Settings/BoardTheme.asset";
+
+            var existing = AssetDatabase.LoadAssetAtPath<BoardTheme>(path);
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var theme = ScriptableObject.CreateInstance<BoardTheme>();
+            theme.name = "BoardTheme";
+            AssetDatabase.CreateAsset(theme, path);
+            AssetDatabase.SaveAssets();
+
+            return theme;
         }
 
         private static Camera BuildCamera()
