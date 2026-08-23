@@ -1,4 +1,5 @@
 using Pathweaver.Core.Campaign;
+using Pathweaver.Core.Endless;
 using Pathweaver.Game.Presentation;
 using Pathweaver.Game.Presentation.Menus;
 using UnityEngine;
@@ -54,8 +55,24 @@ namespace Pathweaver.Game.App
         private CampaignProgressStore _progressStore;
         private Campaign _campaign;
         private CampaignProgress _progress;
+        private EndlessRunStore _endlessStore;
+        private EndlessRun _endlessRun;
         private HexButton _pauseButton;
+        private HexButton _nextRoundButton;
         private bool _hasRecordedThisClear;
+
+        /// <summary>
+        /// Whether the board on screen is a generated endless round rather than a campaign level.
+        /// </summary>
+        /// <remarks>
+        /// Tracked rather than inferred from the identifier. A level called "endless-3" would be an
+        /// odd thing to author, but deciding what mode the player is in by matching a string is the
+        /// kind of rule that quietly stops being true.
+        /// </remarks>
+        private bool _isEndlessRound;
+
+        /// <summary>The endless board most recently started, so its save can be cleared later.</summary>
+        private string _lastEndlessLevelId;
 
         private void Start()
         {
@@ -63,6 +80,8 @@ namespace Pathweaver.Game.App
             _progressStore = CampaignProgressStore.ForPlayer();
             _progress = _progressStore.Load();
             _campaign = CampaignCatalogue.Load();
+            _endlessStore = EndlessRunStore.ForPlayer();
+            _endlessRun = _endlessStore.Load();
 
             var material = _boardView.TileMaterial;
 
@@ -82,6 +101,15 @@ namespace Pathweaver.Game.App
                 HexMeshFactory.CreateRectangle(0.05f, 0.2f), BoardPalette.MenuGlyph, new Vector3(-0.06f, 0f, 0f));
             _pauseButton.AddGlyph(
                 HexMeshFactory.CreateRectangle(0.05f, 0.2f), BoardPalette.MenuGlyph, new Vector3(0.06f, 0f, 0f));
+
+            // Only ever visible on a finished endless round. A campaign level has a level list to go
+            // back to; an endless run has nowhere to go but forward, so it needs a way to say so.
+            _nextRoundButton = HexButton.Create(
+                _hud.transform, "next-round", _camera, material,
+                new Vector2(0.86f, 0.94f), 0.3f, BoardPalette.MenuPrimary, touchRadiusFraction: 0.1f);
+            _nextRoundButton.AddGlyph(
+                HexMeshFactory.CreateRegularPolygon(3, 0.16f, rotationDegrees: -90f), BoardPalette.MenuGlyph);
+            _nextRoundButton.gameObject.SetActive(false);
 
             _session.StateChanged += OnStateChanged;
             _router.ScreenChanged += OnScreenChanged;
@@ -125,6 +153,14 @@ namespace Pathweaver.Game.App
                         return true;
                     }
 
+                    if (_nextRoundButton != null
+                        && _nextRoundButton.gameObject.activeSelf
+                        && _nextRoundButton.IsPressed(screenPosition))
+                    {
+                        StartEndlessRound();
+                        return true;
+                    }
+
                     return false;
                 default:
                     return false;
@@ -142,6 +178,9 @@ namespace Pathweaver.Game.App
                     return true;
                 case MainMenuView.LevelsId:
                     ShowLevelSelect();
+                    return true;
+                case MainMenuView.EndlessId:
+                    StartEndlessRound();
                     return true;
                 case MainMenuView.SettingsId:
                     _settings.Refresh();
@@ -222,9 +261,40 @@ namespace Pathweaver.Game.App
             _router.Show(GameScreen.LevelSelect);
         }
 
+        /// <summary>
+        /// Plays the round the endless run is on, generating it now.
+        /// </summary>
+        /// <remarks>
+        /// Generation is cheap because the generator plans the routes and derives the board from
+        /// them rather than searching for a solution, so a round can be built between taps rather
+        /// than shipped in the package.
+        /// </remarks>
+        private void StartEndlessRound()
+        {
+            _hasRecordedThisClear = false;
+            _isEndlessRound = true;
+
+            var round = _endlessRun.CurrentRound();
+
+            // The board just left behind is finished and will never be dealt again, so its save is
+            // dead weight in the player's storage. Cleared here rather than on completion, because a
+            // player may keep extending routes on a finished board and that run is still worth
+            // resuming until they move on.
+            if (_lastEndlessLevelId != null && _lastEndlessLevelId != round.Level.Id)
+            {
+                _saves?.Delete(_lastEndlessLevelId);
+            }
+
+            _lastEndlessLevelId = round.Level.Id;
+
+            _router.Show(GameScreen.Playing);
+            _session.Begin(round.Level, _saves);
+        }
+
         private void StartLevel(string levelId)
         {
             _hasRecordedThisClear = false;
+            _isEndlessRound = false;
 
             // The screen is shown first so the play interface is active before the level reports
             // its opening state. Starting the level first meant the quota bar was disabled when the
@@ -261,6 +331,13 @@ namespace Pathweaver.Game.App
 
         private void OnStateChanged(Pathweaver.Core.State.GameState state)
         {
+            // Offered while the round is finished and withdrawn if a restart puts the player back
+            // below the target, so the control never claims a round is done when it is not.
+            if (_nextRoundButton != null)
+            {
+                _nextRoundButton.gameObject.SetActive(_isEndlessRound && _session.IsComplete);
+            }
+
             if (!_session.IsComplete || _hasRecordedThisClear)
             {
                 return;
@@ -269,6 +346,16 @@ namespace Pathweaver.Game.App
             // Recorded once per run, not once per state change: clearing the quota does not end the
             // board, so the state keeps changing afterwards.
             _hasRecordedThisClear = true;
+
+            if (_isEndlessRound)
+            {
+                // Advanced as soon as the quota is met rather than when the player taps onward, so
+                // the furthest round reached survives closing the app on a finished board.
+                _endlessRun = _endlessRun.Cleared();
+                _endlessStore.Save(_endlessRun);
+                return;
+            }
+
             _progress = _progress.WithCleared(_session.LevelId);
             _progressStore.Save(_progress);
         }

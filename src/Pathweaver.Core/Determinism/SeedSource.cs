@@ -65,6 +65,26 @@ namespace Pathweaver.Core.Determinism
         }
 
         /// <summary>
+        /// Derives the seed for one round of an endless run.
+        /// </summary>
+        /// <remarks>
+        /// Mixed rather than added. Endless Wayfare asks for round 1, 2, 3 and so on from one run
+        /// seed, and neighbouring seeds fed to a generator produce visibly related output — two
+        /// consecutive rounds would look like the same board rearranged. The mixer is what makes
+        /// them unrelated while keeping the round reproducible from the run seed alone.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown for a round below one.</exception>
+        public static ulong ForRound(ulong seed, int round)
+        {
+            if (round < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(round), round, "Rounds are counted from one.");
+            }
+
+            return Mix(unchecked(Mix(seed) + ((ulong)round * 0x9E3779B97F4A7C15UL)));
+        }
+
+        /// <summary>
         /// Builds the generator a given subsystem draws from.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">

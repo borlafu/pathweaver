@@ -129,10 +129,23 @@ namespace Pathweaver.Game.App
         /// </remarks>
         internal void Begin(string levelId, SaveService saves)
         {
-            _levelId = levelId;
+            Begin(LevelCatalogue.Load(levelId), saves);
+        }
+
+        /// <summary>
+        /// Starts or resumes a level that is already loaded.
+        /// </summary>
+        /// <remarks>
+        /// The overload Endless Wayfare needs: a generated round has no file to load, and asking the
+        /// catalogue for one by identifier would fail. Everything else about playing it is the same,
+        /// including the save, which is keyed by the level's own identifier.
+        /// </remarks>
+        internal void Begin(LevelDefinition level, SaveService saves)
+        {
+            _level = level ?? throw new ArgumentNullException(nameof(level));
+            _levelId = level.Id;
             _saves = saves;
 
-            _level = LevelCatalogue.Load(_levelId);
             var resumed = saves?.Load(_levelId);
 
             State = resumed ?? _level.CreateGame();
@@ -159,7 +172,9 @@ namespace Pathweaver.Game.App
         {
             _saves?.Delete(_levelId);
 
-            _level = LevelCatalogue.Load(_levelId);
+            // Restarts deal from the level already in hand rather than reloading it by identifier.
+            // A generated round is not in the catalogue, so looking it up again would fail on
+            // exactly the mode where restarting matters most.
             State = _level.CreateGame();
             WasResumed = false;
             HeldRotation = 0;

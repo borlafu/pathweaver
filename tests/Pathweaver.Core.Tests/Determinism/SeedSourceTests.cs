@@ -148,6 +148,47 @@ public class SeedSourceTests
             () => SeedSource.Stream(seed, (PathweaverStream)999));
     }
 
+    [Fact]
+    public void A_round_seed_is_the_same_every_time_it_is_asked_for()
+    {
+        // An endless run is identified by its seed and the round reached, so a round has to be
+        // rebuildable from those two numbers after the app has been closed.
+        Assert.Equal(SeedSource.ForRound(1234UL, 7), SeedSource.ForRound(1234UL, 7));
+    }
+
+    [Fact]
+    public void Neighbouring_rounds_get_unrelated_seeds()
+    {
+        // The point of mixing rather than adding. Seeds that differ by one produce generators whose
+        // first draws are close together, which would show up as round eight looking like round
+        // seven with two cells moved.
+        // Arrange / Act
+        var seeds = Enumerable.Range(1, 8).Select(round => SeedSource.ForRound(99UL, round)).ToList();
+
+        // Assert — distinct, and differing in a good half of their bits rather than in the low ones
+        Assert.Equal(seeds.Count, seeds.Distinct().Count());
+
+        for (var index = 1; index < seeds.Count; index++)
+        {
+            var differingBits = CountSetBits(seeds[index] ^ seeds[index - 1]);
+            Assert.InRange(differingBits, 16, 64);
+        }
+    }
+
+    [Fact]
+    public void Two_runs_on_the_same_round_get_different_seeds()
+    {
+        Assert.NotEqual(SeedSource.ForRound(1UL, 3), SeedSource.ForRound(2UL, 3));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void A_round_below_one_is_rejected(int round)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => SeedSource.ForRound(1UL, round));
+    }
+
     private static int CountSetBits(ulong value)
     {
         var count = 0;
