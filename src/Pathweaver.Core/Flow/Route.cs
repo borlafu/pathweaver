@@ -10,8 +10,10 @@ namespace Pathweaver.Core.Flow
     /// </summary>
     /// <remarks>
     /// <see cref="Length"/> is the L in the PRD's payoff curve
-    /// <c>S = S_base * 1.35^(L-1)</c>, so it counts tiles rather than steps: a
-    /// single tile serving both endpoints is length 1 and earns the base score.
+    /// <c>S = S_base * 1.35^(L-1)</c>. It counts player-placed conduits only: the
+    /// spring and hub occupy cells of their own and are not tiles, so a single
+    /// conduit bridging two adjacent endpoints is length 1 and earns the
+    /// unmultiplied base score.
     /// </remarks>
     public sealed class Route
     {
