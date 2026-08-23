@@ -108,10 +108,19 @@ namespace Pathweaver.Game.Presentation.Menus
             SetColour(colour);
         }
 
-        /// <summary>Adds a shape to the button's face.</summary>
+        /// <summary>
+        /// Adds a shape to the button's face.
+        /// </summary>
+        /// <remarks>
+        /// Each glyph sits slightly in front of the one before it. They used to share a depth, which
+        /// left two coplanar meshes fighting for the same pixels: the settings gear is a disc with a
+        /// darker disc punched through it, and it rendered as a plain white disc because the hole was
+        /// level with the ring rather than in front of it.
+        /// </remarks>
         internal GameObject AddGlyph(Mesh mesh, Color colour, Vector3 offset = default, float rotation = 0f)
         {
-            var glyph = AddPart("Glyph", mesh, colour, depth: -0.02f, offset, rotation).gameObject;
+            var depth = -0.02f - (_glyphs.Count * 0.005f);
+            var glyph = AddPart("Glyph", mesh, colour, depth, offset, rotation).gameObject;
             _glyphs.Add(glyph);
             return glyph;
         }
