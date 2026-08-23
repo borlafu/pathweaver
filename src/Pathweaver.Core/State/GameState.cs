@@ -187,6 +187,33 @@ namespace Pathweaver.Core.State
         }
 
         /// <summary>
+        /// Rebuilds a game from a save, without drawing a tile.
+        /// </summary>
+        /// <remarks>
+        /// Distinct from <see cref="Create"/> because a resumed game must keep the
+        /// tile the player was already holding rather than draw a fresh one, which
+        /// would both change the tile and advance the bag.
+        /// </remarks>
+        internal static GameState Restore(
+            HexGrid<ConduitTile> board,
+            FlowEndpoint[] endpoints,
+            TileBag bag,
+            ConduitTile heldTile,
+            PivotTokenPool pivotTokens,
+            long score,
+            long baseRouteScore,
+            IEnumerable<CompletedRoute> completedRoutes)
+            => new GameState(
+                board,
+                endpoints,
+                bag,
+                heldTile,
+                pivotTokens,
+                score,
+                baseRouteScore,
+                new HashSet<CompletedRoute>(completedRoutes));
+
+        /// <summary>
         /// Produces the next state. Used by <see cref="GameEngine"/> only, so that
         /// commands remain the single route by which a game changes.
         /// </summary>

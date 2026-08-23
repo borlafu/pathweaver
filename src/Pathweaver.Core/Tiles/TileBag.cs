@@ -79,6 +79,28 @@ namespace Pathweaver.Core.Tiles
         }
 
         /// <summary>
+        /// The tiles one cycle deals, for serialisation.
+        /// </summary>
+        internal ConduitTile[] Definition => _definition;
+
+        /// <summary>
+        /// The current shuffled cycle, for serialisation. Saving this rather than
+        /// reshuffling on load is what keeps a resumed run identical.
+        /// </summary>
+        internal ConduitTile[] Cycle => _cycle;
+
+        internal int Position => _position;
+
+        internal Pcg32 Generator => _generator;
+
+        /// <summary>
+        /// Rebuilds a bag mid-cycle from a save.
+        /// </summary>
+        internal static TileBag FromSnapshot(
+            ConduitTile[] definition, ConduitTile[] cycle, int position, Pcg32 generator)
+            => new TileBag(definition, cycle, position, generator);
+
+        /// <summary>
         /// Deals the next tile, returning it alongside the bag that follows.
         /// </summary>
         public (TileBag Bag, ConduitTile Tile) Draw()
