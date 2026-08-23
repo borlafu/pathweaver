@@ -36,9 +36,16 @@ namespace Pathweaver.Game.Presentation
 
         private readonly Dictionary<HexCoord, CellView> _cells = new Dictionary<HexCoord, CellView>();
 
+        /// <summary>How long a harvested route stays lit, in seconds.</summary>
+        private const float FlashSeconds = 0.9f;
+
         private Mesh _hexMesh;
         private Mesh _spokeMesh;
         private Material _material;
+        private GameState _lastState;
+        private ISet<HexCoord> _lastAvailable;
+        private readonly HashSet<HexCoord> _flashing = new HashSet<HexCoord>();
+        private float _flashEndsAt = -1f;
 
         /// <summary>The meshes and material cells are drawn with, for other views.</summary>
         internal Mesh HexMesh
@@ -95,8 +102,51 @@ namespace Pathweaver.Game.Presentation
         /// Updates every cell to match the state, optionally marking where the held
         /// tile could go.
         /// </summary>
+        /// <summary>
+        /// Lights the given conduits, then returns them to normal.
+        /// </summary>
+        internal void FlashHarvested(IEnumerable<HexCoord> tiles)
+        {
+            _flashing.Clear();
+
+            foreach (var tile in tiles)
+            {
+                _flashing.Add(tile);
+            }
+
+            if (_flashing.Count == 0)
+            {
+                return;
+            }
+
+            _flashEndsAt = Time.unscaledTime + FlashSeconds;
+            Refresh(_lastState, _lastAvailable);
+        }
+
+        private void Update()
+        {
+            if (_flashEndsAt < 0f || Time.unscaledTime < _flashEndsAt)
+            {
+                return;
+            }
+
+            _flashEndsAt = -1f;
+            _flashing.Clear();
+            Refresh(_lastState, _lastAvailable);
+        }
+
         internal void Refresh(GameState state, ISet<HexCoord> availableCells = null)
         {
+            if (state == null)
+            {
+                return;
+            }
+
+            // Remembered so a flash starting or ending can redraw without the caller having to
+            // hand the state over again.
+            _lastState = state;
+            _lastAvailable = availableCells;
+
             var endpoints = new Dictionary<HexCoord, FlowEndpoint>();
             foreach (var endpoint in state.Endpoints)
             {
@@ -116,7 +166,15 @@ namespace Pathweaver.Game.Presentation
 
                 if (state.Board.TryGet(coordinate, out var tile))
                 {
-                    cell.ShowConduit(tile);
+                    if (_flashing.Contains(coordinate))
+                    {
+                        cell.ShowHarvestedConduit(tile);
+                    }
+                    else
+                    {
+                        cell.ShowConduit(tile);
+                    }
+
                     continue;
                 }
 

@@ -46,6 +46,21 @@ namespace Pathweaver.Game.Presentation
 
         internal static readonly Color DialogCancel = new Color(0.34f, 0.36f, 0.42f);
 
+        /// <summary>The quota bar's empty track.</summary>
+        internal static readonly Color ProgressTrack = new Color(0.20f, 0.22f, 0.26f);
+
+        internal static readonly Color ProgressFill = new Color(0.35f, 0.68f, 0.92f);
+
+        /// <summary>The quota bar once the level's target is met.</summary>
+        internal static readonly Color ProgressComplete = new Color(0.42f, 0.78f, 0.48f);
+
+        internal static readonly Color TokenHeld = new Color(0.92f, 0.78f, 0.38f);
+
+        internal static readonly Color TokenEmpty = new Color(0.24f, 0.26f, 0.30f);
+
+        /// <summary>A conduit on a route that has just paid out.</summary>
+        internal static readonly Color HarvestFlash = new Color(0.95f, 0.97f, 1f);
+
         internal static readonly Color Spring = new Color(0.95f, 0.85f, 0.35f);
         internal static readonly Color Hub = new Color(0.55f, 0.40f, 0.85f);
 

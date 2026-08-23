@@ -59,6 +59,9 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private RestartConfirmView _restartConfirm;
 
+        [SerializeField]
+        private LevelCompleteView _levelComplete;
+
         private bool _isPressed;
         private bool _startedOnRestart;
         private bool _startedOnTray;
@@ -88,6 +91,9 @@ namespace Pathweaver.Game.Presentation
             // One buzz per harvest, not per route: several routes completing at once is a
             // good moment, not a reason to rattle the phone.
             _haptics?.RouteCompleted();
+
+            // And light the path that paid out, so the buzz has something to refer to.
+            _boardView?.FlashHarvested(_session.LastHarvestedTiles);
         }
 
         private void Update()
@@ -174,6 +180,13 @@ namespace Pathweaver.Game.Presentation
             _isPressed = false;
 
             var wasTap = _travelled <= TapThresholdPixels;
+
+            // The completion notice is dismissed by any tap and blocks nothing else, since
+            // clearing the quota does not end the board.
+            if (wasTap && _levelComplete != null && _levelComplete.IsOpen)
+            {
+                _levelComplete.Dismiss();
+            }
 
             if (_restartConfirm != null && _restartConfirm.IsOpen)
             {
