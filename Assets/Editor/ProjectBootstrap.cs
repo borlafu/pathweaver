@@ -326,6 +326,21 @@ namespace Pathweaver.EditorTools
         }
 
         /// <summary>
+        /// Points a board view at the tile material asset.
+        /// </summary>
+        /// <remarks>
+        /// The material is a serialised field rather than a runtime lookup, because a shader nothing
+        /// references is stripped from a player build. Anything that builds a board view outside a
+        /// scene needs this, which is why it is here rather than repeated.
+        /// </remarks>
+        internal static void WireTileMaterial(BoardView board)
+        {
+            var serialised = new SerializedObject(board);
+            serialised.FindProperty("_tileMaterial").objectReferenceValue = CreateTileMaterial();
+            serialised.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>
         /// Creates the material the board is drawn with, as an asset.
         /// </summary>
         /// <remarks>
@@ -403,7 +418,7 @@ namespace Pathweaver.EditorTools
             return camera;
         }
 
-        private static string ArgumentOr(string name, string fallback)
+        internal static string ArgumentOr(string name, string fallback)
         {
             var arguments = Environment.GetCommandLineArgs();
             for (var index = 0; index < arguments.Length - 1; index++)

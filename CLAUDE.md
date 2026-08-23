@@ -209,6 +209,18 @@ unity -batchmode -quit -projectPath . \
 Worth using after any change to the presentation layer. It caught back-face culling
 silently hiding every hexagon, which no test would have noticed.
 
+The store icon and feature graphic come from the same route — the game's own cells and
+palette, so the listing cannot advertise something the game does not look like:
+
+```bash
+unity -batchmode -quit -projectPath . \
+  -executeMethod Pathweaver.EditorTools.StoreArt.Capture -logFile /tmp/unity.log
+```
+
+Writes `Artifacts/store/icon-512.png` and `Artifacts/store/feature-1024x500.png`. Both
+are build outputs rather than committed assets. Listing text lives in
+`docs/store/listing.md`.
+
 Unity tests, which CI cannot run because it has no licence:
 
 ```bash
