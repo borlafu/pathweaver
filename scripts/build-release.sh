@@ -69,6 +69,38 @@ export PATHWEAVER_KEY_PASS="$KEY_PASS"
 
 echo "   $(du -h "$OUTPUT" | cut -f1) at $OUTPUT"
 
+echo "== Checking 16 KB page alignment"
+# Google Play requires native libraries aligned to 16 KB for new apps. No Unity setting
+# controls it: the NDK and Gradle plugin produce it, which means a future toolchain change
+# could silently take it away. Play would then reject the upload with a message that says
+# nothing about why, so it is verified here instead.
+readelf="$(find "/Applications/Unity/Hub/Editor/${UNITY_VERSION}/PlaybackEngines/AndroidPlayer/NDK" -name llvm-readelf 2>/dev/null | head -1)"
+if [ -z "$readelf" ]; then
+  echo "   WARNING: llvm-readelf not found; alignment unverified" >&2
+else
+  workdir="$(mktemp -d)"
+  unzip -o -q "$OUTPUT" 'base/lib/*/*.so' -d "$workdir"
+
+  misaligned=0
+  for lib in "$workdir"/base/lib/*/*.so; do
+    [ -e "$lib" ] || continue
+    align="$("$readelf" -lW "$lib" | awk '/LOAD/ {print $NF; exit}')"
+    if [ "$align" != "0x4000" ]; then
+      echo "   $(basename "$lib") is aligned $align, not 0x4000" >&2
+      misaligned=$((misaligned + 1))
+    fi
+  done
+
+  rm -rf "$workdir"
+
+  if [ "$misaligned" -gt 0 ]; then
+    echo "   FAILED: $misaligned library/libraries are not 16 KB aligned; Play will reject this" >&2
+    exit 1
+  fi
+
+  echo "   every native library is 16 KB aligned"
+fi
+
 echo "== Checking nothing secret leaked into the project"
 if git -C "$root" diff --quiet -- ProjectSettings/ProjectSettings.asset; then
   echo "   ProjectSettings unchanged"

@@ -34,6 +34,28 @@ cause of Unity reporting that `Pathweaver.Core` cannot be found.
 | Play Console account | `borlafu`, **personal** |
 | Distribution | Free, no in-app purchases in the MVP |
 
+### Signing
+
+| | |
+|---|---|
+| Upload key | held locally, outside this repository; alias `pathweaver-upload` |
+| App signing key | held by Google under Play App Signing, with post-quantum keys enrolled |
+| App signing certificate SHA-256 | `FC:92:61:74:17:B8:46:7E:8F:D5:AE:9B:2B:4E:12:60:6C:92:0F:E5:C0:0C:BB:87:07:66:31:C8:6D:3F:C7:0E` |
+
+The two keys are different on purpose, and that difference is what makes a mistake survivable: you
+sign uploads with the upload key, Google re-signs with the app signing key before delivery, and a lost
+or compromised upload key can be reset. The app signing certificate is public — fingerprints are
+published in `.well-known` files by design — and Play Games Services or any API integration will ask
+for the value above.
+
+Release builds read the passwords from the macOS Keychain via `scripts/build-release.sh`. Never enter
+them in the Editor: Unity writes keystore passwords into `ProjectSettings.asset`, which is committed.
+
+There is no `assetlinks.json` and no need for one. Digital Asset Links proves domain ownership so that
+`https://` links open in the app rather than a browser; this game is offline-first with no website and
+no deep links, so there is nothing to verify and nowhere to host it. If a site ever exists, the file
+goes at `https://<domain>/.well-known/assetlinks.json` with the app signing fingerprint above.
+
 The application ID is **permanent**. It cannot be changed after the first upload
 and cannot be reused even if the app is deleted, so it must match exactly in
 Unity's Player Settings (Other Settings → Identification → Package Name).
