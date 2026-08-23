@@ -60,6 +60,115 @@ namespace Pathweaver.EditorTools
         }
 
         /// <summary>
+        /// Applies release signing from the environment.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Read from environment variables, never from the Editor's saved settings. Unity stores
+        /// keystore passwords in ProjectSettings.asset, which is a committed file, so entering them
+        /// in Publishing Settings is enough to put them in a git diff.
+        /// </para>
+        /// <para>
+        /// A missing variable is not an error here. Development builds are signed with Unity's debug
+        /// key and are the normal case for on-device testing; refusing to build without release
+        /// credentials would make the everyday path need secrets it does not use.
+        /// </para>
+        /// </remarks>
+        /// <returns>Whether release signing was configured.</returns>
+        private static bool TryConfigureSigning()
+        {
+            var keystore = Environment.GetEnvironmentVariable("PATHWEAVER_KEYSTORE");
+            var keystorePassword = Environment.GetEnvironmentVariable("PATHWEAVER_KEYSTORE_PASS");
+            var alias = Environment.GetEnvironmentVariable("PATHWEAVER_KEY_ALIAS");
+            var aliasPassword = Environment.GetEnvironmentVariable("PATHWEAVER_KEY_PASS");
+
+            if (string.IsNullOrEmpty(keystore)
+                || string.IsNullOrEmpty(keystorePassword)
+                || string.IsNullOrEmpty(alias)
+                || string.IsNullOrEmpty(aliasPassword))
+            {
+                PlayerSettings.Android.useCustomKeystore = false;
+                Debug.Log("[build] no release credentials in the environment; using the debug key");
+                return false;
+            }
+
+            if (!File.Exists(keystore))
+            {
+                // Worth failing on: the intent to sign was expressed, so quietly falling back to a
+                // debug key would produce an artefact that looks releasable and is not.
+                Debug.LogError($"[build] keystore not found at {keystore}");
+                EditorApplication.Exit(1);
+                return false;
+            }
+
+            PlayerSettings.Android.useCustomKeystore = true;
+            PlayerSettings.Android.keystoreName = keystore;
+            PlayerSettings.Android.keystorePass = keystorePassword;
+            PlayerSettings.Android.keyaliasName = alias;
+            PlayerSettings.Android.keyaliasPass = aliasPassword;
+
+            Debug.Log($"[build] signing with alias \"{alias}\" from {Path.GetFileName(keystore)}");
+            return true;
+        }
+
+        /// <summary>
+        /// Builds a signed Android App Bundle for upload to Google Play.
+        /// </summary>
+        /// <remarks>
+        /// A bundle rather than an APK because Play requires one for new apps, and it lets Google
+        /// deliver per-device slices rather than one package carrying every variant — which is also
+        /// the largest single lever on the download size the PRD caps at 85 MB.
+        /// </remarks>
+        internal static void BuildAab()
+        {
+            ConfigurePlayerSettings();
+
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+
+            // Strips managed code that nothing references. The largest saving available before art
+            // exists, and the one most likely to break something, which is why the release build is
+            // tested rather than assumed.
+            PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Android, ManagedStrippingLevel.High);
+
+            PlayerSettings.Android.optimizedFramePacing = true;
+
+            var signed = TryConfigureSigning();
+            if (!signed)
+            {
+                Debug.LogWarning(
+                    "[build] the bundle will carry a debug key and Play will reject it");
+            }
+
+            EditorUserBuildSettings.buildAppBundle = true;
+
+            var outputPath = ArgumentOr("-aabOutput", "Artifacts/pathweaver.aab");
+            Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+
+            var options = new BuildPlayerOptions
+            {
+                scenes = new[] { "Assets/Scenes/Game.unity" },
+                locationPathName = outputPath,
+                target = BuildTarget.Android,
+
+                // No Development flag: a release bundle carries no debug symbols and no profiler.
+                options = BuildOptions.None,
+            };
+
+            var report = BuildPipeline.BuildPlayer(options);
+            var summary = report.summary;
+
+            if (summary.result != BuildResult.Succeeded)
+            {
+                Debug.LogError($"[build] failed: {summary.result}, {summary.totalErrors} error(s)");
+                EditorApplication.Exit(1);
+                return;
+            }
+
+            Debug.Log($"[build] wrote {outputPath} in {summary.totalTime}");
+        }
+
+        /// <summary>
         /// Builds an installable APK for on-device testing.
         /// </summary>
         internal static void BuildApk()
@@ -78,6 +187,10 @@ namespace Pathweaver.EditorTools
 
             var outputPath = ArgumentOr("-apkOutput", "Artifacts/pathweaver.apk");
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+
+            // Development builds keep Unity's debug key, which adb accepts and Play does not.
+            EditorUserBuildSettings.buildAppBundle = false;
+            PlayerSettings.Android.useCustomKeystore = false;
 
             var options = new BuildPlayerOptions
             {

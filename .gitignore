@@ -67,6 +67,7 @@ local.properties
 *.p12
 *.pepk
 keystore.properties
+*.aab
 
 # macOS
 .DS_Store
