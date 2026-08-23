@@ -12,13 +12,12 @@ namespace Pathweaver.Core.Flow
     /// <remarks>
     /// <para>
     /// This is the heart of the game: PRD section 3.1 step 3 pays out when an
-    /// active path connects a source spring to a destination hub. Everything about
-    /// scoring, quotas, and objective progress reads from what this returns.
+    /// active path connects a source spring to a destination hub. Scoring, quotas,
+    /// and objective progress all read from what this returns.
     /// </para>
     /// <para>
     /// It is a pure function over a board and its endpoints, holding no state, so
-    /// it can be called after every placement without bookkeeping and is trivial
-    /// to test.
+    /// it can run after every placement with no bookkeeping to invalidate.
     /// </para>
     /// </remarks>
     public static class FlowResolver
@@ -28,11 +27,17 @@ namespace Pathweaver.Core.Flow
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Where a conduit network offers several paths between the same pair, the
-        /// shortest is reported. That is the conservative reading of the PRD's
-        /// length multiplier: a player who builds a loop cannot claim the longer
-        /// way round as their route length. It also keeps the result single-valued,
-        /// which scoring depends on.
+        /// A route runs from a conduit adjacent to a spring to a conduit adjacent
+        /// to a hub, and covers conduits only — endpoints occupy their own cells
+        /// and are never tiles. Two touching endpoints therefore complete nothing:
+        /// a route is built from tiles, so a spring pressed against a hub is not a
+        /// free harvest.
+        /// </para>
+        /// <para>
+        /// Where a network offers several paths between the same pair, the shortest
+        /// is reported. That is the conservative reading of the PRD's length
+        /// multiplier — a player who builds a loop cannot claim the longer way
+        /// round — and it keeps the result single-valued, which scoring depends on.
         /// </para>
         /// <para>
         /// Results are ordered by kind, then spring, then hub, so the order does
@@ -40,8 +45,12 @@ namespace Pathweaver.Core.Flow
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when an endpoint sits outside the board, which means the level
-        /// data is wrong rather than the board merely being incomplete.
+        /// Thrown when an endpoint sits outside the board.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown when two endpoints share a cell, or when a conduit occupies an
+        /// endpoint cell. Both mean the board is invalid rather than merely
+        /// incomplete, and reporting no routes would hide the mistake.
         /// </exception>
         public static IReadOnlyList<Route> FindCompletedRoutes(
             HexGrid<ConduitTile> board, IEnumerable<FlowEndpoint> endpoints)
@@ -57,16 +66,7 @@ namespace Pathweaver.Core.Flow
             }
 
             var all = endpoints.ToArray();
-            foreach (var endpoint in all)
-            {
-                if (!board.Contains(endpoint.Coordinate))
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(endpoints),
-                        endpoint.Coordinate,
-                        $"Endpoint {endpoint} lies outside the board.");
-                }
-            }
+            ValidateEndpoints(board, all);
 
             var springs = Ordered(all.Where(endpoint => endpoint.Role == EndpointRole.Spring));
             var hubs = Ordered(all.Where(endpoint => endpoint.Role == EndpointRole.Hub));
@@ -74,67 +74,109 @@ namespace Pathweaver.Core.Flow
             var routes = new List<Route>();
             foreach (var spring in springs)
             {
-                var reachableHubs = hubs.Where(hub => hub.Kind == spring.Kind).ToList();
-                if (reachableHubs.Count == 0)
+                var matchingHubs = hubs.Where(hub => hub.Kind == spring.Kind).ToList();
+                if (matchingHubs.Count == 0)
                 {
                     continue;
                 }
 
-                routes.AddRange(RoutesFrom(board, spring, reachableHubs));
+                routes.AddRange(RoutesFrom(board, spring, matchingHubs));
             }
 
             return routes;
         }
 
+        private static void ValidateEndpoints(HexGrid<ConduitTile> board, FlowEndpoint[] endpoints)
+        {
+            var seen = new HashSet<HexCoord>();
+
+            foreach (var endpoint in endpoints)
+            {
+                if (!board.Contains(endpoint.Coordinate))
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(endpoints), endpoint.Coordinate, $"Endpoint {endpoint} lies outside the board.");
+                }
+
+                if (!seen.Add(endpoint.Coordinate))
+                {
+                    throw new ArgumentException(
+                        $"Cell {endpoint.Coordinate} carries more than one endpoint.", nameof(endpoints));
+                }
+
+                if (!board.IsEmpty(endpoint.Coordinate))
+                {
+                    throw new ArgumentException(
+                        $"Cell {endpoint.Coordinate} holds a conduit, but {endpoint} occupies it.",
+                        nameof(endpoints));
+                }
+            }
+        }
+
         private static IEnumerable<Route> RoutesFrom(
             HexGrid<ConduitTile> board, FlowEndpoint spring, IReadOnlyList<FlowEndpoint> hubs)
         {
-            // A spring only flows if the tile it feeds exists and faces it.
-            if (!board.TryGet(spring.Coordinate, out var firstTile)
-                || firstTile.Kind != spring.Kind
-                || !firstTile.HasEdge(spring.Direction))
+            var reached = Traverse(board, spring);
+            if (reached.Count == 0)
             {
                 return Array.Empty<Route>();
             }
 
-            var previous = BreadthFirstSearch(board, spring);
-
             var routes = new List<Route>();
             foreach (var hub in hubs)
             {
-                if (!previous.ContainsKey(hub.Coordinate))
+                var lastConduit = ClosestConduitFeeding(board, reached, hub);
+                if (lastConduit is null)
                 {
                     continue;
                 }
 
-                // The hub must also be faced by the tile that reaches it.
-                if (!board.TryGet(hub.Coordinate, out var lastTile) || !lastTile.HasEdge(hub.Direction))
-                {
-                    continue;
-                }
-
-                routes.Add(new Route(spring.Kind, spring, hub, PathTo(previous, spring.Coordinate, hub.Coordinate)));
+                var path = PathTo(reached, lastConduit.Value);
+                routes.Add(new Route(spring.Kind, spring, hub, path));
             }
 
             return routes;
         }
 
         /// <summary>
-        /// Walks the connected conduits of one kind outward from a spring,
-        /// recording how each cell was first reached.
+        /// Walks the conduits reachable from a spring, recording how each was
+        /// first reached and how far along the path it lies.
         /// </summary>
         /// <remarks>
-        /// Breadth-first, so the recorded parent chain is a shortest path. Frontier
-        /// cells expand in ascending open-edge order, which keeps the traversal —
-        /// and therefore the reported path when several are equally short —
-        /// identical on every device.
+        /// Breadth-first from every conduit that feeds the spring at once, so the
+        /// recorded parent chain is a shortest path. Seeds are taken in ascending
+        /// direction order and frontier cells expand in ascending open-edge order,
+        /// which keeps the traversal — and so the reported path when several tie in
+        /// length — identical on every device.
         /// </remarks>
-        private static Dictionary<HexCoord, HexCoord> BreadthFirstSearch(
+        private static Dictionary<HexCoord, (HexCoord Previous, int Distance)> Traverse(
             HexGrid<ConduitTile> board, FlowEndpoint spring)
         {
-            var previous = new Dictionary<HexCoord, HexCoord> { [spring.Coordinate] = spring.Coordinate };
+            var reached = new Dictionary<HexCoord, (HexCoord Previous, int Distance)>();
             var frontier = new Queue<HexCoord>();
-            frontier.Enqueue(spring.Coordinate);
+
+            for (var direction = 0; direction < HexCoord.Directions.Count; direction++)
+            {
+                var candidate = spring.Coordinate.Neighbour(direction);
+                if (!board.Contains(candidate) || !board.TryGet(candidate, out var tile))
+                {
+                    continue;
+                }
+
+                // The conduit has to face the spring, and carry its resource.
+                if (tile.Kind != spring.Kind || !tile.HasEdge(EdgeMask.Opposite(direction)))
+                {
+                    continue;
+                }
+
+                if (reached.ContainsKey(candidate))
+                {
+                    continue;
+                }
+
+                reached[candidate] = (candidate, 0);
+                frontier.Enqueue(candidate);
+            }
 
             while (frontier.Count > 0)
             {
@@ -144,30 +186,70 @@ namespace Pathweaver.Core.Flow
                     continue;
                 }
 
+                var distance = reached[current].Distance;
+
                 foreach (var direction in tile.Edges.OpenDirections)
                 {
-                    var neighbourCoordinate = current.Neighbour(direction);
-                    if (previous.ContainsKey(neighbourCoordinate) || !board.Contains(neighbourCoordinate))
+                    var neighbour = current.Neighbour(direction);
+                    if (reached.ContainsKey(neighbour) || !board.Contains(neighbour))
                     {
                         continue;
                     }
 
-                    if (!board.TryGet(neighbourCoordinate, out var neighbourTile)
+                    if (!board.TryGet(neighbour, out var neighbourTile)
                         || !tile.ConnectsTo(neighbourTile, direction))
                     {
                         continue;
                     }
 
-                    previous[neighbourCoordinate] = current;
-                    frontier.Enqueue(neighbourCoordinate);
+                    reached[neighbour] = (current, distance + 1);
+                    frontier.Enqueue(neighbour);
                 }
             }
 
-            return previous;
+            return reached;
+        }
+
+        /// <summary>
+        /// The reached conduit adjacent to the hub and open towards it that lies
+        /// closest to the spring.
+        /// </summary>
+        /// <remarks>
+        /// Ties break on ascending direction, so the choice is stable.
+        /// </remarks>
+        private static HexCoord? ClosestConduitFeeding(
+            HexGrid<ConduitTile> board,
+            Dictionary<HexCoord, (HexCoord Previous, int Distance)> reached,
+            FlowEndpoint hub)
+        {
+            HexCoord? best = null;
+            var bestDistance = int.MaxValue;
+
+            for (var direction = 0; direction < HexCoord.Directions.Count; direction++)
+            {
+                var candidate = hub.Coordinate.Neighbour(direction);
+                if (!reached.TryGetValue(candidate, out var entry))
+                {
+                    continue;
+                }
+
+                if (!board.TryGet(candidate, out var tile) || !tile.HasEdge(EdgeMask.Opposite(direction)))
+                {
+                    continue;
+                }
+
+                if (entry.Distance < bestDistance)
+                {
+                    best = candidate;
+                    bestDistance = entry.Distance;
+                }
+            }
+
+            return best;
         }
 
         private static IReadOnlyList<HexCoord> PathTo(
-            Dictionary<HexCoord, HexCoord> previous, HexCoord from, HexCoord to)
+            Dictionary<HexCoord, (HexCoord Previous, int Distance)> reached, HexCoord to)
         {
             var reversed = new List<HexCoord>();
             var step = to;
@@ -175,12 +257,14 @@ namespace Pathweaver.Core.Flow
             while (true)
             {
                 reversed.Add(step);
-                if (step.Equals(from))
+
+                var previous = reached[step].Previous;
+                if (previous.Equals(step))
                 {
                     break;
                 }
 
-                step = previous[step];
+                step = previous;
             }
 
             reversed.Reverse();
@@ -192,7 +276,6 @@ namespace Pathweaver.Core.Flow
                 .OrderBy(endpoint => (int)endpoint.Kind)
                 .ThenBy(endpoint => endpoint.Coordinate.Q)
                 .ThenBy(endpoint => endpoint.Coordinate.R)
-                .ThenBy(endpoint => endpoint.Direction)
                 .ToList();
     }
 }
