@@ -90,6 +90,17 @@ namespace Pathweaver.Core.Levels
                 TokenPool.Of(StartingTokens),
                 TokenPool.Of(StartingSkips));
 
+        /// <summary>
+        /// Whether a score clears this level's quota.
+        /// </summary>
+        /// <remarks>
+        /// Here rather than in the presentation layer, which is where it first lived. What
+        /// counts as finishing a level is a rule, and rules belong with the simulation where
+        /// they can be tested without Unity — otherwise the one thing the whole level is
+        /// judged by would be the one thing CI never checks.
+        /// </remarks>
+        public bool IsClearedBy(long score) => score >= TargetScore;
+
         public override string ToString() => $"{Id} ({Shape.Count} cells, target {TargetScore})";
     }
 }

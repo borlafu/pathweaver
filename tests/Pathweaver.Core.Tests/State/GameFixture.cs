@@ -15,9 +15,9 @@ namespace Pathweaver.Core.Tests.State;
 internal static class GameFixture
 {
     internal const int East = 0;
-    internal const int NorthEast = 1;
+    internal const int SouthEast = 1;
     internal const int West = 3;
-    internal const int SouthWest = 4;
+    internal const int NorthWest = 4;
 
     internal const long BaseRouteScore = 100;
 

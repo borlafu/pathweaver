@@ -77,7 +77,7 @@ namespace Pathweaver.Game.App
         internal long TargetScore => _level?.TargetScore ?? 0;
 
         /// <summary>Whether the level's quota has been met.</summary>
-        internal bool IsComplete => State != null && _level != null && State.Score >= _level.TargetScore;
+        internal bool IsComplete => State != null && _level != null && _level.IsClearedBy(State.Score);
 
         /// <summary>
         /// The conduits on the routes that most recently paid out.
