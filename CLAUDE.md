@@ -5,12 +5,24 @@ See PRD.md for the full product spec.
 
 ## Status
 
-`Pathweaver.Core` and its test project exist and build clean. No Unity project
-has been scaffolded yet — no `Assets/` or `ProjectSettings/`, so the Unity
-commands below do not work yet.
+The simulation is complete and covered by tests. The Unity project exists and
+compiles against it, but nothing is rendered yet.
 
 Toolchain is ready: .NET SDK 10.0.400, and Unity **6000.5.9f1** (Unity 6.5) with
 the Android modules. See Toolchain setup.
+
+## First thing on a fresh clone
+
+Unity cannot reference a `.csproj`, so the simulation is consumed as a compiled
+plugin. That plugin is a build output and is not committed, so the Unity project
+will not compile until it exists:
+
+```bash
+./scripts/build-core.sh
+```
+
+Run it again after changing anything under `src/`. Forgetting is the most likely
+cause of Unity reporting that `Pathweaver.Core` cannot be found.
 
 ## Release identity
 
@@ -31,16 +43,32 @@ removes, so it runs in parallel with development.
 
 ## Layout
 
+The repository root is both the .NET solution and the Unity project.
+
 ```
 Pathweaver.slnx                 solution (.NET 10 SDK emits .slnx, not .sln)
 src/Pathweaver.Core/            netstandard2.1, no UnityEngine references
-tests/Pathweaver.Core.Tests/    net10.0, xUnit
+tests/Pathweaver.Core.Tests/    net10.0, xUnit, and the level solvability gate
+levels/*.pwlevel                authored levels, verified solvable by CI
+scripts/build-core.sh           builds the simulation into Assets/Plugins
+
+Assets/Scripts/                 Pathweaver.Game assembly — presentation only
+Assets/Plugins/                 Pathweaver.Core.dll, built, not committed
+Assets/Settings/                URP asset and 2D renderer
+Assets/Editor/                  command-line project setup
+Packages/, ProjectSettings/     Unity configuration, committed
 ```
 
 `Pathweaver.Core` holds the whole simulation: hex grid, deterministic seeding,
-flow resolution, scoring. It must stay free of `UnityEngine` references so it
-runs under `dotnet test` and in CI without an Editor or a license. Unity will
-consume it as a managed plugin and supply only presentation and input.
+flow resolution, scoring, placement rules, save format, level loading. It must
+stay free of `UnityEngine` references so it runs under `dotnet test` and in CI
+without an Editor, a licence, or a device. Unity supplies presentation and input
+only — no game rule belongs in `Assets/`.
+
+Rendering is the Universal Render Pipeline with the **2D renderer** (URP 17.5.0),
+per PRD section 5.1. The 2D renderer is the reason for the choice: it gives the
+cozy lighting the PRD asks for later without reworking materials once real art
+replaces the placeholder shapes.
 
 ## Toolchain setup (macOS, Apple Silicon)
 
@@ -123,12 +151,28 @@ overwrites those files on every regeneration.
 
 ## Commands
 
-Core library — works today, no Unity needed:
+Core library — no Unity needed, and what CI runs:
 
 - Build: `dotnet build Pathweaver.slnx`
 - Test: `dotnet test Pathweaver.slnx`
 - Coverage: `dotnet test Pathweaver.slnx --collect:"XPlat Code Coverage"`
 - Format: `dotnet format Pathweaver.slnx`
+- Plugin: `./scripts/build-core.sh` — required before Unity will compile
+
+The test suite includes the level solvability gate: every file under `levels/` must
+load and be completable under several seeds, so an unsolvable level fails CI rather
+than reaching a player.
+
+Batch operations on the Unity project, useful because they need no GUI:
+
+```bash
+unity -batchmode -quit -projectPath . -logFile /tmp/unity.log            # compile only
+unity -batchmode -quit -projectPath . -executeMethod <Type>.<Method> ...  # run setup code
+```
+
+`Assets/Editor/ProjectBootstrap.cs` holds the setup steps that were run through
+that route, so project configuration is reproducible rather than a sequence of
+remembered clicks.
 
 Unity generates its own `.sln` and `.csproj` files under the project root when
 an `Assets/` folder exists. Those are gitignored; never hand-edit them. The

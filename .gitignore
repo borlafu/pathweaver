@@ -73,3 +73,8 @@ local.properties
 
 # Per-developer Claude Code settings
 .claude/settings.local.json
+
+# Pathweaver.Core is built into the Unity project by scripts/build-core.sh.
+# It is a build output, so it is not committed; run the script on a fresh clone.
+/Assets/Plugins/Pathweaver.Core.dll
+/Assets/Plugins/Pathweaver.Core.dll.meta
