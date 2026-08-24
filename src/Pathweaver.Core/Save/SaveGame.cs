@@ -7,6 +7,7 @@ using Pathweaver.Core.Determinism;
 using Pathweaver.Core.Flow;
 using Pathweaver.Core.Hex;
 using Pathweaver.Core.Rules;
+using Pathweaver.Core.Scoring;
 using Pathweaver.Core.State;
 using Pathweaver.Core.Tiles;
 
@@ -37,7 +38,7 @@ namespace Pathweaver.Core.Save
     public static class SaveGame
     {
         /// <summary>The version this build writes.</summary>
-        public const int FormatVersion = 2;
+        public const int FormatVersion = 3;
 
         /// <summary>
         /// The oldest version this build can still read.
@@ -51,6 +52,17 @@ namespace Pathweaver.Core.Save
 
         /// <summary>The version that first carried a skip count.</summary>
         private const int SkipsAddedInVersion = 2;
+
+        /// <summary>
+        /// The version that first recorded what each pair had been paid for.
+        /// </summary>
+        /// <remarks>
+        /// Before it, a save recorded only that a pair had paid out. Now that a pair connected a better
+        /// way is paid the difference, the length matters: without it a route paid at one length could
+        /// be paid in full again after a suspend. Older saves are filled in from the board they carry —
+        /// see <see cref="ReadCompletedRoutes"/>.
+        /// </remarks>
+        private const int PaidLengthsAddedInVersion = 3;
 
         private const int HeaderLength = 8;
 
@@ -98,7 +110,7 @@ namespace Pathweaver.Core.Save
             WriteEndpoints(writer, state.Endpoints);
             WriteTile(writer, state.HeldTile);
             WriteBag(writer, state.Bag);
-            WriteCompletedRoutes(writer, state.CompletedRoutes);
+            WriteCompletedRoutes(writer, state);
 
             writer.Flush();
             return buffer.ToArray();
@@ -202,7 +214,7 @@ namespace Pathweaver.Core.Save
             var endpoints = ReadEndpoints(reader);
             var heldTile = ReadTile(reader);
             var bag = ReadBag(reader);
-            var completedRoutes = ReadCompletedRoutes(reader, endpoints);
+            var completedRoutes = ReadCompletedRoutes(reader, endpoints, version, board);
 
             return GameState.Restore(
                 board, endpoints, bag, heldTile, TokenPool.Of(pivotTokens), TokenPool.Of(skipTokens),
@@ -334,13 +346,11 @@ namespace Pathweaver.Core.Save
             return tiles;
         }
 
-        private static void WriteCompletedRoutes(
-            BinaryWriter writer, IReadOnlyCollection<CompletedRoute> routes)
+        private static void WriteCompletedRoutes(BinaryWriter writer, GameState state)
         {
-            // Ordered so the encoding stays stable: a hash set enumerates in
-            // whatever order it likes, which would make identical games produce
-            // different bytes.
-            var ordered = routes
+            // Ordered so the encoding stays stable: a dictionary enumerates in whatever order it likes,
+            // which would make identical games produce different bytes.
+            var ordered = state.CompletedRoutes
                 .OrderBy(route => route.Spring.Q)
                 .ThenBy(route => route.Spring.R)
                 .ThenBy(route => route.Hub.Q)
@@ -352,11 +362,25 @@ namespace Pathweaver.Core.Save
             {
                 WriteCoordinate(writer, route.Spring);
                 WriteCoordinate(writer, route.Hub);
+                writer.Write(state.PaidLengthOf(route));
             }
         }
 
-        private static List<CompletedRoute> ReadCompletedRoutes(
-            BinaryReader reader, FlowEndpoint[] endpoints)
+        /// <summary>
+        /// Reads what each pair has been paid for.
+        /// </summary>
+        /// <remarks>
+        /// A save older than <see cref="PaidLengthsAddedInVersion"/> records only that a pair paid out.
+        /// The length is filled in from the board the save carries: whatever route that pair has right
+        /// now is what it was paid for, since that is the position the payout was made in. A pair with
+        /// no route now — the player retrieved a conduit after being paid — is recorded as one, the
+        /// least any route can pay, which errs towards paying a difference rather than withholding one.
+        /// </remarks>
+        private static List<KeyValuePair<CompletedRoute, int>> ReadCompletedRoutes(
+            BinaryReader reader,
+            FlowEndpoint[] endpoints,
+            int version,
+            HexGrid<ConduitTile> board)
         {
             var count = ReadCount(reader, "completed routes");
             var springs = endpoints
@@ -368,7 +392,11 @@ namespace Pathweaver.Core.Save
                 .Select(endpoint => endpoint.Coordinate)
                 .ToHashSet();
 
-            var routes = new List<CompletedRoute>(count);
+            var currentLengths = version >= PaidLengthsAddedInVersion
+                ? null
+                : CurrentRouteLengths(board, endpoints);
+
+            var routes = new List<KeyValuePair<CompletedRoute, int>>(count);
             for (var index = 0; index < count; index++)
             {
                 var spring = ReadCoordinate(reader);
@@ -383,10 +411,42 @@ namespace Pathweaver.Core.Save
                         $"Completed route {spring} to {hub} does not match this level's endpoints.");
                 }
 
-                routes.Add(new CompletedRoute(spring, hub));
+                var pair = new CompletedRoute(spring, hub);
+
+                var paidLength = version >= PaidLengthsAddedInVersion
+                    ? ReadPaidLength(reader)
+                    : currentLengths!.TryGetValue(pair, out var current) ? current : 1;
+
+                routes.Add(new KeyValuePair<CompletedRoute, int>(pair, paidLength));
             }
 
             return routes;
+        }
+
+        private static int ReadPaidLength(BinaryReader reader)
+        {
+            var length = reader.ReadInt32();
+
+            if (length < 1 || length > ScoreTable.MaxRouteLength)
+            {
+                throw new SaveFormatException(
+                    $"A paid route length of {length} is outside 1 to {ScoreTable.MaxRouteLength}.");
+            }
+
+            return length;
+        }
+
+        private static Dictionary<CompletedRoute, int> CurrentRouteLengths(
+            HexGrid<ConduitTile> board, FlowEndpoint[] endpoints)
+        {
+            var lengths = new Dictionary<CompletedRoute, int>();
+
+            foreach (var route in FlowResolver.FindCompletedRoutes(board, endpoints))
+            {
+                lengths[new CompletedRoute(route.Spring.Coordinate, route.Hub.Coordinate)] = route.Length;
+            }
+
+            return lengths;
         }
 
         private static void WriteCoordinate(BinaryWriter writer, HexCoord coordinate)

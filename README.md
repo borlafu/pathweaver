@@ -73,8 +73,17 @@ and earns the unmultiplied base score. Where a network offers several paths betw
 the same spring and hub, the shortest is the one reported and paid — a player who
 builds a loop cannot claim the longer way round.
 
-Each spring-and-hub pair pays out **once**. The game records which pairs have already
-harvested, so retrieving a conduit and putting it back does not pay twice.
+Each spring-and-hub pair pays for the **best route it has managed**, and only ever the
+difference. Connect a pair the short way for 100, find a longer way later, and the pair pays
+what the longer route is worth minus the 100 already taken. Retrieving a conduit and putting
+it back pays nothing, because the route is no better than it was.
+
+The rule used to be one payout per pair, ever, at whatever length it first completed. That
+turned the ring level into a trap: joining the spring to the hub through the single cell
+between them took 100 points and made its 800 target unreachable, with a restart the only way
+out — and the Pivot Token the level grants could not rescue it, because retrieving the short
+cut did not clear the record. Tokens are still granted on a first completion only, so a route
+extended a cell at a time is not a way to farm them.
 
 A level is cleared by reaching its **target score**, and clearing it ends the board. Every
 control is withdrawn and one button, centred on screen, moves on. An earlier version let

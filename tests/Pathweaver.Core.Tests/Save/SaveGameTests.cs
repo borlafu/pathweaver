@@ -159,7 +159,9 @@ public class SaveGameTests
     [Fact]
     public void The_format_version_is_published()
     {
-        Assert.Equal(2, SaveGame.FormatVersion);
+        // Bumped to 3 when a save started recording what each pair had been paid for, which is what
+        // lets a pair connected a better way later be paid the difference.
+        Assert.Equal(3, SaveGame.FormatVersion);
     }
 
     [Fact]
