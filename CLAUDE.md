@@ -74,6 +74,7 @@ Pathweaver.slnx                 solution (.NET 10 SDK emits .slnx, not .sln)
 src/Pathweaver.Core/            netstandard2.1, no UnityEngine references
 tests/Pathweaver.Core.Tests/    net10.0, xUnit, and the level solvability gate
 levels/*.pwlevel                authored levels, verified solvable by CI
+atlas/*.pwatlas                 World Atlas packs, verified reachable by CI
 scripts/build-core.sh           builds the simulation into Assets/Plugins
 
 Assets/Scripts/                 Pathweaver.Game assembly — presentation only
@@ -290,6 +291,8 @@ lose.
 | Is a retrieved conduit returned to hand? | No, it is discarded. The token buys back the space, not the tile. |
 | What does a Pivot Token do? | It takes a conduit off the board, and nothing else. PRD section 3.2B also allows turning a placed conduit; that half is dropped, because a conduit was placed connected to something and turning it in place usually only disconnects it. `PivotRotate` was implemented, tested, and then deleted rather than left as dead code. |
 | How is a Pivot Token spent? | Tap the remove button under the pip column to arm it, then tap a conduit to retrieve it. Arming is a mode rather than a bare tap on a conduit, because the board is the one thing a thumb touches constantly and a token is the scarcest thing the player holds. Arming spends nothing, and a tap anywhere else cancels. |
+| What does the World Atlas cost and pay? | Star Essence, one per base score harvested on any cleared board, in both modes. Nodes are relics — extra skips, extra Pivot Tokens, extra essence per clear — and are additive on top of a board's own allowance, because an upgrade that replaced it would make a generous level worse than a mean one. The whole first region costs 51 and clearing the twenty levels once pays at least 77, a relationship CI checks. |
+| How does a future biome pack dock on? | It adds a file under `atlas/` with its own `pack:` line and a `docks:` line naming the nodes it attaches to. Nothing already shipped changes. The `docks:` declaration exists because otherwise a prerequisite living in another file is indistinguishable from a typo, and one of the two has to be an error. |
 | Do tokens survive the end of a board? | Yes. Endless rounds carry both Pivot Tokens and skips; campaign levels carry Pivot Tokens, in `CampaignProgress`. In both cases the board's own allowance is a floor rather than a replacement. They are earned, so taking them back at a boundary is taking back a reward — and since clearing a board ends it, a token earned by the clearing route would otherwise be unspendable. A fresh endless run keeps none. Campaign skips are not carried: three per level is an allowance rather than a reward, and every authored level is solvable within its own. |
 
 ## Hard constraints from the PRD

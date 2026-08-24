@@ -87,9 +87,12 @@ keystore.properties
 /Assets/Plugins/Pathweaver.Core.dll
 /Assets/Plugins/Pathweaver.Core.dll.meta
 
-# Levels are copied from levels/ into Resources by scripts/build-core.sh.
+# Levels and atlas packs are copied from levels/ and atlas/ into Resources by
+# scripts/build-core.sh.
 /Assets/Resources/Levels/
 /Assets/Resources/Levels.meta
+/Assets/Resources/Atlas/
+/Assets/Resources/Atlas.meta
 
 # Rendered previews from ProjectBootstrap.CaptureBoardPreview
 /Artifacts/

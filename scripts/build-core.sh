@@ -37,3 +37,21 @@ for level in "$levels_source"/*.pwlevel; do
 done
 
 echo "Copied $copied level(s) to Assets/Resources/Levels"
+
+# Atlas packs follow the same route as levels, and for the same reason: authored under atlas/,
+# copied into Resources as .txt so Unity can import them as TextAssets and read them synchronously
+# on a device. A new biome pack is a new file here and nothing else.
+atlas_source="$root/atlas"
+atlas_destination="$root/Assets/Resources/Atlas"
+
+mkdir -p "$atlas_destination"
+rm -f "$atlas_destination"/*.txt
+
+packs=0
+for pack in "$atlas_source"/*.pwatlas; do
+  [ -e "$pack" ] || continue
+  cp "$pack" "$atlas_destination/$(basename "${pack%.pwatlas}").txt"
+  packs=$((packs + 1))
+done
+
+echo "Copied $packs atlas pack(s) to Assets/Resources/Atlas"

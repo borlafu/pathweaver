@@ -105,6 +105,18 @@ namespace Pathweaver.Core.Levels
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">Thrown for a negative count.</exception>
         public LevelDefinition WithStartingTokens(int startingTokens)
+            => WithStartingResources(startingTokens, StartingSkips);
+
+        /// <summary>
+        /// The same level, dealt with different numbers of Pivot Tokens and skips in hand.
+        /// </summary>
+        /// <remarks>
+        /// The second way a level's opening resources are raised: carried tokens travel between levels,
+        /// and unlocked atlas relics add to every board. Both are the caller's arithmetic, so the level
+        /// file keeps saying only what the level grants on its own.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown for a negative count.</exception>
+        public LevelDefinition WithStartingResources(int startingTokens, int startingSkips)
         {
             if (startingTokens < 0)
             {
@@ -112,9 +124,15 @@ namespace Pathweaver.Core.Levels
                     nameof(startingTokens), startingTokens, "A level cannot start with fewer than no tokens.");
             }
 
+            if (startingSkips < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(startingSkips), startingSkips, "A level cannot start with fewer than no skips.");
+            }
+
             return new LevelDefinition(
                 Id, Name, _shape, _endpoints, _bagTiles, BaseRouteScore, TargetScore,
-                startingTokens, StartingSkips, Seed);
+                startingTokens, startingSkips, Seed);
         }
 
         public GameState CreateGame(ulong seed)
