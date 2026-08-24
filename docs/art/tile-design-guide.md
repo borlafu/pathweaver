@@ -376,6 +376,13 @@ Every cell of the board is in exactly one of these states at any moment.
 | 5 | **Spring** | A source; flow begins here | Hexagon in `#F2D959` with an east–west bar in the kind colour | A source. Must read as *emitting*. |
 | 6 | **Hub** | A destination; flow is harvested here | Hexagon in `#8C66D9` with an east–west bar in the kind colour | A destination. Must read as *receiving*. |
 
+**Now established in code:** springs and hubs animate, and the direction is the role. A ring
+grows from the centre of a spring out to its rim; on a hub it collapses from the rim to the
+centre. That is the "radiating versus converging silhouette" proposed below, built as
+`EndpointPulse` — so the non-colour channel for source-versus-destination exists today, and
+your art should assume it. The ring is a separate object drawn between the cell background
+and the conduit arms, so it never covers the resource motif.
+
 Additional established facts about springs and hubs:
 
 - **A spring or hub occupies its own cell, and is never a conduit.** The player
@@ -402,6 +409,11 @@ composites over the normal tile during the 0.9-second flash. That keeps the
 texture count flat and lets the animation be tuned in code without redelivering
 art. If the flash instead needs a genuinely different painting, say so now,
 because it changes the budget arithmetic.
+
+**Also now established:** a completed route carries a travelling light along the centre
+channel of its conduits (`FlowPulse`). It is a small disc in the resource colour, brightened,
+drawn in front of the arms — so the clear central channel described below is no longer a
+future requirement but a present one.
 
 The Supporter Pass's **golden path particle trails** (PRD 6.2) will also travel
 along completed routes. They are particle effects rather than tile art, but the

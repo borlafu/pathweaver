@@ -103,6 +103,22 @@ twenty levels once, so it is reachable by playing rather than by grinding — an
 relationship. Nodes are authored under `atlas/` as one line each, and a future biome pack docks onto
 the outer edge by adding a file that names the nodes it attaches to.
 
+### What moves, and why
+
+Springs breathe outward and hubs breathe inward: a ring grows from the centre of a spring to
+its rim, and collapses from rim to centre on a hub. That is not decoration. Source and
+destination were previously told apart by background colour alone, and the art guide's
+section 9 asks for exactly this second channel — "a radiating versus converging silhouette".
+
+Every **completed** route carries a travelling light from its spring to its hub, along the
+clear channel down the middle of each conduit. Only completed routes flow, so movement means
+"this pays" rather than "this is joined to something".
+
+Both run at the 30 Hz the frame-rate governor drops to once the board is idle, and neither
+tells the governor it is busy — a pulse must not cost the battery a drag costs. **Settings →
+Reduce Motion** silences all of it, including the rotation hint and the restart button's
+pulse.
+
 ### Tokens
 
 Every completed route pays out in one of two currencies, so none feels wasted:

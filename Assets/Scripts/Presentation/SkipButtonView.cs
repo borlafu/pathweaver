@@ -23,8 +23,9 @@ namespace Pathweaver.Game.Presentation
         private static readonly Vector2 ViewportPosition = new Vector2(0.86f, 0.10f);
 
         private const float ButtonRadius = 0.34f;
-        private const float GlyphLength = 0.2f;
-        private const float GlyphThickness = 0.075f;
+        private const float GlyphLength = 0.13f;
+        private const float GlyphHeight = 0.115f;
+        private const float GlyphThickness = 0.05f;
 
         [SerializeField]
         private BoardView _boardView;
@@ -110,14 +111,15 @@ namespace Pathweaver.Game.Presentation
             _backgroundRenderer = AddPart(
                 "Background", HexMeshFactory.CreateHexagon(ButtonRadius), BoardPalette.SkipSpent, 0f);
 
-            // Two chevrons pointing right: the tile after this one, and the one after that.
-            // A single arrow would read as "go" rather than "next".
-            var chevron = HexMeshFactory.CreateRectangle(GlyphLength, GlyphThickness);
+            // Two chevrons pointing right: the tile after this one, and the one after that. A single
+            // arrow would read as "go" rather than "next".
+            //
+            // One mitred mesh each, rather than the two loose rectangles per chevron this used to be —
+            // those crossed at the apex and left a notch on the outside of the joint.
+            var chevron = GlyphMeshFactory.CreateChevron(GlyphLength, GlyphHeight, GlyphThickness);
 
-            AddPart("UpperA", chevron, BoardPalette.RestartArrow, -0.02f, new Vector3(-0.09f, 0.06f, 0f), -40f);
-            AddPart("LowerA", chevron, BoardPalette.RestartArrow, -0.02f, new Vector3(-0.09f, -0.06f, 0f), 40f);
-            AddPart("UpperB", chevron, BoardPalette.RestartArrow, -0.02f, new Vector3(0.09f, 0.06f, 0f), -40f);
-            AddPart("LowerB", chevron, BoardPalette.RestartArrow, -0.02f, new Vector3(0.09f, -0.06f, 0f), 40f);
+            AddPart("Near", chevron, BoardPalette.RestartArrow, -0.02f, new Vector3(-0.06f, 0f, 0f));
+            AddPart("Far", chevron, BoardPalette.RestartArrow, -0.02f, new Vector3(0.06f, 0f, 0f));
         }
 
         private MeshRenderer AddPart(

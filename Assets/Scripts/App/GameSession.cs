@@ -44,6 +44,7 @@ namespace Pathweaver.Game.App
 
         private SaveService _saves;
         private LevelDefinition _level;
+        private HexGrid<ConduitTile> _lastResolvedBoard;
 
         /// <summary>Raised whenever the state changes, including at the start.</summary>
         internal event Action<GameState> StateChanged;
@@ -432,16 +433,15 @@ namespace Pathweaver.Game.App
         /// with no flash and no buzz is exactly the "nothing happened" that made the short cut on the
         /// ring level look like a bug.
         /// <para>
-        /// Routes are recomputed from the board rather than reported by the engine, whose job is to
-        /// score them, not to describe them for display. Boards hold tens of cells, so asking again
-        /// costs nothing worth avoiding.
+        /// Reads <see cref="ActiveRoutes"/>, which Publish has already resolved for this board, so a
+        /// placement resolves the flow once rather than twice.
         /// </para>
         /// </remarks>
         private IReadOnlyList<Route> RoutesPaidSince(Dictionary<(HexCoord Spring, HexCoord Hub), int> paidBefore)
         {
             var paid = new List<Route>();
 
-            foreach (var route in FlowResolver.FindCompletedRoutes(State.Board, State.Endpoints))
+            foreach (var route in ActiveRoutes)
             {
                 var pair = (route.Spring.Coordinate, route.Hub.Coordinate);
                 var before = paidBefore.TryGetValue(pair, out var length) ? length : 0;
@@ -475,8 +475,54 @@ namespace Pathweaver.Game.App
             return lengths;
         }
 
+        /// <summary>
+        /// The routes currently complete, spring to hub, in board order.
+        /// </summary>
+        /// <remarks>
+        /// Resolved once per board rather than per frame, and cached here because the flow animation and
+        /// the payout check both want the same answer. Empty until a board exists.
+        /// </remarks>
+        internal IReadOnlyList<Route> ActiveRoutes { get; private set; } = Array.Empty<Route>();
+
+        /// <summary>
+        /// Re-resolves the completed routes, unless the board is the one already resolved.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Publish runs on every state change, including ones that cannot alter a route — turning the tile
+        /// in hand, arming a Pivot Token. State is immutable, so comparing the board by reference is an
+        /// exact and free test of whether anything could have changed.
+        /// </para>
+        /// <para>
+        /// The resolve is wrapped because <see cref="FlowResolver.FindCompletedRoutes"/> throws on a board
+        /// it considers invalid, and this now runs while a level is being loaded. A decoration must never
+        /// be able to stop a level from opening: a fault here costs the flow animation and nothing else.
+        /// </para>
+        /// </remarks>
+        private void ResolveRoutes()
+        {
+            if (ReferenceEquals(State.Board, _lastResolvedBoard))
+            {
+                return;
+            }
+
+            _lastResolvedBoard = State.Board;
+
+            try
+            {
+                ActiveRoutes = FlowResolver.FindCompletedRoutes(State.Board, State.Endpoints);
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"[flow] routes could not be resolved: {error.Message}");
+                ActiveRoutes = Array.Empty<Route>();
+            }
+        }
+
         private void Publish()
         {
+            ResolveRoutes();
+
             AvailableCells = State.LegalPlacements
                 .Where(placement => placement.Rotation == HeldRotation)
                 .Select(placement => placement.Coordinate)

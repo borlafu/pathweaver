@@ -22,8 +22,15 @@ namespace Pathweaver.Game.Presentation
         private static readonly int[] HubMarkEdges = { 0, 3 };
 
         private TileVisual _visual;
+        private Transform _pulse;
+        private Material _pulseMaterial;
+        private Color _pulseResting;
+        private Color _pulseLit;
 
         internal HexCoord Coordinate { get; private set; }
+
+        /// <summary>Whether this cell carries an endpoint's breathing ring.</summary>
+        internal bool HasPulse => _pulse != null;
 
         internal void Initialise(
             HexCoord coordinate, Mesh hexMesh, Mesh spokeMesh, Material material, BoardTheme theme)
@@ -36,6 +43,81 @@ namespace Pathweaver.Game.Presentation
             _visual.Initialise(hexMesh, spokeMesh, material, theme);
 
             ShowEmpty();
+        }
+
+        /// <summary>
+        /// Gives this cell the ring that breathes in or out, once, for good.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A sibling of the tile's visual rather than a child of it. Every display state rebuilds the
+        /// visual's spokes and motif from scratch, so anything living inside it is churned on every state
+        /// change; the ring belongs to the cell's <em>role</em>, which never changes, not to its drawing.
+        /// </para>
+        /// <para>
+        /// It sits between the background and the spokes, and it is a ring rather than a disc, so it
+        /// travels across the cell without ever hiding the resource mark in the middle.
+        /// </para>
+        /// </remarks>
+        internal void AttachPulse(FlowEndpoint endpoint, Mesh ringMesh, Material material)
+        {
+            if (_pulse != null || ringMesh == null || material == null)
+            {
+                return;
+            }
+
+            var isSpring = endpoint.Role == EndpointRole.Spring;
+            _pulseResting = isSpring ? BoardPalette.Spring : BoardPalette.Hub;
+
+            // Lit is the cell's own colour brightened rather than a colour of its own: the ring has to
+            // dissolve into the cell exactly, because an opaque material has no alpha to fade.
+            _pulseLit = Color.Lerp(_pulseResting, BoardPalette.HarvestFlash, 0.7f);
+
+            var pulse = new GameObject("Pulse");
+            pulse.transform.SetParent(transform, worldPositionStays: false);
+            pulse.transform.localPosition = new Vector3(0f, 0f, -0.005f);
+            pulse.transform.localScale = Vector3.one * EndpointPulse.RestingScale;
+
+            pulse.AddComponent<MeshFilter>().sharedMesh = ringMesh;
+
+            var renderer = pulse.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.material.color = _pulseResting;
+
+            _pulse = pulse.transform;
+            _pulseMaterial = renderer.material;
+            PulseRole = endpoint.Role;
+        }
+
+        /// <summary>Which way this cell's ring travels.</summary>
+        internal EndpointRole PulseRole { get; private set; }
+
+        /// <summary>
+        /// Poses the ring at a point in its cycle.
+        /// </summary>
+        /// <remarks>
+        /// Scale and colour only — no rebuild, no allocation — so this is safe to call every frame.
+        /// </remarks>
+        internal void SetPulse(float scale, float fade)
+        {
+            if (_pulse == null)
+            {
+                return;
+            }
+
+            _pulse.localScale = Vector3.one * scale;
+            _pulseMaterial.color = Color.Lerp(_pulseLit, _pulseResting, fade);
+        }
+
+        /// <summary>Puts the ring away, for reduced motion.</summary>
+        internal void RestPulse()
+        {
+            if (_pulse == null)
+            {
+                return;
+            }
+
+            _pulse.localScale = Vector3.one * EndpointPulse.RestingScale;
         }
 
         internal void ShowEmpty()

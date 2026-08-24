@@ -24,23 +24,17 @@ namespace Pathweaver.Game.Presentation.Menus
             _resume = HexButton.Create(
                 transform, ResumeId, camera, material,
                 new Vector2(0.5f, 0.58f), 0.6f, BoardPalette.MenuPrimary, touchRadiusFraction: 0.16f);
-            _resume.AddGlyph(
-                HexMeshFactory.CreateRegularPolygon(3, 0.24f, rotationDegrees: -90f), BoardPalette.MenuGlyph);
+            MenuGlyphs.AddPlay(_resume, 0.24f);
 
             _restart = HexButton.Create(
                 transform, RestartId, camera, material,
                 new Vector2(0.33f, 0.38f), 0.45f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.13f);
-            _restart.AddGlyph(
-                HexMeshFactory.CreateCircularArrow(0.2f, 0.065f, 265f), BoardPalette.MenuGlyph);
+            MenuGlyphs.AddRestartArrow(_restart);
 
             _menu = HexButton.Create(
                 transform, MenuId, camera, material,
                 new Vector2(0.67f, 0.38f), 0.45f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.13f);
-            foreach (var offset in new[] { -0.14f, 0f, 0.14f })
-            {
-                _menu.AddGlyph(
-                    HexMeshFactory.CreateHexagon(0.06f), BoardPalette.MenuGlyph, new Vector3(0f, offset, 0f));
-            }
+            MenuGlyphs.AddLevelStack(_menu, pipRadius: 0.06f, spacing: 0.14f);
         }
 
         internal string ButtonAt(Vector2 screenPosition)

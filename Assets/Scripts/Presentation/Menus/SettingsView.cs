@@ -40,9 +40,7 @@ namespace Pathweaver.Game.Presentation.Menus
             _back = HexButton.Create(
                 transform, BackId, camera, material,
                 new Vector2(0.14f, 0.09f), 0.4f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.12f);
-            // Left, matching the level list's back control. See LevelSelectView for why 30 was wrong.
-            _back.AddGlyph(
-                HexMeshFactory.CreateRegularPolygon(3, 0.19f, rotationDegrees: 90f), BoardPalette.MenuGlyph);
+            MenuGlyphs.AddBack(_back);
 
             Refresh();
         }
@@ -52,8 +50,8 @@ namespace Pathweaver.Game.Presentation.Menus
         /// </summary>
         internal void Refresh()
         {
-            DrawSwitch(_haptics, GameSettings.HapticsEnabled, WaveGlyph());
-            DrawSwitch(_reduceMotion, GameSettings.ReduceMotion, MotionGlyph());
+            DrawSwitch(_haptics, GameSettings.HapticsEnabled, MenuGlyphs.Haptics());
+            DrawSwitch(_reduceMotion, GameSettings.ReduceMotion, MenuGlyphs.Motion());
         }
 
         internal string ButtonAt(Vector2 screenPosition)
@@ -70,23 +68,6 @@ namespace Pathweaver.Game.Presentation.Menus
 
             return _back != null && _back.IsPressed(screenPosition) ? BackId : null;
         }
-
-        /// <summary>Three bars, like a buzz.</summary>
-        private static (Mesh Mesh, Vector3 Offset)[] WaveGlyph()
-            => new[]
-            {
-                (HexMeshFactory.CreateRectangle(0.05f, 0.12f), new Vector3(-0.13f, 0f, 0f)),
-                (HexMeshFactory.CreateRectangle(0.05f, 0.24f), new Vector3(0f, 0f, 0f)),
-                (HexMeshFactory.CreateRectangle(0.05f, 0.12f), new Vector3(0.13f, 0f, 0f)),
-            };
-
-        /// <summary>An arrow-like wedge, for motion.</summary>
-        private static (Mesh Mesh, Vector3 Offset)[] MotionGlyph()
-            => new[]
-            {
-                (HexMeshFactory.CreateRegularPolygon(3, 0.13f, rotationDegrees: -90f), new Vector3(-0.1f, 0f, 0f)),
-                (HexMeshFactory.CreateRegularPolygon(3, 0.13f, rotationDegrees: -90f), new Vector3(0.1f, 0f, 0f)),
-            };
 
         private static void DrawSwitch(HexButton button, bool isOn, (Mesh Mesh, Vector3 Offset)[] glyph)
         {
