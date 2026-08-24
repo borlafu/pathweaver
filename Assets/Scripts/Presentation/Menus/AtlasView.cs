@@ -25,12 +25,24 @@ namespace Pathweaver.Game.Presentation.Menus
     {
         internal const string BackId = "back";
 
-        /// <summary>World units between neighbouring nodes, and the radius of one.</summary>
-        private const float NodeSpacing = 1.05f;
-        private const float NodeRadius = 0.42f;
-        private const float LinkThickness = 0.06f;
-        private const float CostPipRadius = 0.058f;
-        private const float CostPipSpacing = 0.15f;
+        /// <summary>
+        /// A node's radius as a share of the distance between two nodes.
+        /// </summary>
+        /// <remarks>
+        /// Everything scales from the spacing, which is computed from the constellation's own extents
+        /// so a pack of any shape fits the screen. The first version used fixed world units and the
+        /// outer nodes ran off both edges the moment the region was three columns wide.
+        /// </remarks>
+        private const float NodeRadiusFactor = 0.40f;
+
+        private const float LinkThicknessFactor = 0.14f;
+
+        /// <summary>The band of screen the constellation may use, in viewport fractions.</summary>
+        private const float TopEdge = 0.95f;
+        private const float BottomEdge = 0.28f;
+
+        /// <summary>Breathing room around the constellation, in world units.</summary>
+        private const float MarginWorldUnits = 0.12f;
 
         /// <summary>Essence pips shown before the row is capped.</summary>
         private const int MaximumEssencePips = 12;
@@ -42,6 +54,8 @@ namespace Pathweaver.Game.Presentation.Menus
         private HexButton _back;
         private Material _material;
         private Camera _camera;
+        private float _spacing = 1f;
+        private float _radius = 0.4f;
 
         /// <summary>
         /// Draws the constellation for the given progress.
@@ -54,6 +68,7 @@ namespace Pathweaver.Game.Presentation.Menus
             Clear();
 
             var centre = Centre(map);
+            Fit(map, centre);
 
             // Links first, so a node is drawn over the lines that reach it.
             foreach (var node in map.Nodes)
@@ -133,13 +148,46 @@ namespace Pathweaver.Game.Presentation.Menus
             return new Vector3(middle.x, middle.y, 0f);
         }
 
+        /// <summary>
+        /// Chooses a spacing that fits the whole constellation on screen.
+        /// </summary>
+        /// <remarks>
+        /// Measured against the width and the height separately, and the tighter of the two wins —
+        /// the same reasoning as <see cref="BoardCameraFitter"/>, except the layout scales rather than
+        /// the camera, because the menu camera has to keep its framing for the controls drawn on top.
+        /// </remarks>
+        private void Fit(AtlasMap map, Vector3 centre)
+        {
+            var extentX = 0.001f;
+            var extentY = 0.001f;
+
+            foreach (var node in map.Nodes)
+            {
+                var world = HexMetrics.ToWorld(node.Position) - centre;
+                extentX = Mathf.Max(extentX, Mathf.Abs(world.x));
+                extentY = Mathf.Max(extentY, Mathf.Abs(world.y));
+            }
+
+            var visible = MenuCamera.WorldExtents(_camera);
+            var halfWidth = (visible.x * 0.5f) - MarginWorldUnits;
+            var halfHeight = (visible.y * (TopEdge - BottomEdge) * 0.5f) - MarginWorldUnits;
+
+            var forWidth = halfWidth / (extentX + NodeRadiusFactor);
+            var forHeight = halfHeight / (extentY + NodeRadiusFactor);
+
+            _spacing = Mathf.Max(0.1f, Mathf.Min(forWidth, forHeight));
+            _radius = _spacing * NodeRadiusFactor;
+        }
+
         private Vector3 WorldPositionOf(HexCoord coordinate, Vector3 centre)
         {
-            var world = (HexMetrics.ToWorld(coordinate) - centre) * NodeSpacing;
+            var world = (HexMetrics.ToWorld(coordinate) - centre) * _spacing;
 
-            // Above the centre of the screen, leaving the lower band for the essence row and the
-            // back control.
-            return new Vector3(world.x, world.y + 0.5f, -1.4f);
+            // Centred in the band, which leaves the essence row and the back control their own space
+            // below rather than drawing the constellation over them.
+            var band = _camera.ViewportToWorldPoint(new Vector3(0.5f, (TopEdge + BottomEdge) * 0.5f, 0f));
+
+            return new Vector3(world.x + band.x, world.y + band.y, -1.4f);
         }
 
         private void DrawNode(AtlasNode node, AtlasMap map, AtlasProgress progress, Vector3 centre)
@@ -159,11 +207,15 @@ namespace Pathweaver.Game.Presentation.Menus
 
             var button = HexButton.Create(
                 transform, node.Id, _camera, _material,
-                new Vector2(viewport.x, viewport.y), NodeRadius, colour, touchRadiusFraction: 0.09f);
+                new Vector2(viewport.x, viewport.y), _radius, colour,
+                touchRadiusFraction: Mathf.Max(_radius / MenuCamera.WorldExtents(_camera).x * 0.9f, 0.06f));
 
             // What the node gives, as its own mark: a hexagon for a token, a chevron pair for a skip,
             // a small star for essence. The same three shapes the HUD already uses for those things.
-            button.AddGlyph(EffectGlyph(node.Effect.Kind), EffectColour(node.Effect.Kind, unlocked));
+            button.AddGlyph(
+                EffectGlyph(node.Effect.Kind, _radius),
+                EffectColour(node.Effect.Kind, unlocked),
+                new Vector3(0f, _radius * 0.22f, 0f));
 
             if (!unlocked)
             {
@@ -187,11 +239,11 @@ namespace Pathweaver.Game.Presentation.Menus
             return true;
         }
 
-        private static Mesh EffectGlyph(AtlasEffectKind kind) => kind switch
+        private static Mesh EffectGlyph(AtlasEffectKind kind, float radius) => kind switch
         {
-            AtlasEffectKind.Token => HexMeshFactory.CreateHexagon(0.15f),
-            AtlasEffectKind.Skip => HexMeshFactory.CreateRectangle(0.2f, 0.07f),
-            _ => HexMeshFactory.CreateRegularPolygon(4, 0.16f, rotationDegrees: 45f),
+            AtlasEffectKind.Token => HexMeshFactory.CreateHexagon(radius * 0.34f),
+            AtlasEffectKind.Skip => HexMeshFactory.CreateRectangle(radius * 0.5f, radius * 0.17f),
+            _ => HexMeshFactory.CreateRegularPolygon(4, radius * 0.36f, rotationDegrees: 45f),
         };
 
         private static Color EffectColour(AtlasEffectKind kind, bool unlocked)
@@ -214,14 +266,18 @@ namespace Pathweaver.Game.Presentation.Menus
         /// </summary>
         /// <remarks>
         /// Pips rather than a number, because there is still no font — and at these costs a row of
-        /// shapes reads faster than a digit would anyway. Costs run to ten, so they wrap onto two rows
-        /// rather than growing wider than the node they belong to.
+        /// shapes reads faster than a digit would anyway. They sit inside the node's lower half: below
+        /// it, they collided with whatever node the constellation put underneath.
         /// </remarks>
         private void DrawCost(HexButton button, int cost, bool affordable)
         {
             const int perRow = 5;
             var colour = affordable ? BoardPalette.AtlasEssence : BoardPalette.AtlasCostUnaffordable;
-            var mesh = HexMeshFactory.CreateHexagon(CostPipRadius);
+
+            var pipRadius = _radius * 0.11f;
+            var pipSpacing = _radius * 0.29f;
+            var mesh = HexMeshFactory.CreateHexagon(pipRadius);
+            var rows = Mathf.CeilToInt(cost / (float)perRow);
 
             for (var index = 0; index < cost; index++)
             {
@@ -229,8 +285,8 @@ namespace Pathweaver.Game.Presentation.Menus
                 var column = index % perRow;
                 var inRow = Mathf.Min(cost - (row * perRow), perRow);
 
-                var x = (column - ((inRow - 1) * 0.5f)) * CostPipSpacing;
-                var y = -0.2f - (row * CostPipSpacing);
+                var x = (column - ((inRow - 1) * 0.5f)) * pipSpacing;
+                var y = (-_radius * 0.34f) - ((row - ((rows - 1) * 0.5f)) * pipSpacing * 0.95f);
 
                 button.AddGlyph(mesh, colour, new Vector3(x, y, 0f));
             }
@@ -253,7 +309,7 @@ namespace Pathweaver.Game.Presentation.Menus
                 0f, 0f, Mathf.Atan2(difference.y, difference.x) * Mathf.Rad2Deg);
 
             link.AddComponent<MeshFilter>().sharedMesh =
-                HexMeshFactory.CreateRectangle(length, LinkThickness);
+                HexMeshFactory.CreateRectangle(length, _radius * LinkThicknessFactor);
 
             var renderer = link.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = _material;
