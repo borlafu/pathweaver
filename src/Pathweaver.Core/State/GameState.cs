@@ -44,16 +44,17 @@ namespace Pathweaver.Core.State
     /// explores branches without needing to unwind anything.
     /// </para>
     /// <para>
-    /// <see cref="CompletedRoutes"/> records which pairs have paid out, because
-    /// <see cref="FlowResolver"/> reports every currently completed route each time
-    /// it runs. Without that record, a player could retrieve one conduit and
-    /// replace it to be paid again for the same route.
+    /// <see cref="CompletedRoutes"/> records what each pair has been paid for, because
+    /// <see cref="FlowResolver"/> reports every currently completed route each time it runs. Without
+    /// that record, a player could retrieve one conduit and replace it to be paid again for the same
+    /// route. It stores the length paid rather than only the fact of payment, so a pair connected a
+    /// better way later can be paid the difference — see <see cref="GameEngine"/>.
     /// </para>
     /// </remarks>
     public sealed class GameState
     {
         private readonly FlowEndpoint[] _endpoints;
-        private readonly HashSet<CompletedRoute> _completedRoutes;
+        private readonly Dictionary<CompletedRoute, int> _paidLengths;
 
         private GameState(
             HexGrid<ConduitTile> board,
@@ -64,7 +65,7 @@ namespace Pathweaver.Core.State
             TokenPool skipTokens,
             long score,
             long baseRouteScore,
-            HashSet<CompletedRoute> completedRoutes)
+            Dictionary<CompletedRoute, int> paidLengths)
         {
             Board = board;
             _endpoints = endpoints;
@@ -74,7 +75,7 @@ namespace Pathweaver.Core.State
             SkipTokens = skipTokens;
             Score = score;
             BaseRouteScore = baseRouteScore;
-            _completedRoutes = completedRoutes;
+            _paidLengths = paidLengths;
         }
 
         public HexGrid<ConduitTile> Board { get; }
@@ -105,7 +106,18 @@ namespace Pathweaver.Core.State
         /// </summary>
         public long BaseRouteScore { get; }
 
-        public IReadOnlyCollection<CompletedRoute> CompletedRoutes => _completedRoutes;
+        /// <summary>The pairs that have paid out at least once.</summary>
+        public IReadOnlyCollection<CompletedRoute> CompletedRoutes => _paidLengths.Keys;
+
+        /// <summary>
+        /// The route length a pair has already been paid for, or zero if it has never paid.
+        /// </summary>
+        /// <remarks>
+        /// Public because a save has to record it: losing it would mean a pair paid at one length
+        /// could be paid in full again after a suspend.
+        /// </remarks>
+        public int PaidLengthOf(CompletedRoute route)
+            => _paidLengths.TryGetValue(route, out var length) ? length : 0;
 
         /// <summary>
         /// Where the held tile may go, including rotations.
@@ -243,7 +255,7 @@ namespace Pathweaver.Core.State
                 startingSkipTokens,
                 score: 0,
                 baseRouteScore,
-                new HashSet<CompletedRoute>());
+                new Dictionary<CompletedRoute, int>());
         }
 
         /// <summary>
@@ -263,7 +275,7 @@ namespace Pathweaver.Core.State
             TokenPool skipTokens,
             long score,
             long baseRouteScore,
-            IEnumerable<CompletedRoute> completedRoutes)
+            IEnumerable<KeyValuePair<CompletedRoute, int>> paidLengths)
             => new GameState(
                 board,
                 endpoints,
@@ -273,7 +285,7 @@ namespace Pathweaver.Core.State
                 skipTokens,
                 score,
                 baseRouteScore,
-                new HashSet<CompletedRoute>(completedRoutes));
+                new Dictionary<CompletedRoute, int>(ToDictionary(paidLengths)));
 
         /// <summary>
         /// Produces the next state. Used by <see cref="GameEngine"/> only, so that
@@ -286,7 +298,7 @@ namespace Pathweaver.Core.State
             TokenPool? pivotTokens = null,
             TokenPool? skipTokens = null,
             long? score = null,
-            IEnumerable<CompletedRoute>? completedRoutes = null)
+            IEnumerable<KeyValuePair<CompletedRoute, int>>? paidLengths = null)
             => new GameState(
                 board ?? Board,
                 _endpoints,
@@ -296,12 +308,29 @@ namespace Pathweaver.Core.State
                 skipTokens ?? SkipTokens,
                 score ?? Score,
                 BaseRouteScore,
-                completedRoutes is null
-                    ? new HashSet<CompletedRoute>(_completedRoutes)
-                    : new HashSet<CompletedRoute>(completedRoutes));
+                paidLengths is null
+                    ? new Dictionary<CompletedRoute, int>(_paidLengths)
+                    : ToDictionary(paidLengths));
 
-        internal bool HasPaidOut(CompletedRoute route) => _completedRoutes.Contains(route);
+        internal bool HasPaidOut(CompletedRoute route) => _paidLengths.ContainsKey(route);
 
-        internal IEnumerable<CompletedRoute> PaidOutRoutes() => _completedRoutes;
+        internal IEnumerable<KeyValuePair<CompletedRoute, int>> PaidOutRoutes() => _paidLengths;
+
+        private static Dictionary<CompletedRoute, int> ToDictionary(
+            IEnumerable<KeyValuePair<CompletedRoute, int>> paidLengths)
+        {
+            var copy = new Dictionary<CompletedRoute, int>();
+
+            foreach (var pair in paidLengths)
+            {
+                // The larger wins if a caller hands the same pair twice, so a damaged save cannot
+                // reduce what a player has already been paid for.
+                copy[pair.Key] = copy.TryGetValue(pair.Key, out var existing)
+                    ? System.Math.Max(existing, pair.Value)
+                    : pair.Value;
+            }
+
+            return copy;
+        }
     }
 }

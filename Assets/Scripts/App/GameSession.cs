@@ -347,10 +347,23 @@ namespace Pathweaver.Game.App
                 return false;
             }
 
+            var paidBefore = PaidLengths(State);
+
             State = GameEngine.Apply(State, new PivotRetrieve(coordinate));
 
             SetPivotArmed(false);
             Publish();
+
+            // Retrieving can pay: taking a short cut off the board leaves the resources to take the
+            // long way, and the pair is then paid the difference. Without this the biggest payout in
+            // the game would arrive with no flash and no buzz.
+            var harvestedRoutes = RoutesPaidSince(paidBefore);
+            if (harvestedRoutes.Count > 0)
+            {
+                LastHarvestedTiles = harvestedRoutes.SelectMany(route => route.Tiles).ToList();
+                RoutesHarvested?.Invoke(harvestedRoutes.Count);
+            }
+
             SaveNow();
 
             return true;
@@ -386,7 +399,7 @@ namespace Pathweaver.Game.App
                 return false;
             }
 
-            var paidBefore = PaidPairs(State);
+            var paidBefore = PaidLengths(State);
 
             State = GameEngine.Apply(State, new PlaceTile(coordinate, HeldRotation));
 
@@ -396,11 +409,11 @@ namespace Pathweaver.Game.App
 
             Publish();
 
-            var harvested = State.CompletedRoutes.Count - paidBefore.Count;
-            if (harvested > 0)
+            var harvestedRoutes = RoutesPaidSince(paidBefore);
+            if (harvestedRoutes.Count > 0)
             {
-                LastHarvestedTiles = TilesOfNewRoutes(paidBefore);
-                RoutesHarvested?.Invoke(harvested);
+                LastHarvestedTiles = harvestedRoutes.SelectMany(route => route.Tiles).ToList();
+                RoutesHarvested?.Invoke(harvestedRoutes.Count);
             }
 
             // Saved per move rather than on a timer. A save is a few hundred bytes, and
@@ -411,48 +424,55 @@ namespace Pathweaver.Game.App
         }
 
         /// <summary>
-        /// The conduits belonging to routes that were not already paid out.
+        /// The routes that have just been paid for, whether newly completed or improved.
         /// </summary>
         /// <remarks>
-        /// Recomputed from the board rather than reported by the engine, because the engine's
-        /// job is to score routes, not to describe them for display. Boards hold tens of
-        /// cells, so asking again costs nothing worth avoiding.
+        /// Compared by the length each pair had been paid for rather than by how many pairs have paid,
+        /// because a pair connected a better way pays again without the count changing — and a payout
+        /// with no flash and no buzz is exactly the "nothing happened" that made the short cut on the
+        /// ring level look like a bug.
+        /// <para>
+        /// Routes are recomputed from the board rather than reported by the engine, whose job is to
+        /// score them, not to describe them for display. Boards hold tens of cells, so asking again
+        /// costs nothing worth avoiding.
+        /// </para>
         /// </remarks>
-        private IReadOnlyList<HexCoord> TilesOfNewRoutes(HashSet<(HexCoord Spring, HexCoord Hub)> paidBefore)
+        private IReadOnlyList<Route> RoutesPaidSince(Dictionary<(HexCoord Spring, HexCoord Hub), int> paidBefore)
         {
-            var tiles = new List<HexCoord>();
+            var paid = new List<Route>();
 
             foreach (var route in FlowResolver.FindCompletedRoutes(State.Board, State.Endpoints))
             {
-                if (paidBefore.Contains((route.Spring.Coordinate, route.Hub.Coordinate)))
-                {
-                    continue;
-                }
+                var pair = (route.Spring.Coordinate, route.Hub.Coordinate);
+                var before = paidBefore.TryGetValue(pair, out var length) ? length : 0;
 
-                tiles.AddRange(route.Tiles);
+                if (route.Length > before)
+                {
+                    paid.Add(route);
+                }
             }
 
-            return tiles;
+            return paid;
         }
 
         /// <summary>
-        /// The spring and hub pairs already harvested, as plain coordinates.
+        /// What each spring and hub pair has been paid for, keyed by plain coordinates.
         /// </summary>
         /// <remarks>
-        /// Compared as coordinate pairs rather than as CompletedRoute values, whose constructor
-        /// is internal to the simulation. Widening that just so the presentation layer can build
-        /// one would loosen the simulation's surface for a display concern.
+        /// Keyed by coordinate pairs rather than by CompletedRoute values, whose constructor is
+        /// internal to the simulation. Widening that just so the presentation layer can build one would
+        /// loosen the simulation's surface for a display concern.
         /// </remarks>
-        private static HashSet<(HexCoord Spring, HexCoord Hub)> PaidPairs(GameState state)
+        private static Dictionary<(HexCoord Spring, HexCoord Hub), int> PaidLengths(GameState state)
         {
-            var pairs = new HashSet<(HexCoord Spring, HexCoord Hub)>();
+            var lengths = new Dictionary<(HexCoord Spring, HexCoord Hub), int>();
 
             foreach (var route in state.CompletedRoutes)
             {
-                pairs.Add((route.Spring, route.Hub));
+                lengths[(route.Spring, route.Hub)] = state.PaidLengthOf(route);
             }
 
-            return pairs;
+            return lengths;
         }
 
         private void Publish()

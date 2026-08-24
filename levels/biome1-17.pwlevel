@@ -7,6 +7,11 @@
 # This is the length curve as a decision rather than as a table: the short answer is available at
 # every moment and it is never the right one. A Pivot Token is granted because the temptation is a
 # single placement away and the board has no room to absorb it.
+#
+# Taking the short cut is a mistake, not a loss. A pair pays for the best route it has managed, so
+# building the long way and then retrieving the short cut with the token pays the difference: 817 in
+# total, against the 100 the short cut took. That is the whole reason the rule changed — this level
+# was reported from a device as unwinnable after one wrong tap.
 
 id: biome1-17
 name: The Long Way Round
