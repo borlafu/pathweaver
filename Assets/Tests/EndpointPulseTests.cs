@@ -85,6 +85,30 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void Reduced_motion_still_says_which_role_a_cell_plays()
+        {
+            // The edge marks are gone, so this ring is the only thing besides colour that separates a
+            // source from a destination. Switching motion off may take the movement away; it may not
+            // take the distinction away from the players who need it most.
+            var spring = EndpointPulse.RestingScaleFor(EndpointRole.Spring);
+            var hub = EndpointPulse.RestingScaleFor(EndpointRole.Hub);
+
+            Assert.That(spring, Is.Not.EqualTo(hub));
+            Assert.That(spring, Is.GreaterThan(hub));
+            Assert.That(hub, Is.GreaterThan(0f), "a hidden ring says nothing at all");
+        }
+
+        [Test]
+        public void A_resting_ring_sits_where_its_travel_ends()
+        {
+            // So switching motion off looks like the animation stopping, not like a different board.
+            Assert.That(
+                EndpointPulse.RestingScaleFor(EndpointRole.Spring),
+                Is.EqualTo(EndpointPulse.ScaleAt(EndpointPulse.PeriodSeconds * 0.999f, EndpointRole.Spring))
+                    .Within(0.01f));
+        }
+
+        [Test]
         public void The_ring_is_fully_lit_when_it_sets_out()
         {
             Assert.That(EndpointPulse.FadeAt(0f), Is.EqualTo(0f));

@@ -15,12 +15,6 @@ namespace Pathweaver.Game.Presentation
     /// </remarks>
     internal sealed class CellView : MonoBehaviour
     {
-        /// <summary>A spring pushes outward, so it is marked on every edge.</summary>
-        private static readonly int[] SpringMarkEdges = { 0, 1, 2, 3, 4, 5 };
-
-        /// <summary>A hub receives, so it is marked only across.</summary>
-        private static readonly int[] HubMarkEdges = { 0, 3 };
-
         private TileVisual _visual;
         private Transform _pulse;
         private Material _pulseMaterial;
@@ -76,7 +70,7 @@ namespace Pathweaver.Game.Presentation
             var pulse = new GameObject("Pulse");
             pulse.transform.SetParent(transform, worldPositionStays: false);
             pulse.transform.localPosition = new Vector3(0f, 0f, -0.005f);
-            pulse.transform.localScale = Vector3.one * EndpointPulse.RestingScale;
+            pulse.transform.localScale = Vector3.one * EndpointPulse.RestingScaleFor(endpoint.Role);
 
             pulse.AddComponent<MeshFilter>().sharedMesh = ringMesh;
 
@@ -109,7 +103,15 @@ namespace Pathweaver.Game.Presentation
             _pulseMaterial.color = Color.Lerp(_pulseLit, _pulseResting, fade);
         }
 
-        /// <summary>Puts the ring away, for reduced motion.</summary>
+        /// <summary>
+        /// Settles the ring where it still says which role this cell plays, for reduced motion.
+        /// </summary>
+        /// <remarks>
+        /// Not hidden. Now that the edge marks are gone, the ring is the only thing separating a source
+        /// from a destination other than colour — so switching motion off must leave a silhouette
+        /// behind, not take the distinction away from the players most likely to need it. A spring rests
+        /// open at its rim; a hub rests closed at its centre.
+        /// </remarks>
         internal void RestPulse()
         {
             if (_pulse == null)
@@ -117,7 +119,8 @@ namespace Pathweaver.Game.Presentation
                 return;
             }
 
-            _pulse.localScale = Vector3.one * EndpointPulse.RestingScale;
+            _pulse.localScale = Vector3.one * EndpointPulse.RestingScaleFor(PulseRole);
+            _pulseMaterial.color = _pulseLit;
         }
 
         internal void ShowEmpty()
@@ -139,15 +142,18 @@ namespace Pathweaver.Game.Presentation
 
         internal void ShowEndpoint(FlowEndpoint endpoint)
         {
-            // A spring reaches outward on every edge, a hub only across. The pattern of marks
-            // says which role a cell plays without relying on its colour, so the two remain
-            // distinguishable when yellow and purple are not.
+            // No edge marks. A spring used to be starred on all six edges and a hub barred across,
+            // which was the only non-colour signal of the role — and now the ring says it better: a
+            // spring's travels outward, a hub's inward. Two signals for one fact left the cell busy,
+            // and the marks were the weaker of the two.
+            //
+            // What remains carries everything: the background says the role, the resource motif in the
+            // middle says the kind by shape as well as colour, and the ring says the role by direction.
             var isSpring = endpoint.Role == EndpointRole.Spring;
 
             _visual.SetBackground(isSpring ? BoardPalette.Spring : BoardPalette.Hub);
             _visual.UseResourceArt(null);
-            _visual.ShowEdges(
-                isSpring ? SpringMarkEdges : HubMarkEdges, BoardPalette.ForKind(endpoint.Kind));
+            _visual.ClearSpokes();
             _visual.ShowResource(endpoint.Kind, BoardPalette.ForKind(endpoint.Kind));
         }
 

@@ -107,8 +107,12 @@ the outer edge by adding a file that names the nodes it attaches to.
 
 Springs breathe outward and hubs breathe inward: a ring grows from the centre of a spring to
 its rim, and collapses from rim to centre on a hub. That is not decoration. Source and
-destination were previously told apart by background colour alone, and the art guide's
-section 9 asks for exactly this second channel — "a radiating versus converging silhouette".
+destination were previously told apart by background colour and a pattern of edge marks — a
+star on a spring, a bar across a hub — and the art guide's section 9 asks for exactly this
+second channel, "a radiating versus converging silhouette". The marks are gone now that the
+ring carries the same fact better; what remains on an endpoint is the background colour for
+its role, the resource motif for its kind, and the ring for its direction. With Reduce Motion
+on the ring stops but stays: open at the rim on a spring, closed at the centre on a hub.
 
 Every **completed** route carries a travelling light from its spring to its hub, along the
 clear channel down the middle of each conduit. Only completed routes flow, so movement means

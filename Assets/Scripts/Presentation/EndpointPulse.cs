@@ -41,11 +41,20 @@ namespace Pathweaver.Game.Presentation
         /// </remarks>
         internal const float MaximumScale = 0.92f;
 
-        /// <summary>The scale a ring rests at when motion is switched off.</summary>
-        internal const float RestingScale = 0f;
-
         /// <summary>How small the ring is at the tight end of its travel.</summary>
-        private const float MinimumScale = 0.18f;
+        internal const float MinimumScale = 0.18f;
+
+        /// <summary>
+        /// Where a ring sits when motion is switched off.
+        /// </summary>
+        /// <remarks>
+        /// At the end of its own travel — open at the rim for a spring, closed at the centre for a hub —
+        /// rather than hidden. The ring is now the only non-colour signal of the role, since the edge
+        /// marks that used to carry it are gone, so reduced motion has to keep the shape even though it
+        /// gives up the movement.
+        /// </remarks>
+        internal static float RestingScaleFor(EndpointRole role)
+            => role == EndpointRole.Hub ? MinimumScale : MaximumScale;
 
         /// <summary>
         /// How large the ring is at a point in the cycle, as a transform scale.
