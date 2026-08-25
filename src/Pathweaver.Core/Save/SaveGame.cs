@@ -38,7 +38,7 @@ namespace Pathweaver.Core.Save
     public static class SaveGame
     {
         /// <summary>The version this build writes.</summary>
-        public const int FormatVersion = 3;
+        public const int FormatVersion = 4;
 
         /// <summary>
         /// The oldest version this build can still read.
@@ -63,6 +63,19 @@ namespace Pathweaver.Core.Save
         /// see <see cref="ReadCompletedRoutes"/>.
         /// </remarks>
         private const int PaidLengthsAddedInVersion = 3;
+
+        /// <summary>
+        /// The version that first recorded how many tokens a board lets the player hold.
+        /// </summary>
+        /// <remarks>
+        /// Before it there was no ceiling at all: tokens and skips accumulated without limit while
+        /// the interface showed a column of three pips, so a player could hold six of something the
+        /// game claimed a maximum of three of. Ceilings travel with the save because they are not one
+        /// number for the whole game — relics raise them — so a resumed board has to remember the
+        /// ceiling it was dealt. An older save's surplus is dropped on load; see
+        /// <see cref="ReadPool"/>.
+        /// </remarks>
+        private const int CapacitiesAddedInVersion = 4;
 
         private const int HeaderLength = 8;
 
@@ -104,6 +117,8 @@ namespace Pathweaver.Core.Save
             writer.Write(state.Score);
             writer.Write(state.PivotTokens.Count);
             writer.Write(state.SkipTokens.Count);
+            writer.Write(state.PivotTokens.Capacity);
+            writer.Write(state.SkipTokens.Capacity);
 
             WriteShape(writer, state.Board);
             WritePlacedTiles(writer, state.Board);
@@ -200,6 +215,13 @@ namespace Pathweaver.Core.Save
             // keeps an in-progress run alive across the update that added them.
             var skipTokens = version >= SkipsAddedInVersion ? reader.ReadInt32() : DefaultSkipsForOldSaves;
 
+            var pivotCapacity = version >= CapacitiesAddedInVersion
+                ? ReadCapacity(reader)
+                : TokenRules.BaseCapacity;
+            var skipCapacity = version >= CapacitiesAddedInVersion
+                ? ReadCapacity(reader)
+                : TokenRules.BaseCapacity;
+
             var shape = ReadShape(reader);
             var board = HexGrid<ConduitTile>.FromShape(shape);
 
@@ -217,8 +239,51 @@ namespace Pathweaver.Core.Save
             var completedRoutes = ReadCompletedRoutes(reader, endpoints, version, board);
 
             return GameState.Restore(
-                board, endpoints, bag, heldTile, TokenPool.Of(pivotTokens), TokenPool.Of(skipTokens),
-                score, baseRouteScore, completedRoutes);
+                board,
+                endpoints,
+                bag,
+                heldTile,
+                ReadPool(pivotTokens, pivotCapacity, "Pivot Tokens"),
+                ReadPool(skipTokens, skipCapacity, "skips"),
+                score,
+                baseRouteScore,
+                completedRoutes);
+        }
+
+        /// <summary>
+        /// A pool as saved, never holding more than its ceiling.
+        /// </summary>
+        /// <remarks>
+        /// Clamped rather than refused, and this is the one place that is right. A save written before
+        /// ceilings existed can legitimately hold six of something whose ceiling is three, and those
+        /// saves are on players' devices right now — the internal test build wrote them. Refusing the
+        /// payload would cost the whole board to correct a count; dropping the surplus costs the
+        /// surplus, which was never supposed to exist.
+        /// </remarks>
+        private static TokenPool ReadPool(int count, int capacity, string what)
+        {
+            if (count < 0)
+            {
+                throw new SaveFormatException($"A saved count of {count} {what} is negative.");
+            }
+
+            return TokenPool.Of(Math.Min(count, capacity), capacity);
+        }
+
+        /// <summary>
+        /// A saved ceiling, which must be able to hold something and stay within the band.
+        /// </summary>
+        private static int ReadCapacity(BinaryReader reader)
+        {
+            var capacity = reader.ReadInt32();
+
+            if (capacity < 1 || capacity > TokenRules.MaximumCapacity)
+            {
+                throw new SaveFormatException(
+                    $"A saved ceiling of {capacity} is outside 1 to {TokenRules.MaximumCapacity}.");
+            }
+
+            return capacity;
         }
 
         private static void WriteShape(BinaryWriter writer, HexGrid<ConduitTile> board)

@@ -35,7 +35,9 @@ namespace Pathweaver.Core.Levels
             long targetScore,
             int startingTokens,
             int startingSkips,
-            ulong seed)
+            ulong seed,
+            int tokenCapacity = TokenRules.BaseCapacity,
+            int skipCapacity = TokenRules.BaseCapacity)
         {
             Id = id;
             Name = name;
@@ -47,6 +49,8 @@ namespace Pathweaver.Core.Levels
             StartingTokens = startingTokens;
             StartingSkips = startingSkips;
             Seed = seed;
+            TokenCapacity = tokenCapacity;
+            SkipCapacity = skipCapacity;
         }
 
         /// <summary>Stable identifier, used by progression and save data.</summary>
@@ -79,6 +83,19 @@ namespace Pathweaver.Core.Levels
         /// arrive before the first completed route.
         /// </remarks>
         public int StartingSkips { get; }
+
+        /// <summary>
+        /// The most Pivot Tokens this board lets the player hold.
+        /// </summary>
+        /// <remarks>
+        /// Per level rather than one number for the game, because relics raise it: a board played
+        /// with the whole atlas unlocked has a higher ceiling than the same board played before any
+        /// of it. Authored level files do not set it — the ceiling is progression, not level design.
+        /// </remarks>
+        public int TokenCapacity { get; }
+
+        /// <summary>The most skips this board lets the player hold.</summary>
+        public int SkipCapacity { get; }
 
         /// <summary>
         /// The seed this level is played at.
@@ -117,6 +134,23 @@ namespace Pathweaver.Core.Levels
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">Thrown for a negative count.</exception>
         public LevelDefinition WithStartingResources(int startingTokens, int startingSkips)
+            => WithStartingResources(startingTokens, startingSkips, TokenCapacity, SkipCapacity);
+
+        /// <summary>
+        /// The same level, dealt with different opening resources and different ceilings on them.
+        /// </summary>
+        /// <remarks>
+        /// Ceilings are raised alongside the opening hand rather than separately, because the two
+        /// come from the same place: a relic that deals a fourth token has to raise the ceiling to
+        /// four, or it would hand the player something they could not hold. The opening hand is
+        /// clamped to the ceiling here rather than refused, since a caller adding a carried count to
+        /// a relic bonus has no business knowing where the band ends.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown for a negative count or a ceiling below one.
+        /// </exception>
+        public LevelDefinition WithStartingResources(
+            int startingTokens, int startingSkips, int tokenCapacity, int skipCapacity)
         {
             if (startingTokens < 0)
             {
@@ -130,9 +164,13 @@ namespace Pathweaver.Core.Levels
                     nameof(startingSkips), startingSkips, "A level cannot start with fewer than no skips.");
             }
 
+            RequireCapacity(tokenCapacity, nameof(tokenCapacity));
+            RequireCapacity(skipCapacity, nameof(skipCapacity));
+
             return new LevelDefinition(
                 Id, Name, _shape, _endpoints, _bagTiles, BaseRouteScore, TargetScore,
-                startingTokens, startingSkips, Seed);
+                Math.Min(startingTokens, tokenCapacity), Math.Min(startingSkips, skipCapacity), Seed,
+                tokenCapacity, skipCapacity);
         }
 
         public GameState CreateGame(ulong seed)
@@ -141,8 +179,26 @@ namespace Pathweaver.Core.Levels
                 _endpoints,
                 TileBag.Create(_bagTiles, SeedSource.Stream(seed, PathweaverStream.TileBag)),
                 BaseRouteScore,
-                TokenPool.Of(StartingTokens),
-                TokenPool.Of(StartingSkips));
+                TokenPool.Of(StartingTokens, TokenCapacity),
+                TokenPool.Of(StartingSkips, SkipCapacity));
+
+        /// <summary>
+        /// Keeps a ceiling inside the band the rules define.
+        /// </summary>
+        /// <remarks>
+        /// Checked here as well as where relics are counted, because this is the only door a ceiling
+        /// enters a board through. A ceiling outside the band would be a save the next build cannot
+        /// read — <see cref="Save.SaveGame"/> validates the same band — so it fails now rather than
+        /// on the player's next launch.
+        /// </remarks>
+        private static void RequireCapacity(int capacity, string name)
+        {
+            if (capacity < 1 || capacity > TokenRules.MaximumCapacity)
+            {
+                throw new ArgumentOutOfRangeException(
+                    name, capacity, $"A ceiling must lie between 1 and {TokenRules.MaximumCapacity}.");
+            }
+        }
 
         /// <summary>
         /// Whether a score clears this level's quota.

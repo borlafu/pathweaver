@@ -71,9 +71,16 @@ namespace Pathweaver.Core.Endless
         /// <param name="seed">The seed for the whole run.</param>
         /// <param name="carriedPivotTokens">Pivot Tokens brought from the previous round.</param>
         /// <param name="carriedSkips">Skips brought from the previous round.</param>
+        /// <param name="tokenCapacity">The most Pivot Tokens this round lets the player hold.</param>
+        /// <param name="skipCapacity">The most skips this round lets the player hold.</param>
         /// <exception cref="ArgumentOutOfRangeException">Thrown for a round below one.</exception>
         public static EndlessRound Generate(
-            int round, ulong seed, int carriedPivotTokens = 0, int carriedSkips = 0)
+            int round,
+            ulong seed,
+            int carriedPivotTokens = 0,
+            int carriedSkips = 0,
+            int tokenCapacity = TokenRules.BaseCapacity,
+            int skipCapacity = TokenRules.BaseCapacity)
         {
             var difficulty = EndlessDifficulty.ForRound(round);
             var roundSeed = SeedSource.ForRound(seed, round);
@@ -137,10 +144,16 @@ namespace Pathweaver.Core.Endless
                 targetScore: target,
                 // The round's own allowance is a floor rather than a replacement: a player who
                 // hoarded tokens keeps the surplus, and a player who spent everything still starts
-                // with what the round grants.
-                startingTokens: Math.Max(difficulty.StartingTokens, carriedPivotTokens),
-                startingSkips: Math.Max(difficulty.StartingSkips, carriedSkips),
-                seed: roundSeed);
+                // with what the round grants. A hoard bigger than the ceiling cannot exist — the
+                // pool stops paying at the ceiling — but a carried count from a run played with more
+                // relics unlocked can arrive over it, and it is capped rather than refused.
+                startingTokens: Math.Min(
+                    Math.Max(difficulty.StartingTokens, carriedPivotTokens), tokenCapacity),
+                startingSkips: Math.Min(
+                    Math.Max(difficulty.StartingSkips, carriedSkips), skipCapacity),
+                seed: roundSeed,
+                tokenCapacity: tokenCapacity,
+                skipCapacity: skipCapacity);
 
             return new EndlessRound(level, solution);
         }

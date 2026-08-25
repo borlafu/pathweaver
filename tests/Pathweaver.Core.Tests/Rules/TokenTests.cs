@@ -90,6 +90,102 @@ public class PivotTokenTests
         Assert.True(TokenPool.Of(1).CanSpend);
     }
 
+    [Fact]
+    public void Earning_into_a_full_pool_pays_nothing()
+    {
+        // Reported from a device: both counters climbed past the three pips the interface shows, so a
+        // player could hold six of something the game claimed a maximum of three of.
+        // Arrange
+        var full = TokenPool.Of(3);
+
+        // Act
+        var earned = full.Earn(4);
+
+        // Assert
+        Assert.True(full.IsFull);
+        Assert.Equal(3, earned.Count);
+    }
+
+    [Fact]
+    public void A_pool_earns_up_to_its_ceiling_and_no_further()
+    {
+        // The partial case matters as much as the full one: two tokens earned into a pool with one
+        // place left must take the one and drop the other, not refuse both.
+        Assert.Equal(3, TokenPool.Of(2).Earn(2).Count);
+    }
+
+    [Fact]
+    public void Earning_stops_at_a_raised_ceiling_rather_than_the_base_one()
+    {
+        // What an atlas relic buys is room, so the ceiling has to travel with the pool.
+        Assert.Equal(5, TokenPool.Of(3, 5).Earn(9).Count);
+    }
+
+    [Fact]
+    public void Spending_keeps_the_ceiling()
+    {
+        // Otherwise a relic's room would be lost the first time a token was spent.
+        Assert.Equal(5, TokenPool.Of(2, 5).Spend().Capacity);
+    }
+
+    [Fact]
+    public void A_pool_holding_more_than_its_ceiling_is_refused()
+    {
+        // A caller's arithmetic mistake, and clamping it here would hide the mistake by quietly
+        // discarding a token the player had been promised.
+        Assert.Throws<ArgumentOutOfRangeException>(() => TokenPool.Of(4, 3));
+    }
+
+    [Fact]
+    public void A_pool_that_could_hold_nothing_is_refused()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TokenPool.Of(0, 0));
+    }
+
+    [Fact]
+    public void Capping_a_pool_keeps_what_still_fits()
+    {
+        // How a carried count meets a board whose ceiling is lower than the one it was earned under.
+        // Arrange
+        var carried = TokenPool.Of(5, 5);
+
+        // Act
+        var capped = carried.Capped(3);
+
+        // Assert
+        Assert.Equal(3, capped.Count);
+        Assert.Equal(3, capped.Capacity);
+        Assert.Equal(5, carried.Count);
+    }
+
+    [Fact]
+    public void The_base_ceiling_is_what_the_pip_column_shows()
+    {
+        // Three pips per column is what the interface has always drawn. A ceiling that disagreed with
+        // the count on screen is the defect this constant answers.
+        Assert.Equal(3, TokenRules.BaseCapacity);
+    }
+
+    [Theory]
+    [InlineData(0, 3)]
+    [InlineData(1, 4)]
+    [InlineData(2, 5)]
+    [InlineData(3, 5)]
+    [InlineData(9, 5)]
+    public void Relics_raise_the_ceiling_to_five_and_then_stop(int relics, int expected)
+    {
+        // Beyond five the anti-deadlock tokens of PRD section 3.2B stop being scarce, and a board that
+        // cannot deadlock has no decision in it. A pack shipping more relics than the band has room
+        // for costs nothing in ceiling rather than breaking the band.
+        Assert.Equal(expected, TokenRules.CapacityWith(relics));
+    }
+
+    [Fact]
+    public void A_relic_cannot_lower_the_ceiling()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TokenRules.CapacityWith(-1));
+    }
+
     [Theory]
     [InlineData(1, 1)]
     [InlineData(2, 1)]

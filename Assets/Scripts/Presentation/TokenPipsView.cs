@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Pathweaver.Core.Rules;
 using Pathweaver.Core.State;
 using Pathweaver.Game.App;
 using UnityEngine;
@@ -29,7 +30,15 @@ namespace Pathweaver.Game.Presentation
     /// </remarks>
     internal sealed class TokenPipsView : MonoBehaviour
     {
-        private const int MaximumPips = 6;
+        /// <summary>
+        /// Pips built, which is as many as any progression can raise a ceiling to.
+        /// </summary>
+        /// <remarks>
+        /// Built once and shown or hidden per state, because the ceiling changes when a relic is
+        /// unlocked and rebuilding a mesh on a state change is work for nothing.
+        /// </remarks>
+        private const int MaximumPips = TokenRules.MaximumCapacity;
+
         private const float PipRadius = 0.11f;
         private const float PipSpacing = 0.3f;
 
@@ -87,9 +96,9 @@ namespace Pathweaver.Game.Presentation
 
         private void OnStateChanged(GameState state)
         {
-            var held = state == null
-                ? 0
-                : _kind == TokenKind.Pivot ? state.PivotTokens.Count : state.SkipTokens.Count;
+            var pool = state == null
+                ? TokenPool.Empty
+                : _kind == TokenKind.Pivot ? state.PivotTokens : state.SkipTokens;
 
             var armed = _kind == TokenKind.Pivot && _session != null && _session.IsPivotArmed;
 
@@ -97,7 +106,7 @@ namespace Pathweaver.Game.Presentation
             {
                 // Empty slots stay visible but dim, so the player can see there is something
                 // to earn rather than only noticing tokens once they have one.
-                var filled = index < held;
+                var filled = index < pool.Count;
 
                 _pips[index].material.color = filled
                     ? (_kind == TokenKind.Pivot
@@ -105,7 +114,10 @@ namespace Pathweaver.Game.Presentation
                         : BoardPalette.SkipHeld)
                     : BoardPalette.TokenEmpty;
 
-                _pips[index].gameObject.SetActive(index < Mathf.Max(held, 3));
+                // The column is exactly the ceiling, so the count on screen and the count the rules
+                // allow are the same number. It used to grow with the hoard instead, which is how six
+                // pips came to sit under a game that claimed a maximum of three.
+                _pips[index].gameObject.SetActive(index < pool.Capacity);
             }
         }
 

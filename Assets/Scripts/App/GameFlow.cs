@@ -1,6 +1,7 @@
 using Pathweaver.Core.Atlas;
 using Pathweaver.Core.Campaign;
 using Pathweaver.Core.Endless;
+using Pathweaver.Core.Rules;
 using Pathweaver.Game.Presentation;
 using Pathweaver.Game.Presentation.Menus;
 using UnityEngine;
@@ -400,13 +401,16 @@ namespace Pathweaver.Game.App
             }
 
             // Relics reach a generated round the same way carried tokens do, by raising what the round
-            // deals. The generator treats both as a floor under its own allowance.
+            // deals. The generator treats both as a floor under its own allowance, and caps the result
+            // at the ceilings the same relics have earned — a relic that dealt a fourth token without
+            // raising the ceiling would be handing the player something they cannot hold.
             var bonuses = _atlasMap.BonusesFor(_atlasProgress);
             var round = _endlessRun
                 .Carrying(
                     _endlessRun.CarriedPivotTokens + bonuses.Tokens,
                     _endlessRun.CarriedSkips + bonuses.Skips)
-                .CurrentRound();
+                .CurrentRound(
+                    TokenRules.CapacityWith(bonuses.Tokens), TokenRules.CapacityWith(bonuses.Skips));
 
             // The board just left behind is finished and will never be dealt again, so its save is
             // dead weight in the player's storage. Cleared here rather than on completion, because a
@@ -436,12 +440,22 @@ namespace Pathweaver.Game.App
             // clearing a level ends the board, so a token earned by the clearing route would be
             // unspendable if it did not travel. Atlas relics are added on top of that, because a
             // permanent upgrade that replaced an allowance would make a generous level worse.
+            // Relics raise the ceiling as well as the hand: a fourth token dealt into a pool that holds
+            // three would vanish, which is the defect the ceiling was added to fix rather than cause.
+            // WithStartingResources trims a hand that overshoots, so a carried count from a board played
+            // with more relics unlocked lands on this one rather than throwing.
             var level = LevelCatalogue.Load(levelId);
             var bonuses = _atlasMap.BonusesFor(_atlasProgress);
             var tokens = Mathf.Max(level.StartingTokens, _progress.PivotTokens) + bonuses.Tokens;
 
             _router.Show(GameScreen.Playing);
-            _session.Begin(level.WithStartingResources(tokens, level.StartingSkips + bonuses.Skips), _saves);
+            _session.Begin(
+                level.WithStartingResources(
+                    tokens,
+                    level.StartingSkips + bonuses.Skips,
+                    TokenRules.CapacityWith(bonuses.Tokens),
+                    TokenRules.CapacityWith(bonuses.Skips)),
+                _saves);
         }
 
         private void OnScreenChanged(GameScreen screen)

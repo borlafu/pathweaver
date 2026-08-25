@@ -170,7 +170,9 @@ namespace Pathweaver.Core.State
                 else
                 {
                     // Every completed route pays out in one currency or the other, so none
-                    // feels wasted: length buys power, closing early buys flexibility.
+                    // feels wasted: length buys power, closing early buys flexibility. A full pool
+                    // pays nothing, which is the pressure to spend what has been earned rather than
+                    // hoard it — see TokenPool.Earn.
                     pivots = pivots.Earn(TokenRules.PivotTokensFor(route.Length));
                     skips = skips.Earn(TokenRules.SkipTokensFor(route.Length));
                 }
