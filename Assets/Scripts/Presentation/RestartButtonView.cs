@@ -101,7 +101,9 @@ namespace Pathweaver.Game.Presentation
 
             // Only the stuck state moves. A button that pulses all the time stops meaning
             // anything.
-            var scale = _isUrgent
+            // Reduced motion silences this the way it silences the rotation hint. Until it did, the
+            // setting was a half-promise: the board went still and this kept beating.
+            var scale = _isUrgent && !GameSettings.ReduceMotion
                 ? 1f + (Mathf.Sin(Time.unscaledTime * PulsesPerSecond * Mathf.PI * 2f) * PulseDepth)
                 : 1f;
 

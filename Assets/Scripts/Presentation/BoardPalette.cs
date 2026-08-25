@@ -96,8 +96,6 @@ namespace Pathweaver.Game.Presentation
 
         internal static readonly Color MenuSecondary = new Color(0.26f, 0.28f, 0.33f);
 
-        /// <summary>The hole in the settings ring: darker than the button, or it disappears.</summary>
-        internal static readonly Color MenuGearHole = new Color(0.13f, 0.14f, 0.17f);
 
         internal static readonly Color MenuGlyph = new Color(0.92f, 0.94f, 0.97f);
 

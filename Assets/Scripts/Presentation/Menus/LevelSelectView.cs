@@ -94,11 +94,7 @@ namespace Pathweaver.Game.Presentation.Menus
                 transform, BackId, camera, material,
                 new Vector2(0.14f, 0.09f), 0.4f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.12f);
 
-            // A triangle pointing back the way the player came. 90 degrees puts the apex at 180,
-            // which is left; 30 was the same shape as the play button's -90 and pointed right, so
-            // the back control read as another play control.
-            _back.AddGlyph(
-                HexMeshFactory.CreateRegularPolygon(3, 0.19f, rotationDegrees: 90f), BoardPalette.MenuGlyph);
+            MenuGlyphs.AddBack(_back);
         }
 
         /// <summary>

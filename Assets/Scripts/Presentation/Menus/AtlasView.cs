@@ -98,9 +98,7 @@ namespace Pathweaver.Game.Presentation.Menus
                 transform, BackId, camera, material,
                 new Vector2(0.14f, 0.09f), 0.4f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.12f);
 
-            // Left, matching every other back control in the game.
-            _back.AddGlyph(
-                HexMeshFactory.CreateRegularPolygon(3, 0.19f, rotationDegrees: 90f), BoardPalette.MenuGlyph);
+            MenuGlyphs.AddBack(_back);
         }
 
         /// <summary>

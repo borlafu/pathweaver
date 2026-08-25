@@ -145,6 +145,16 @@ namespace Pathweaver.EditorTools
             Wire(skipPips, ("_boardView", board), ("_camera", camera), ("_session", session));
             SetPips(skipPips, TokenKind.Skip, new Vector2(0.86f, 0.26f));
 
+            // The two board animations. Outside the HUD and outside the play controls: a finished board
+            // hides its controls but keeps its board, and a paused board is still being looked at, so the
+            // springs should keep breathing through both.
+            var endpointPulse = new GameObject("EndpointPulse").AddComponent<EndpointPulseAnimator>();
+            Wire(endpointPulse, ("_boardView", board));
+
+            var flowPulse = new GameObject("FlowPulse").AddComponent<FlowPulseAnimator>();
+            flowPulse.transform.SetParent(board.transform, worldPositionStays: true);
+            Wire(flowPulse, ("_boardView", board), ("_session", session));
+
             var platform = new GameObject("Platform");
             var frameRate = platform.AddComponent<FrameRateGovernor>();
             var haptics = platform.AddComponent<HapticsService>();
@@ -287,6 +297,11 @@ namespace Pathweaver.EditorTools
             var levelId = ArgumentOr("-levelId", "biome1-01");
             var outputPath = ArgumentOr("-output", "Artifacts/board-preview.png");
 
+            // Where in the endpoint pulse's cycle to freeze the board. Animation cannot be judged from a
+            // still, but it can be judged from four of them — and the motion is a pure function of a
+            // phase precisely so this is possible without a device.
+            var pulsePhase = float.TryParse(ArgumentOr("-pulsePhase", "0.5"), out var phase) ? phase : 0.5f;
+
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             var camera = BuildCamera();
@@ -315,6 +330,13 @@ namespace Pathweaver.EditorTools
 
             board.Refresh(state, available);
 
+            var elapsed = Mathf.Repeat(pulsePhase, 1f) * EndpointPulse.PeriodSeconds;
+            foreach (var cell in board.PulsingCells)
+            {
+                cell.SetPulse(
+                    EndpointPulse.ScaleAt(elapsed, cell.PulseRole), EndpointPulse.FadeAt(elapsed));
+            }
+
             // Match the aspect the image is rendered at, or the fit is computed for the
             // Editor's game view instead.
             camera.aspect = (float)width / height;
@@ -337,7 +359,9 @@ namespace Pathweaver.EditorTools
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
             File.WriteAllBytes(outputPath, image.EncodeToPNG());
 
-            Debug.Log($"[bootstrap] wrote {outputPath} for {level.Id} ({state.Board.Coordinates.Count} cells)");
+            Debug.Log(
+                $"[bootstrap] wrote {outputPath} for {level.Id} ({state.Board.Coordinates.Count} cells) "
+                + $"at pulse phase {pulsePhase:0.00}");
         }
 
         /// <summary>

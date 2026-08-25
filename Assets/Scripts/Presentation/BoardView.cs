@@ -41,12 +41,14 @@ namespace Pathweaver.Game.Presentation
         private BoardTheme _theme;
 
         private readonly Dictionary<HexCoord, CellView> _cells = new Dictionary<HexCoord, CellView>();
+        private readonly List<CellView> _pulsingCells = new List<CellView>();
 
         /// <summary>How long a harvested route stays lit, in seconds.</summary>
         private const float FlashSeconds = 0.9f;
 
         private Mesh _hexMesh;
         private Mesh _spokeMesh;
+        private Mesh _ringMesh;
         private Material _material;
         private GameState _lastState;
         private ISet<HexCoord> _lastAvailable;
@@ -88,6 +90,23 @@ namespace Pathweaver.Game.Presentation
         internal int CellCount => _cells.Count;
 
         /// <summary>
+        /// The cells carrying an endpoint's breathing ring, in board order.
+        /// </summary>
+        /// <remarks>
+        /// Collected once per <see cref="Build"/> and handed out as the cached list, so the animator that
+        /// reads it every frame allocates nothing. Endpoints are authored into the level and never move,
+        /// which is what makes collecting them once correct.
+        /// </remarks>
+        internal IReadOnlyList<CellView> PulsingCells => _pulsingCells;
+
+        /// <summary>Whether a harvested route is currently lit.</summary>
+        /// <remarks>
+        /// Read by the flow animation, which stands aside during the flash: the flash is the payout, and
+        /// a travelling dot would be lost inside a route lit near-white anyway.
+        /// </remarks>
+        internal bool IsFlashing => _flashing.Count > 0;
+
+        /// <summary>
         /// Creates a cell view per cell in the state's board.
         /// </summary>
         internal void Build(GameState state)
@@ -98,6 +117,17 @@ namespace Pathweaver.Game.Presentation
             foreach (var coordinate in state.Board.Coordinates)
             {
                 CreateCell(coordinate);
+            }
+
+            // Endpoints get their ring here rather than in Refresh, because Refresh runs on every state
+            // change and the ring must survive all of them untouched.
+            foreach (var endpoint in state.Endpoints)
+            {
+                if (_cells.TryGetValue(endpoint.Coordinate, out var cell))
+                {
+                    cell.AttachPulse(endpoint, _ringMesh, _material);
+                    _pulsingCells.Add(cell);
+                }
             }
 
             Refresh(state);
@@ -248,6 +278,10 @@ namespace Pathweaver.Game.Presentation
             _hexMesh ??= HexMeshFactory.CreateHexagon(HexMetrics.Size * 0.92f);
             _spokeMesh ??= HexMeshFactory.CreateSpoke(TileVisual.SpokeLength, TileVisual.SpokeThickness);
 
+            // Built at the drawn hexagon's own radius, so a pulse scaled to one exactly fills its cell
+            // and never spills into the neighbour.
+            _ringMesh ??= GlyphMeshFactory.CreateRing(HexMetrics.Size * 0.92f, HexMetrics.Size * 0.2f);
+
             if (_material == null)
             {
                 if (_tileMaterial == null)
@@ -274,6 +308,9 @@ namespace Pathweaver.Game.Presentation
             }
 
             _cells.Clear();
+
+            // The rings were children of those cells, so they are gone with them.
+            _pulsingCells.Clear();
         }
 
         private void OnDestroy()

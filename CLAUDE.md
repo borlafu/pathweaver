@@ -208,7 +208,24 @@ unity -batchmode -quit -projectPath . \
 ```
 
 Worth using after any change to the presentation layer. It caught back-face culling
-silently hiding every hexagon, which no test would have noticed.
+silently hiding every hexagon — which a test now would notice, because
+`Assets/Tests/MeshWindingTests.cs` compares every generated mesh against the winding of
+the one known-good hexagon.
+
+Animation cannot be judged from one still, but it can be judged from four. Pass
+`-pulsePhase` to freeze the endpoint pulses anywhere in their cycle:
+
+```bash
+for phase in 0 0.25 0.5 0.75; do
+  unity -batchmode -quit -projectPath . \
+    -executeMethod Pathweaver.EditorTools.ProjectBootstrap.CaptureBoardPreview \
+    -levelId biome1-06 -pulsePhase $phase -output Artifacts/pulse-$phase.png \
+    -logFile /tmp/unity.log
+done
+```
+
+That the motion is a pure function of a phase — `EndpointPulse`, `FlowPulse` — is what makes
+this possible, and is why those two are separate from the components that apply them.
 
 The store icon and feature graphic come from the same route — the game's own cells and
 palette, so the listing cannot advertise something the game does not look like:
@@ -290,6 +307,8 @@ lose.
 | Does clearing the quota end the board? | Yes. Every control is withdrawn and a single button, centred, moves on to the next level or the next endless round. This reverses the earlier answer — play used to continue so routes could be extended for a bigger score — because a finished board with a full quota bar and a live tray reads as unfinished. A token earned by the clearing route is not lost: campaign levels carry Pivot Tokens between them, as endless rounds do. |
 | Is a retrieved conduit returned to hand? | No, it is discarded. The token buys back the space, not the tile. |
 | Does a pair pay more than once? | It pays for the best route it has managed, and only the difference. The original rule — one payout per pair at whatever length it first completed — made `biome1-17` a trap: the one-conduit short cut across the ring took 100 and put the 800 target out of reach for good, and retrieving the short cut did not clear the record, so the Pivot Token could not rescue it either. Reported from a device. Tokens are still granted on a first completion only, or extending a route a cell at a time would farm them. |
+| Why do springs and hubs breathe? | A spring's ring grows from its centre to its rim and a hub's collapses inward, which is the "radiating versus converging silhouette" the art guide asks for in section 9. The motion is therefore an accessibility channel that happens to look alive, not decoration that happens to be accessible. The old edge marks — a star on a spring, a bar across a hub — were removed with it: two signals for one fact left the cell cluttered, and the marks were the weaker one. Reduced motion rests the ring open on a spring and closed on a hub rather than hiding it, so the role survives without either colour or movement. |
+| Why does animation keep running when nothing is happening? | Because a board with a dead spring reads as frozen. It runs at the 30 Hz the frame governor already drops to after 1.5 seconds idle, and no animator calls `NotifyActivity` — doing so would pin the active rate for as long as the game is open and spend battery on a board nobody is touching. Pulse periods are kept slow enough (1.8 s, 54 frames) that 30 Hz does not look stepped; the fix for a stepped pulse is never to raise the idle rate. |
 | What does a Pivot Token do? | It takes a conduit off the board, and nothing else. PRD section 3.2B also allows turning a placed conduit; that half is dropped, because a conduit was placed connected to something and turning it in place usually only disconnects it. `PivotRotate` was implemented, tested, and then deleted rather than left as dead code. |
 | How is a Pivot Token spent? | Tap the remove button under the pip column to arm it, then tap a conduit to retrieve it. Arming is a mode rather than a bare tap on a conduit, because the board is the one thing a thumb touches constantly and a token is the scarcest thing the player holds. Arming spends nothing, and a tap anywhere else cancels. |
 | What does the World Atlas cost and pay? | Star Essence, one per base score harvested on any cleared board, in both modes. Nodes are relics — extra skips, extra Pivot Tokens, extra essence per clear — and are additive on top of a board's own allowance, because an upgrade that replaced it would make a generous level worse than a mean one. The whole first region costs 51 and clearing the twenty levels once pays at least 77, a relationship CI checks. |

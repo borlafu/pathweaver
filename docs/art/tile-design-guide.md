@@ -373,8 +373,24 @@ Every cell of the board is in exactly one of these states at any moment.
 | 2 | **Empty cell, legal for the held tile** | The tile in your hand can go *here* | Same hexagon in the lighter `#4D5C70` | A clearly readable "you may build here" treatment. Note the code comment: this is **not a hint, it is the placement rule made visible** — a tile must join the existing network, and without this signal a refused tap reads as the game ignoring the player. It must be unmistakable, yet calm enough to have several on screen at once. |
 | 3 | **Placed conduit** | A tile you have laid | Hexagon in `#525969` plus one spoke per open edge in the kind colour | The tile art proper. Backing plus conduit, per sections 6 and 7. |
 | 4 | **Conduit on a route that just paid out** | *That* is the route that scored | The whole route's cells flash to near-white `#F2F7FF` for **0.9 seconds**, conduits keeping their kind colour | The celebration. The whole route lights, not the last tile placed, because what paid out is the route and the player needs to see which one. See the proposal below. |
-| 5 | **Spring** | A source; flow begins here | Hexagon in `#F2D959` with an east–west bar in the kind colour | A source. Must read as *emitting*. |
-| 6 | **Hub** | A destination; flow is harvested here | Hexagon in `#8C66D9` with an east–west bar in the kind colour | A destination. Must read as *receiving*. |
+| 5 | **Spring** | A source; flow begins here | Hexagon in `#F2D959`, the resource motif in the middle, and a ring that grows from the centre to the rim | A source. Must read as *emitting*. |
+| 6 | **Hub** | A destination; flow is harvested here | Hexagon in `#8C66D9`, the resource motif in the middle, and a ring that collapses from the rim to the centre | A destination. Must read as *receiving*. |
+
+**Now established in code:** springs and hubs animate, and the direction is the role. A ring
+grows from the centre of a spring out to its rim; on a hub it collapses from the rim to the
+centre. That is the "radiating versus converging silhouette" proposed below, built as
+`EndpointPulse` — so the non-colour channel for source-versus-destination exists today, and
+your art should assume it. The ring is a separate object drawn between the cell background
+and the resource motif, so it never covers the motif.
+
+**And the edge marks are gone.** A spring used to be starred across all six edges and a hub
+barred east–west; both were removed when the ring arrived, because two signals for one fact
+left the cell cluttered and the marks were the weaker signal. So an endpoint is now three
+things: the background colour for the role, the resource motif for the kind, and the ring's
+direction of travel for the role again without colour. **Do not design a spring or hub around
+edge marks** — and note that when a player switches Reduce Motion on, the ring stops but does
+not vanish: it rests open at the rim on a spring and closed at the centre on a hub, so the
+silhouette still answers which is which.
 
 Additional established facts about springs and hubs:
 
@@ -402,6 +418,11 @@ composites over the normal tile during the 0.9-second flash. That keeps the
 texture count flat and lets the animation be tuned in code without redelivering
 art. If the flash instead needs a genuinely different painting, say so now,
 because it changes the budget arithmetic.
+
+**Also now established:** a completed route carries a travelling light along the centre
+channel of its conduits (`FlowPulse`). It is a small disc in the resource colour, brightened,
+drawn in front of the arms — so the clear central channel described below is no longer a
+future requirement but a present one.
 
 The Supporter Pass's **golden path particle trails** (PRD 6.2) will also travel
 along completed routes. They are particle effects rather than tile art, but the

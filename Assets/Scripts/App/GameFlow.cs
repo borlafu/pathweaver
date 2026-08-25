@@ -119,11 +119,7 @@ namespace Pathweaver.Game.App
                 _hud.transform, "pause", _camera, material,
                 new Vector2(0.88f, 0.94f), 0.3f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.1f);
 
-            // Two bars: the shape a pause control has had for fifty years.
-            _pauseButton.AddGlyph(
-                HexMeshFactory.CreateRectangle(0.05f, 0.2f), BoardPalette.MenuGlyph, new Vector3(-0.06f, 0f, 0f));
-            _pauseButton.AddGlyph(
-                HexMeshFactory.CreateRectangle(0.05f, 0.2f), BoardPalette.MenuGlyph, new Vector3(0.06f, 0f, 0f));
+            MenuGlyphs.AddPause(_pauseButton);
 
             // The only control a finished board offers, in either mode, and centred because it is
             // the only one: nothing else on screen is worth aiming at. Green rather than blue,
@@ -131,8 +127,7 @@ namespace Pathweaver.Game.App
             _nextButton = HexButton.Create(
                 _hud.transform, "next", _camera, material,
                 new Vector2(0.5f, 0.5f), 0.85f, BoardPalette.ProgressComplete, touchRadiusFraction: 0.22f);
-            _nextButton.AddGlyph(
-                HexMeshFactory.CreateRegularPolygon(3, 0.34f, rotationDegrees: -90f), BoardPalette.MenuGlyph);
+            MenuGlyphs.AddPlay(_nextButton, 0.34f);
             _nextButton.gameObject.SetActive(false);
 
             _session.StateChanged += OnStateChanged;
