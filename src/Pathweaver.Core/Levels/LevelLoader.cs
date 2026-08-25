@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using Pathweaver.Core.Flow;
 using Pathweaver.Core.Hex;
+using Pathweaver.Core.Rules;
 using Pathweaver.Core.Tiles;
 
 namespace Pathweaver.Core.Levels
@@ -123,10 +124,10 @@ namespace Pathweaver.Core.Levels
                         targetScore = ParsePositiveNumber(value, "target-score", lineNumber);
                         break;
                     case "tokens":
-                        startingTokens = (int)ParseNonNegativeNumber(value, "tokens", lineNumber);
+                        startingTokens = ParseHoldableCount(value, "tokens", lineNumber);
                         break;
                     case "skips":
-                        startingSkips = (int)ParseNonNegativeNumber(value, "skips", lineNumber);
+                        startingSkips = ParseHoldableCount(value, "skips", lineNumber);
                         break;
                     case "seed":
                         seed = (ulong)ParseNonNegativeNumber(value, "seed", lineNumber);
@@ -298,6 +299,29 @@ namespace Pathweaver.Core.Levels
             }
 
             return number;
+        }
+
+        /// <summary>
+        /// A count of tokens or skips a player could actually hold.
+        /// </summary>
+        /// <remarks>
+        /// An authored level may not deal more than the base ceiling holds. Ceilings above it are
+        /// earned through the World Atlas, so a level file cannot assume one: the surplus would be
+        /// invisible on a board played without the relics — the pip column shows a ceiling, not a
+        /// hoard — and it is a level-design error rather than something to clamp away quietly.
+        /// </remarks>
+        private static int ParseHoldableCount(string value, string key, int line)
+        {
+            var number = ParseNonNegativeNumber(value, key, line);
+
+            if (number > TokenRules.BaseCapacity)
+            {
+                throw new LevelFormatException(
+                    $"\"{key}\" is {number}, more than the {TokenRules.BaseCapacity} a level may deal.",
+                    line);
+            }
+
+            return (int)number;
         }
 
         private static long ParseNonNegativeNumber(string value, string key, int line)

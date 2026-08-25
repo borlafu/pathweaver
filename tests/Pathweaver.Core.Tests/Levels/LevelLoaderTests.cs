@@ -378,6 +378,11 @@ public class LevelLoaderTests
     [InlineData("target-score: -5")]
     [InlineData("base-score: 0")]
     [InlineData("tokens: -1")]
+    // More than the base ceiling holds. Ceilings above it are earned through the World Atlas, so a
+    // level file cannot assume one: the surplus would be invisible on a board played without the
+    // relics, since the pip column shows a ceiling rather than a hoard.
+    [InlineData("tokens: 4")]
+    [InlineData("skips: 6")]
     [InlineData("shape: hexagon -1")]
     [InlineData("tile: 0,3 water x0")]
     public void Implausible_numbers_are_rejected(string line)

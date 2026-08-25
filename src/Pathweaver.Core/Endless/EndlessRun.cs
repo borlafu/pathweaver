@@ -1,4 +1,5 @@
 using System;
+using Pathweaver.Core.Rules;
 
 namespace Pathweaver.Core.Endless
 {
@@ -76,7 +77,18 @@ namespace Pathweaver.Core.Endless
 
         /// <summary>The round the player is on, with whatever they are still carrying.</summary>
         public EndlessRound CurrentRound()
-            => EndlessGenerator.Generate(Round, Seed, CarriedPivotTokens, CarriedSkips);
+            => CurrentRound(TokenRules.BaseCapacity, TokenRules.BaseCapacity);
+
+        /// <summary>
+        /// The round the player is on, under the ceilings their relics have earned them.
+        /// </summary>
+        /// <remarks>
+        /// The ceilings are passed in rather than read from the atlas here, because a run knows
+        /// nothing about the World Atlas and should not have to.
+        /// </remarks>
+        public EndlessRound CurrentRound(int tokenCapacity, int skipCapacity)
+            => EndlessGenerator.Generate(
+                Round, Seed, CarriedPivotTokens, CarriedSkips, tokenCapacity, skipCapacity);
 
         /// <summary>
         /// Moves on after finishing the current round, keeping what is left in hand.

@@ -28,50 +28,67 @@ namespace Pathweaver.Core.Tests.State;
 public class ImprovedRouteTests
 {
     /// <summary>
-    /// A ring of twelve cells with the spring and hub two steps apart: one cell between them the short
-    /// way, nine the long way. Sixty skips, so the helper below can always reach the tile it needs —
-    /// this fixture is about what a completed route pays, not about managing a hand.
+    /// A ring of six cells with the spring and hub two steps apart: one cell between them the short
+    /// way, three the long way. One skip, so that earning one is still visible.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The bag holds one shape, and that is why the ring is the smallest one there is. Every cell of a
+    /// radius-one ring turns by the same angle, so whatever the bag deals fits wherever the helper
+    /// below wants it and no skip is ever needed to build either route.
+    /// </para>
+    /// <para>
+    /// The fixture this replaces was a twelve-cell ring, and it bought its way through a two-shape bag
+    /// with sixty skips — a hand no player can hold now that a pool has a ceiling of three. Three was
+    /// not enough to build that ring, because a cell can only be filled once its neighbour is, so a
+    /// mismatched deal has nowhere else to go.
+    /// </para>
+    /// </remarks>
     private const string RingLevel = """
         id: ring
         base-score: 100
-        target-score: 400
+        target-score: 150
         tokens: 1
-        skips: 60
-        cell: 2,0
-        cell: 1,1
-        cell: 0,2
-        cell: -1,2
-        cell: -2,2
-        cell: -2,1
-        cell: -2,0
-        cell: -1,-1
-        cell: 0,-2
-        cell: 1,-2
-        cell: 2,-2
-        cell: 2,-1
-        spring: 2,0 water
-        hub: 2,-2 water
-        tile: 0,3 water x6
-        tile: 0,2 water x5
+        skips: 1
+        cell: 1,0
+        cell: 0,1
+        cell: -1,1
+        cell: -1,0
+        cell: 0,-1
+        cell: 1,-1
+        spring: 1,0 water
+        hub: -1,1 water
+        tile: 0,2 water x6
         """;
+
+    /// <summary>The ring in order, from the spring the long way round to the hub.</summary>
+    private static readonly HexCoord[] TheLongWay =
+    {
+        new HexCoord(1, 0),
+        new HexCoord(1, -1),
+        new HexCoord(0, -1),
+        new HexCoord(-1, 0),
+        new HexCoord(-1, 1),
+    };
+
+    /// <summary>The single cell between the spring and the hub the other way round.</summary>
+    private static readonly HexCoord ShortCut = new HexCoord(0, 1);
 
     [Fact]
     public void A_longer_route_pays_the_difference_once_the_short_cut_is_gone()
     {
         // Arrange — the short cut first, which is the trap
         var level = LevelLoader.Parse(RingLevel);
-        var state = level.CreateGame();
+        var state = TakeTheShortCut(level.CreateGame());
 
-        state = Connect(state, new HexCoord(2, -1), new HexCoord(2, 0), new HexCoord(2, -2));
         Assert.Equal(ScoreTable.ScoreFor(100, 1), state.Score);
 
         // Act — build the long way round, then retrieve the short cut so the resources take it
         state = BuildLongWay(state);
-        state = GameEngine.Apply(state, new PivotRetrieve(new HexCoord(2, -1)));
+        state = GameEngine.Apply(state, new PivotRetrieve(ShortCut));
 
-        // Assert — nine conduits, paid in full, with the 100 already taken deducted
-        var expected = ScoreTable.ScoreFor(100, 9);
+        // Assert — three conduits, paid in full, with the 100 already taken deducted
+        var expected = ScoreTable.ScoreFor(100, 3);
         Assert.Equal(expected, state.Score);
         Assert.True(level.IsClearedBy(state.Score));
     }
@@ -83,14 +100,12 @@ public class ImprovedRouteTests
         // to be paid twice for the same work.
         // Arrange
         var level = LevelLoader.Parse(RingLevel);
-        var state = level.CreateGame();
-
-        state = Connect(state, new HexCoord(2, -1), new HexCoord(2, 0), new HexCoord(2, -2));
+        var state = TakeTheShortCut(level.CreateGame());
         var afterFirst = state.Score;
 
         // Act — take it off and put it back
-        state = GameEngine.Apply(state, new PivotRetrieve(new HexCoord(2, -1)));
-        state = Connect(state, new HexCoord(2, -1), new HexCoord(2, 0), new HexCoord(2, -2));
+        state = GameEngine.Apply(state, new PivotRetrieve(ShortCut));
+        state = TakeTheShortCut(state);
 
         // Assert
         Assert.Equal(afterFirst, state.Score);
@@ -103,10 +118,10 @@ public class ImprovedRouteTests
         var level = LevelLoader.Parse(RingLevel);
         var state = BuildLongWay(level.CreateGame());
         var afterLongWay = state.Score;
-        Assert.Equal(ScoreTable.ScoreFor(100, 9), afterLongWay);
+        Assert.Equal(ScoreTable.ScoreFor(100, 3), afterLongWay);
 
         // Act
-        state = Connect(state, new HexCoord(2, -1), new HexCoord(2, 0), new HexCoord(2, -2));
+        state = TakeTheShortCut(state);
 
         // Assert — the resources now take the short cut, but a payout already made is not undone
         Assert.Equal(afterLongWay, state.Score);
@@ -119,26 +134,22 @@ public class ImprovedRouteTests
         // step, which is a farm rather than a reward.
         // Arrange
         var level = LevelLoader.Parse(RingLevel);
-        var state = level.CreateGame();
+        var state = TakeTheShortCut(level.CreateGame());
 
-        state = Connect(state, new HexCoord(2, -1), new HexCoord(2, 0), new HexCoord(2, -2));
         var skipsAfterFirst = state.SkipTokens.Count;
         var tokensAfterFirst = state.PivotTokens.Count;
 
-        // Act — improve it to nine conduits, which would earn a Pivot Token if this were a first
-        // completion
+        // Act — improve it to three conduits, which would earn a skip if this were a first completion
         state = BuildLongWay(state);
-        state = GameEngine.Apply(state, new PivotRetrieve(new HexCoord(2, -1)));
+        state = GameEngine.Apply(state, new PivotRetrieve(ShortCut));
 
-        // Assert — the score improved, and the only change to the currencies is the token the
-        // retrieve spent. A nine-conduit route treated as a first completion would have granted a
-        // Pivot Token, which would show up here as no change at all.
+        // Assert — the score improved, and the only change to the currencies is the token the retrieve
+        // spent. The level deals one skip and the first completion earns a second, which leaves room
+        // below the ceiling: a third would mean the improvement had been paid as a fresh route.
         Assert.True(state.Score > ScoreTable.ScoreFor(100, 1));
         Assert.Equal(tokensAfterFirst - 1, state.PivotTokens.Count);
-
-        // Skips only ever went down: the helper spends them to reach the tiles it needs, and nothing
-        // in an improvement grants one.
-        Assert.True(state.SkipTokens.Count <= skipsAfterFirst);
+        Assert.Equal(skipsAfterFirst, state.SkipTokens.Count);
+        Assert.False(state.SkipTokens.IsFull, "the ceiling, not the rule, would be hiding a grant");
     }
 
     [Fact]
@@ -148,63 +159,88 @@ public class ImprovedRouteTests
         // round would lose the record of what had been paid — and the difference would be paid twice.
         // Arrange
         var level = LevelLoader.Parse(RingLevel);
-        var state = Connect(
-            level.CreateGame(), new HexCoord(2, -1), new HexCoord(2, 0), new HexCoord(2, -2));
+        var state = TakeTheShortCut(level.CreateGame());
 
         // Act
         var reloaded = SaveGame.Read(SaveGame.Write(state));
         reloaded = BuildLongWay(reloaded);
-        reloaded = GameEngine.Apply(reloaded, new PivotRetrieve(new HexCoord(2, -1)));
+        reloaded = GameEngine.Apply(reloaded, new PivotRetrieve(ShortCut));
 
         // Assert
-        Assert.Equal(ScoreTable.ScoreFor(100, 9), reloaded.Score);
+        Assert.Equal(ScoreTable.ScoreFor(100, 3), reloaded.Score);
+    }
+
+    /// <summary>Joins the spring to the hub through the single cell between them.</summary>
+    private static GameState TakeTheShortCut(GameState state)
+        => Build(state, ShapesFor(new[] { TheLongWay[0], ShortCut, TheLongWay[^1] }));
+
+    /// <summary>Builds the conduits of the long way round.</summary>
+    private static GameState BuildLongWay(GameState state) => Build(state, ShapesFor(TheLongWay));
+
+    /// <summary>
+    /// The shape each cell of a path needs: open towards the cell before it and the cell after it.
+    /// </summary>
+    /// <remarks>
+    /// The ends of the path are the spring and the hub, which are already on the board, so only the
+    /// cells between them appear here.
+    /// </remarks>
+    private static Dictionary<HexCoord, EdgeMask> ShapesFor(IReadOnlyList<HexCoord> path)
+    {
+        var shapes = new Dictionary<HexCoord, EdgeMask>();
+
+        for (var index = 1; index < path.Count - 1; index++)
+        {
+            shapes[path[index]] = EdgeMask.FromDirections(
+                DirectionTo(path[index], path[index - 1]), DirectionTo(path[index], path[index + 1]));
+        }
+
+        return shapes;
     }
 
     /// <summary>
-    /// Places a conduit joining two given neighbours, whatever the bag deals, by skipping until the
-    /// tile in hand fits.
+    /// Fills the wanted cells, placing whatever the bag deals wherever that shape is still wanted.
     /// </summary>
-    private static GameState Connect(GameState state, HexCoord cell, HexCoord from, HexCoord to)
+    /// <remarks>
+    /// Playing the deal rather than dictating an order is what keeps this within the three skips a
+    /// level grants. Insisting on ring order meant every mismatch cost a skip; taking the tile in hand
+    /// to any cell that wants it means a mismatch is only a mismatch when no remaining cell wants that
+    /// shape at all, which on this board is rare. A run of them would exhaust the skips, and that
+    /// throws rather than quietly asserting against a half-built ring.
+    /// </remarks>
+    private static GameState Build(GameState state, Dictionary<HexCoord, EdgeMask> wanted)
     {
-        var wanted = EdgeMask.FromDirections(DirectionTo(cell, from), DirectionTo(cell, to));
+        var remaining = new Dictionary<HexCoord, EdgeMask>(wanted);
 
-        for (var attempt = 0; attempt < 40; attempt++)
+        while (remaining.Count > 0)
         {
-            for (var rotation = 0; rotation < 6; rotation++)
+            var placed = false;
+
+            foreach (var candidate in state.LegalPlacements)
             {
-                if (state.HeldTile.RotateClockwise(rotation).Edges == wanted)
+                if (!remaining.TryGetValue(candidate.Coordinate, out var shape)
+                    || candidate.Tile.Edges != shape)
                 {
-                    return GameEngine.Apply(state, new PlaceTile(cell, rotation));
+                    continue;
                 }
+
+                state = GameEngine.Apply(state, new PlaceTile(candidate.Coordinate, candidate.Rotation));
+                remaining.Remove(candidate.Coordinate);
+                placed = true;
+                break;
+            }
+
+            if (placed)
+            {
+                continue;
+            }
+
+            if (!state.SkipTokens.CanSpend)
+            {
+                throw new InvalidOperationException(
+                    $"Ran out of skips with {remaining.Count} cells still to fill, holding {state.HeldTile}.");
             }
 
             state = GameEngine.Apply(state, new SkipTile());
-        }
-
-        throw new InvalidOperationException($"No tile fitting {wanted} was dealt for {cell}.");
-    }
-
-    /// <summary>Builds the nine conduits of the long way round, in ring order.</summary>
-    private static GameState BuildLongWay(GameState state)
-    {
-        var ring = new[]
-        {
-            new HexCoord(2, 0),
-            new HexCoord(1, 1),
-            new HexCoord(0, 2),
-            new HexCoord(-1, 2),
-            new HexCoord(-2, 2),
-            new HexCoord(-2, 1),
-            new HexCoord(-2, 0),
-            new HexCoord(-1, -1),
-            new HexCoord(0, -2),
-            new HexCoord(1, -2),
-            new HexCoord(2, -2),
-        };
-
-        for (var index = 1; index < ring.Length - 1; index++)
-        {
-            state = Connect(state, ring[index], ring[index - 1], ring[index + 1]);
         }
 
         return state;

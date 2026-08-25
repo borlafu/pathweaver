@@ -1,3 +1,4 @@
+using Pathweaver.Core.Rules;
 using Pathweaver.Core.Save;
 using Pathweaver.Core.State;
 using Pathweaver.Core.Tests.State;
@@ -159,9 +160,10 @@ public class SaveGameTests
     [Fact]
     public void The_format_version_is_published()
     {
-        // Bumped to 3 when a save started recording what each pair had been paid for, which is what
-        // lets a pair connected a better way later be paid the difference.
-        Assert.Equal(3, SaveGame.FormatVersion);
+        // Bumped to 4 when a save started recording how many tokens a board lets the player hold.
+        // The ceiling is not one number for the game — relics raise it — so a resumed board has to
+        // remember the one it was dealt.
+        Assert.Equal(4, SaveGame.FormatVersion);
     }
 
     [Fact]
@@ -198,7 +200,7 @@ public class SaveGameTests
         asVersionOne.AddRange(current.Take(4));                  // marker
         asVersionOne.AddRange(BitConverter.GetBytes(1));         // version
         asVersionOne.AddRange(current.Skip(8).Take(20));         // base score, score, pivots
-        asVersionOne.AddRange(current.Skip(32));                 // everything after the skips
+        asVersionOne.AddRange(current.Skip(40));                 // after the skips and both ceilings
 
         // Act
         var loaded = SaveGame.Read(asVersionOne.ToArray());
@@ -206,6 +208,59 @@ public class SaveGameTests
         // Assert
         Assert.Equal(3, loaded.SkipTokens.Count);
         Assert.Equal(0, loaded.Score);
+    }
+
+    [Fact]
+    public void A_saved_game_reloads_with_the_same_ceilings()
+    {
+        // A relic raises the ceiling, so losing it on resume would take the relic back for as long as
+        // the board lasted.
+        // Arrange
+        var original = GameFixture.NewGame(
+            startingTokens: 4, startingSkips: 5, tokenCapacity: 4, skipCapacity: 5);
+
+        // Act
+        var reloaded = SaveGame.Read(SaveGame.Write(original));
+
+        // Assert
+        Assert.Equal(original.PivotTokens, reloaded.PivotTokens);
+        Assert.Equal(original.SkipTokens, reloaded.SkipTokens);
+    }
+
+    [Fact]
+    public void A_save_written_before_ceilings_existed_loses_only_its_surplus()
+    {
+        // These saves are on players' devices: the internal test build had no ceiling at all, so a
+        // count of five where the ceiling is now three is a real payload rather than a corrupt one.
+        // Refusing it would cost the whole board to correct a count.
+        // Arrange — a five-skip game, rewritten as version 3 by dropping both ceilings
+        var current = SaveGame.Write(GameFixture.NewGame(startingSkips: 5, skipCapacity: 5));
+
+        var asVersionThree = new List<byte>();
+        asVersionThree.AddRange(current.Take(4));                  // marker
+        asVersionThree.AddRange(BitConverter.GetBytes(3));         // version
+        asVersionThree.AddRange(current.Skip(8).Take(24));         // scores, pivots, skips
+        asVersionThree.AddRange(current.Skip(40));                 // everything after the ceilings
+
+        // Act
+        var loaded = SaveGame.Read(asVersionThree.ToArray());
+
+        // Assert
+        Assert.Equal(TokenRules.BaseCapacity, loaded.SkipTokens.Count);
+        Assert.Equal(TokenRules.BaseCapacity, loaded.SkipTokens.Capacity);
+    }
+
+    [Fact]
+    public void A_saved_ceiling_outside_the_band_is_rejected()
+    {
+        // Unlike a surplus count, a ceiling this build cannot produce means the payload is wrong about
+        // its own shape, and reading on would misread everything after it.
+        // Arrange — the pivot ceiling, at offset 32, set past the highest any progression reaches
+        var bytes = SaveGame.Write(GameFixture.NewGame());
+        BitConverter.GetBytes(TokenRules.MaximumCapacity + 1).CopyTo(bytes, 32);
+
+        // Act / Assert
+        Assert.Throws<SaveFormatException>(() => SaveGame.Read(bytes));
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using Pathweaver.Core.Endless;
+using Pathweaver.Core.Rules;
 
 namespace Pathweaver.Core.Tests.Endless;
 
@@ -54,7 +55,7 @@ public class EndlessRunTests
     public void A_carried_token_is_added_to_the_rounds_own_allowance()
     {
         // Arrange — round 2 grants no Pivot Token of its own and three skips
-        var run = EndlessRun.Start(seed: 12UL).Cleared(pivotTokensLeft: 2, skipsLeft: 5);
+        var run = EndlessRun.Start(seed: 12UL).Cleared(pivotTokensLeft: 2, skipsLeft: 3);
 
         // Act
         var state = run.CurrentRound().Level.CreateGame();
@@ -62,7 +63,40 @@ public class EndlessRunTests
         // Assert — the allowance is a floor, not a replacement, so hoarding is rewarded and
         // spending is never punished with a worse start
         Assert.Equal(2, state.PivotTokens.Count);
-        Assert.Equal(5, state.SkipTokens.Count);
+        Assert.Equal(3, state.SkipTokens.Count);
+    }
+
+    [Fact]
+    public void A_carried_count_above_the_ceiling_is_capped_rather_than_dealt()
+    {
+        // A count can arrive over the ceiling from a run played with relics that have since been
+        // spent elsewhere, or from a save written before ceilings existed. Dealing it would put more
+        // pips on screen than the column has, which is the defect ceilings exist to fix.
+        // Arrange
+        var run = EndlessRun.Start(seed: 12UL).Cleared(pivotTokensLeft: 9, skipsLeft: 9);
+
+        // Act
+        var state = run.CurrentRound().Level.CreateGame();
+
+        // Assert
+        Assert.Equal(TokenRules.BaseCapacity, state.PivotTokens.Count);
+        Assert.Equal(TokenRules.BaseCapacity, state.SkipTokens.Count);
+    }
+
+    [Fact]
+    public void A_round_played_with_relics_deals_and_holds_more()
+    {
+        // What an atlas token relic buys: the extra token, and the room to hold it.
+        // Arrange
+        var run = EndlessRun.Start(seed: 12UL).Cleared(pivotTokensLeft: 4, skipsLeft: 4);
+
+        // Act
+        var state = run.CurrentRound(tokenCapacity: 4, skipCapacity: 5).Level.CreateGame();
+
+        // Assert
+        Assert.Equal(4, state.PivotTokens.Count);
+        Assert.Equal(4, state.PivotTokens.Capacity);
+        Assert.Equal(5, state.SkipTokens.Capacity);
     }
 
     [Fact]

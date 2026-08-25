@@ -34,6 +34,49 @@ namespace Pathweaver.Core.Rules
         public const int PivotThreshold = 4;
 
         /// <summary>
+        /// How many of either token a player may hold before earning stops paying.
+        /// </summary>
+        /// <remarks>
+        /// A ceiling exists so that holding tokens is a decision rather than a savings account: a
+        /// full pool means the next completed route pays nothing in that currency, which is the
+        /// pressure to spend. Three because that is what the interface has always shown — a pip
+        /// column of three — and a counter that disagreed with the count it displayed is the defect
+        /// this constant answers.
+        /// </remarks>
+        public const int BaseCapacity = 3;
+
+        /// <summary>
+        /// The largest ceiling any progression may reach.
+        /// </summary>
+        /// <remarks>
+        /// Relics raise the ceiling as well as the opening hand, or an upgrade that dealt a fourth
+        /// token would hand the player something they could not hold. Five is the end of that road:
+        /// beyond it the anti-deadlock tokens of PRD section 3.2B stop being scarce, and a board that
+        /// cannot deadlock is a board without a decision in it.
+        /// </remarks>
+        public const int MaximumCapacity = 5;
+
+        /// <summary>
+        /// The ceiling a player reaches with a given number of relics of one kind.
+        /// </summary>
+        /// <remarks>
+        /// The whole progression arithmetic, in one place: the base ceiling plus what has been
+        /// unlocked, never above <see cref="MaximumCapacity"/>. A pack that ships more relics than
+        /// the band has room for therefore costs nothing in ceiling rather than breaking the band.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown for a negative count.</exception>
+        public static int CapacityWith(int relics)
+        {
+            if (relics < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(relics), relics, "A ceiling cannot be lowered by a relic.");
+            }
+
+            return Math.Min(BaseCapacity + relics, MaximumCapacity);
+        }
+
+        /// <summary>
         /// Pivot Tokens earned by a single route.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">
