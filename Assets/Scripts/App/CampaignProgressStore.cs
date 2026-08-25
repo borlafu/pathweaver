@@ -75,5 +75,28 @@ namespace Pathweaver.Game.App
                 Debug.LogWarning($"[progress] could not be written: {error.Message}");
             }
         }
+
+        /// <summary>
+        /// Forgets everything, as if the game had never been played.
+        /// </summary>
+        /// <remarks>
+        /// Removes every level the player had cleared, and the Pivot Tokens they were carrying. Only the reset in
+        /// <see cref="ProgressReset"/> calls this, so there is one place that knows what "all
+        /// progress" means and no single screen can wipe half of it.
+        /// </remarks>
+        internal void Delete()
+        {
+            try
+            {
+                if (File.Exists(Path))
+                {
+                    File.Delete(Path);
+                }
+            }
+            catch (IOException error)
+            {
+                Debug.LogWarning($"[progress] could not be deleted: {error.Message}");
+            }
+        }
     }
 }

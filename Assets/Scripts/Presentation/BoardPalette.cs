@@ -145,6 +145,16 @@ namespace Pathweaver.Game.Presentation
 
         internal static readonly Color SwitchOffGlyph = new Color(0.45f, 0.47f, 0.52f);
 
+        /// <summary>
+        /// A control that destroys something, once it is armed and one tap from doing it.
+        /// </summary>
+        /// <remarks>
+        /// The only red in the game, and it appears on exactly one control. Colour is not what tells
+        /// the player it is armed — a ring appears around the cross, because this game may never rely
+        /// on colour alone — but red is what makes a mis-tap hesitate.
+        /// </remarks>
+        internal static readonly Color Destructive = new Color(0.74f, 0.29f, 0.27f);
+
         internal static readonly Color Spring = new Color(0.95f, 0.85f, 0.35f);
         internal static readonly Color Hub = new Color(0.55f, 0.40f, 0.85f);
 

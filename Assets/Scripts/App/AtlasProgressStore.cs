@@ -71,5 +71,28 @@ namespace Pathweaver.Game.App
                 Debug.LogWarning($"[atlas] progress could not be saved: {error.Message}");
             }
         }
+
+        /// <summary>
+        /// Forgets everything, as if the game had never been played.
+        /// </summary>
+        /// <remarks>
+        /// Removes every node the player had bought and all the Star Essence they had banked. Only the reset in
+        /// <see cref="ProgressReset"/> calls this, so there is one place that knows what "all
+        /// progress" means and no single screen can wipe half of it.
+        /// </remarks>
+        internal void Delete()
+        {
+            try
+            {
+                if (File.Exists(Path))
+                {
+                    File.Delete(Path);
+                }
+            }
+            catch (IOException error)
+            {
+                Debug.LogWarning($"[atlas] could not be deleted: {error.Message}");
+            }
+        }
     }
 }

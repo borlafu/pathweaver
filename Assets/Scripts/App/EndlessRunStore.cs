@@ -82,5 +82,28 @@ namespace Pathweaver.Game.App
                 Debug.LogWarning($"[endless] the run could not be saved: {error.Message}");
             }
         }
+
+        /// <summary>
+        /// Forgets everything, as if the game had never been played.
+        /// </summary>
+        /// <remarks>
+        /// Removes the round the player had reached and the best they had ever reached. Only the reset in
+        /// <see cref="ProgressReset"/> calls this, so there is one place that knows what "all
+        /// progress" means and no single screen can wipe half of it.
+        /// </remarks>
+        internal void Delete()
+        {
+            try
+            {
+                if (File.Exists(Path))
+                {
+                    File.Delete(Path);
+                }
+            }
+            catch (IOException error)
+            {
+                Debug.LogWarning($"[endless] could not be deleted: {error.Message}");
+            }
+        }
     }
 }
