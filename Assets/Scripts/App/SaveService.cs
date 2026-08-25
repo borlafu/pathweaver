@@ -111,6 +111,57 @@ namespace Pathweaver.Game.App
             }
         }
 
+        /// <summary>
+        /// Deletes every board this player has in progress.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Written by pattern rather than by asking the campaign for its level identifiers, because a
+        /// generated endless round is not in any catalogue and its save would otherwise survive a
+        /// wipe — the player would ask for a fresh start and be dropped back onto the board they
+        /// wanted rid of.
+        /// </para>
+        /// <para>
+        /// Quarantined and half-written files go too. They are diagnostics, and a player asking for
+        /// everything to be forgotten has not asked to keep the evidence.
+        /// </para>
+        /// </remarks>
+        /// <returns>How many files were removed.</returns>
+        internal int DeleteAll()
+        {
+            if (!Directory.Exists(_directory))
+            {
+                return 0;
+            }
+
+            var removed = 0;
+
+            foreach (var pattern in new[]
+                     {
+                         "*" + Extension,
+                         "*" + Extension + TemporaryExtension,
+                         "*" + Extension + QuarantineExtension,
+                     })
+            {
+                foreach (var path in Directory.GetFiles(_directory, pattern))
+                {
+                    try
+                    {
+                        File.Delete(path);
+                        removed++;
+                    }
+                    catch (IOException error)
+                    {
+                        // One stubborn file must not stop the rest being cleared: a wipe that gave up
+                        // half way would leave the player worse off than not asking for one.
+                        Debug.LogWarning($"[save] could not delete {Path.GetFileName(path)}: {error.Message}");
+                    }
+                }
+            }
+
+            return removed;
+        }
+
         private static void Quarantine(string path, Exception error)
         {
             Debug.LogWarning($"[save] {Path.GetFileName(path)} is unusable: {error.Message}");

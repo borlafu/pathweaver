@@ -106,6 +106,29 @@ namespace Pathweaver.Game.Presentation.Menus
             }
         }
 
+        /// <summary>
+        /// A cross, ringed once the control is armed: erase everything.
+        /// </summary>
+        /// <remarks>
+        /// The ring is the point. A player who cannot see the red still has to be able to tell an
+        /// armed control from a resting one, and this game does not let colour carry a fact on its
+        /// own — the springs and hubs breathe for the same reason. The ring also reads as a halo
+        /// around the one tap that cannot be undone.
+        /// </remarks>
+        internal static void AddErase(HexButton button, bool isArmed)
+        {
+            var colour = isArmed ? BoardPalette.MenuGlyph : BoardPalette.SwitchOffGlyph;
+            var bar = HexMeshFactory.CreateRectangle(0.3f, 0.07f);
+
+            button.AddGlyph(bar, colour, default, 45f);
+            button.AddGlyph(bar, colour, default, -45f);
+
+            if (isArmed)
+            {
+                button.AddGlyph(GlyphMeshFactory.CreateRing(0.26f, 0.04f, sides: 12), colour);
+            }
+        }
+
         /// <summary>Three bars of rising height, like a buzz.</summary>
         internal static (Mesh Mesh, Vector3 Offset)[] Haptics()
             => new[]

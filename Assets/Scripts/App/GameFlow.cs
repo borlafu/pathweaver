@@ -208,6 +208,9 @@ namespace Pathweaver.Game.App
                     ShowAtlas();
                     return true;
                 case MainMenuView.SettingsId:
+                    // Opened disarmed, always. An arming left behind from a previous visit would turn
+                    // the first tap of this one into a wipe.
+                    _settings.SetResetArmed(false);
                     _settings.Refresh();
                     _router.Show(GameScreen.Settings);
                     return true;
@@ -318,8 +321,21 @@ namespace Pathweaver.Game.App
             _router.Show(GameScreen.Atlas);
         }
 
+        /// <summary>
+        /// Flips a switch, or takes the two taps that erase everything.
+        /// </summary>
+        /// <remarks>
+        /// Every button other than reset disarms it, including a tap on nothing. Without that the
+        /// arming would sit on screen indefinitely, and the tap that finally landed on it would be one
+        /// the player had stopped thinking about.
+        /// </remarks>
         private bool HandleSettings(string button)
         {
+            if (button != SettingsView.ResetId && _settings.IsResetArmed)
+            {
+                _settings.SetResetArmed(false);
+            }
+
             switch (button)
             {
                 case SettingsView.HapticsId:
@@ -330,12 +346,55 @@ namespace Pathweaver.Game.App
                     GameSettings.ReduceMotion = !GameSettings.ReduceMotion;
                     _settings.Refresh();
                     return true;
+                case SettingsView.ResetId:
+                    if (!_settings.IsResetArmed)
+                    {
+                        _settings.SetResetArmed(true);
+                        return true;
+                    }
+
+                    ResetProgress();
+                    return true;
                 case SettingsView.BackId:
                     _router.Show(GameScreen.MainMenu);
                     return true;
                 default:
                     return false;
             }
+        }
+
+        /// <summary>
+        /// Erases every record of past play and returns the game to its first-launch state.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The stores are reloaded rather than assigned empty values, so the game reads its own
+        /// freshly wiped storage exactly as a first launch does. That also means a file the platform
+        /// refused to delete shows up here as progress still present, rather than as a screen that
+        /// disagrees with the disk.
+        /// </para>
+        /// <para>
+        /// It ends on the main menu. Staying in settings would leave the player looking at the control
+        /// they just used with no sign anything had happened, and the menu is where a first launch
+        /// starts.
+        /// </para>
+        /// </remarks>
+        private void ResetProgress()
+        {
+            ProgressReset.Wipe(_saves, _progressStore, _atlasStore, _endlessStore);
+
+            _progress = _progressStore.Load();
+            _atlasProgress = _atlasStore.Load();
+            _endlessRun = _endlessStore.Load();
+
+            // The board that was on screen, if any, is no longer anyone's run: its save is gone, and
+            // the endless bookkeeping must not delete a save belonging to a round dealt after this.
+            _lastEndlessLevelId = null;
+            _isEndlessRound = false;
+            _hasRecordedThisClear = false;
+
+            _settings.SetResetArmed(false);
+            _router.Show(GameScreen.MainMenu);
         }
 
         /// <summary>
