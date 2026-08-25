@@ -61,11 +61,15 @@ namespace Pathweaver.Game.Presentation
             }
 
             var isSpring = endpoint.Role == EndpointRole.Spring;
+
+            // Resting is the cell's own colour, because the ring has to dissolve into the cell exactly:
+            // an opaque material has no alpha, so "invisible" means "the same colour as what is behind".
             _pulseResting = isSpring ? BoardPalette.Spring : BoardPalette.Hub;
 
-            // Lit is the cell's own colour brightened rather than a colour of its own: the ring has to
-            // dissolve into the cell exactly, because an opaque material has no alpha to fade.
-            _pulseLit = Color.Lerp(_pulseResting, BoardPalette.HarvestFlash, 0.7f);
+            // Lit is the resource's own colour, so what a spring is emitting and a hub is drawing in is
+            // the thing the route actually carries — water reads blue, wind reads mint, and the endpoint
+            // says its kind twice over rather than leaving that to the motif alone.
+            _pulseLit = BoardPalette.ForKind(endpoint.Kind);
 
             var pulse = new GameObject("Pulse");
             pulse.transform.SetParent(transform, worldPositionStays: false);

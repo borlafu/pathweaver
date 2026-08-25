@@ -81,17 +81,44 @@ namespace Pathweaver.Game.Presentation
         /// How far the ring has faded into the cell behind it: 0 fully lit, 1 invisible.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// The material is opaque — there is no alpha to fade — so a ring disappears by being lerped to
-        /// the colour of the cell it sits on. It has to reach exactly 1 at the end of the cycle, or the
-        /// jump back to the start of the next one is visible as a flicker.
+        /// the colour of the cell it sits on.
+        /// </para>
+        /// <para>
+        /// The two roles fade in opposite directions, because each is describing a different event. A
+        /// spring is emitting: its ring is brightest where it leaves the centre and dissolves as it
+        /// reaches the rim, like something thrown. A hub is receiving: its ring arrives faint at the rim
+        /// and gathers to full strength as it closes on the centre, like something drawn in.
+        /// </para>
+        /// <para>
+        /// That leaves a hub fully lit at the end of its cycle, where a spring is invisible. The jump
+        /// back to the rim is nonetheless unseen, because at <see cref="MinimumScale"/> the ring is
+        /// smaller than the resource motif drawn in front of it — the cut happens behind the motif.
+        /// </para>
         /// </remarks>
-        internal static float FadeAt(float elapsedSeconds)
+        internal static float FadeAt(float elapsedSeconds, EndpointRole role)
         {
             var phase = PhaseOf(elapsedSeconds);
 
-            // Lit for the first part of the travel, dissolving over the rest. Fading from the very
-            // first frame would leave the ring dim for its whole life.
-            const float HeldLit = 0.45f;
+            // A hub reads its cycle backwards, so its dissolve runs backwards too.
+            return Dissolve(role == EndpointRole.Hub ? 1f - phase : phase);
+        }
+
+        /// <summary>
+        /// Lit for the first part of a travel, dissolving over the rest.
+        /// </summary>
+        /// <remarks>
+        /// Held lit at the start rather than fading from the first frame, which would leave the ring dim
+        /// for its whole life and read as a smudge rather than as something moving.
+        /// </remarks>
+        private static float Dissolve(float phase)
+        {
+            // Held lit for most of the travel, not half of it. The first quarter of a ring's growth is
+            // spent inside the resource motif drawn in front of it, so a dissolve starting at the midpoint
+            // left barely a moment where the resource's own colour was both visible and undiluted — a
+            // water spring looked pale yellow rather than blue.
+            const float HeldLit = 0.7f;
 
             if (phase <= HeldLit)
             {

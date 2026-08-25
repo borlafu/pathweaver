@@ -64,7 +64,7 @@ namespace Pathweaver.Game.Presentation
 
                 cell.SetPulse(
                     EndpointPulse.ScaleAt(elapsed, cell.PulseRole),
-                    EndpointPulse.FadeAt(elapsed));
+                    EndpointPulse.FadeAt(elapsed, cell.PulseRole));
             }
         }
     }

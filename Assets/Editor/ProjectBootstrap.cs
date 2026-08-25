@@ -334,7 +334,8 @@ namespace Pathweaver.EditorTools
             foreach (var cell in board.PulsingCells)
             {
                 cell.SetPulse(
-                    EndpointPulse.ScaleAt(elapsed, cell.PulseRole), EndpointPulse.FadeAt(elapsed));
+                    EndpointPulse.ScaleAt(elapsed, cell.PulseRole),
+                    EndpointPulse.FadeAt(elapsed, cell.PulseRole));
             }
 
             // Match the aspect the image is rendered at, or the fit is computed for the
