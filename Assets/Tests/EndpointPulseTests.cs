@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using Pathweaver.Core.Flow;
+using Pathweaver.Core.Hex;
 using Pathweaver.Game.Presentation;
 using UnityEngine;
 
@@ -70,18 +71,47 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
-        public void The_cycle_repeats_without_a_step()
+        public void A_springs_cycle_repeats_without_a_step()
         {
-            // The equivalent of the rotation hint ending exactly at rest: the ring has to be invisible
-            // at the moment it jumps back to the start, or the loop shows as a flicker.
-            Assert.That(EndpointPulse.FadeAt(EndpointPulse.PeriodSeconds), Is.EqualTo(0f));
+            // The equivalent of the rotation hint ending exactly at rest: a spring's ring has to be
+            // invisible at the moment it jumps back to the centre, or the loop shows as a flicker.
             Assert.That(
-                EndpointPulse.FadeAt(EndpointPulse.PeriodSeconds - 0.0001f),
+                EndpointPulse.FadeAt(EndpointPulse.PeriodSeconds - 0.0001f, EndpointRole.Spring),
                 Is.EqualTo(1f).Within(0.001f));
+
+            Assert.That(EndpointPulse.FadeAt(0f, EndpointRole.Spring), Is.EqualTo(0f));
 
             Assert.That(
                 EndpointPulse.ScaleAt(EndpointPulse.PeriodSeconds, EndpointRole.Spring),
                 Is.EqualTo(EndpointPulse.ScaleAt(0f, EndpointRole.Spring)).Within(0.0001f));
+        }
+
+        [Test]
+        public void A_hub_gathers_strength_as_it_closes_rather_than_losing_it()
+        {
+            // The two roles describe different events, so they fade in opposite directions: a spring
+            // throws something away and dims, a hub draws something in and brightens.
+            Assert.That(
+                EndpointPulse.FadeAt(0f, EndpointRole.Hub),
+                Is.EqualTo(1f).Within(0.001f),
+                "a hub's ring should arrive at the rim almost invisible");
+
+            Assert.That(
+                EndpointPulse.FadeAt(EndpointPulse.PeriodSeconds - 0.0001f, EndpointRole.Hub),
+                Is.EqualTo(0f),
+                "a hub's ring should reach the centre at full strength");
+        }
+
+        [Test]
+        public void A_hubs_loop_is_hidden_behind_the_resource_motif()
+        {
+            // A hub ends its cycle lit, so the jump back to the rim is a hard cut rather than a fade.
+            // It is unseen because the ring at its smallest is inside the motif drawn in front of it —
+            // and that is only true while the ring is smaller than the motif, which this pins.
+            var smallestRingRadius = HexMetrics.Size * 0.92f * EndpointPulse.MinimumScale;
+            var motifRadius = HexMetrics.Size * ResourceMotif.RadiusFraction;
+
+            Assert.That(smallestRingRadius, Is.LessThan(motifRadius));
         }
 
         [Test]
@@ -109,9 +139,12 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
-        public void The_ring_is_fully_lit_when_it_sets_out()
+        public void A_ring_is_fully_lit_where_its_travel_begins()
         {
-            Assert.That(EndpointPulse.FadeAt(0f), Is.EqualTo(0f));
+            Assert.That(EndpointPulse.FadeAt(0f, EndpointRole.Spring), Is.EqualTo(0f));
+            Assert.That(
+                EndpointPulse.FadeAt(EndpointPulse.PeriodSeconds * 0.999f, EndpointRole.Hub),
+                Is.EqualTo(0f));
         }
 
         [Test]
@@ -119,7 +152,8 @@ namespace Pathweaver.Game.EditorTests
         {
             for (var elapsed = 0f; elapsed < EndpointPulse.PeriodSeconds * 2f; elapsed += 0.01f)
             {
-                Assert.That(EndpointPulse.FadeAt(elapsed), Is.InRange(0f, 1f));
+                Assert.That(EndpointPulse.FadeAt(elapsed, EndpointRole.Spring), Is.InRange(0f, 1f));
+                Assert.That(EndpointPulse.FadeAt(elapsed, EndpointRole.Hub), Is.InRange(0f, 1f));
             }
         }
 

@@ -114,6 +114,12 @@ ring carries the same fact better; what remains on an endpoint is the background
 its role, the resource motif for its kind, and the ring for its direction. With Reduce Motion
 on the ring stops but stays: open at the rim on a spring, closed at the centre on a hub.
 
+The ring is drawn in the **resource's own colour** — blue for water, mint for wind — so an
+endpoint says what it carries as well as what it does. The two roles fade in opposite
+directions, because they are describing opposite events: a spring's ring is brightest as it
+leaves the centre and dissolves at the rim, like something thrown, while a hub's arrives faint
+at the rim and gathers to full strength as it closes, like something drawn in.
+
 Every **completed** route carries a travelling light from its spring to its hub, along the
 clear channel down the middle of each conduit. Only completed routes flow, so movement means
 "this pays" rather than "this is joined to something".

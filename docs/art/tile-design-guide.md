@@ -373,8 +373,8 @@ Every cell of the board is in exactly one of these states at any moment.
 | 2 | **Empty cell, legal for the held tile** | The tile in your hand can go *here* | Same hexagon in the lighter `#4D5C70` | A clearly readable "you may build here" treatment. Note the code comment: this is **not a hint, it is the placement rule made visible** — a tile must join the existing network, and without this signal a refused tap reads as the game ignoring the player. It must be unmistakable, yet calm enough to have several on screen at once. |
 | 3 | **Placed conduit** | A tile you have laid | Hexagon in `#525969` plus one spoke per open edge in the kind colour | The tile art proper. Backing plus conduit, per sections 6 and 7. |
 | 4 | **Conduit on a route that just paid out** | *That* is the route that scored | The whole route's cells flash to near-white `#F2F7FF` for **0.9 seconds**, conduits keeping their kind colour | The celebration. The whole route lights, not the last tile placed, because what paid out is the route and the player needs to see which one. See the proposal below. |
-| 5 | **Spring** | A source; flow begins here | Hexagon in `#F2D959`, the resource motif in the middle, and a ring that grows from the centre to the rim | A source. Must read as *emitting*. |
-| 6 | **Hub** | A destination; flow is harvested here | Hexagon in `#8C66D9`, the resource motif in the middle, and a ring that collapses from the rim to the centre | A destination. Must read as *receiving*. |
+| 5 | **Spring** | A source; flow begins here | Hexagon in `#F2D959`, the resource motif in the middle, and a ring in the resource colour growing from the centre to the rim, brightest as it sets out | A source. Must read as *emitting*. |
+| 6 | **Hub** | A destination; flow is harvested here | Hexagon in `#8C66D9`, the resource motif in the middle, and a ring in the resource colour collapsing from the rim to the centre, gathering strength as it closes | A destination. Must read as *receiving*. |
 
 **Now established in code:** springs and hubs animate, and the direction is the role. A ring
 grows from the centre of a spring out to its rim; on a hub it collapses from the rim to the
@@ -391,6 +391,11 @@ direction of travel for the role again without colour. **Do not design a spring 
 edge marks** — and note that when a player switches Reduce Motion on, the ring stops but does
 not vanish: it rests open at the rim on a spring and closed at the centre on a hub, so the
 silhouette still answers which is which.
+
+The ring takes the **resource colour**, and the two roles fade in opposite directions: a
+spring's is brightest leaving the centre and dissolves at the rim; a hub's arrives faint at the
+rim and reaches full strength at the centre. If your art gives an endpoint its own strong
+interior detail, remember that a coloured ring will travel across it four times a minute.
 
 Additional established facts about springs and hubs:
 
