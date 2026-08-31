@@ -452,7 +452,7 @@ namespace Pathweaver.EditorTools
             // The menu framing. BoardCameraFitter takes over per level, and GameFlow puts this
             // back whenever a menu is shown, so the two agree on one value.
             camera.orthographicSize = MenuCamera.OrthographicSize;
-            camera.backgroundColor = new Color(0.08f, 0.09f, 0.11f);
+            camera.backgroundColor = BoardPalette.Background;
             camera.clearFlags = CameraClearFlags.SolidColor;
 
             return camera;

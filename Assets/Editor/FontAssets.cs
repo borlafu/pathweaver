@@ -110,7 +110,7 @@ namespace Pathweaver.EditorTools
 
             fontAsset.name = "VarelaRound SDF";
 
-            if (!fontAsset.TryAddCharacters(Latin1Characters(), out var missing))
+            if (!fontAsset.TryAddCharacters(Characters(), out var missing))
             {
                 // Fatal, because the failure is silent otherwise: a dropped glyph renders as a box on
                 // a player's phone and nothing here would have said so. Varela Round covers the whole
@@ -138,15 +138,26 @@ namespace Pathweaver.EditorTools
         }
 
         /// <summary>
-        /// Every printable character in Latin-1.
+        /// The punctuation the game's own writing uses that Latin-1 does not contain.
+        /// </summary>
+        /// <remarks>
+        /// Found by rendering a preview sheet: <c>biome1-01 — First Waters</c> came out as
+        /// <c>biome1-01   First Waters</c>, because an em dash is U+2014 and the atlas stopped at
+        /// U+00FF. The em dash is used constantly in this project's prose, so the gap would have
+        /// reached a player. Seven glyphs is a negligible cost against finding this on a phone.
+        /// </remarks>
+        private const string TypographicPunctuation = "–—‘’“”…";
+
+        /// <summary>
+        /// Every character the atlas carries.
         /// </summary>
         /// <remarks>
         /// Basic Latin plus the Latin-1 supplement, which covers English and Spanish and most of
-        /// western Europe. It stops there deliberately: the atlas is static, so its size is the cost
-        /// of every language it might one day carry, and a language the game has no strings in yet
-        /// would be paying that cost for nothing.
+        /// western Europe, plus <see cref="TypographicPunctuation"/>. It stops there deliberately:
+        /// the atlas is static, so its size is the cost of every language it might one day carry, and
+        /// a language the game has no strings in yet would be paying that cost for nothing.
         /// </remarks>
-        private static string Latin1Characters()
+        private static string Characters()
         {
             var characters = new StringBuilder();
 
@@ -160,6 +171,8 @@ namespace Pathweaver.EditorTools
             {
                 characters.Append((char)code);
             }
+
+            characters.Append(TypographicPunctuation);
 
             return characters.ToString();
         }

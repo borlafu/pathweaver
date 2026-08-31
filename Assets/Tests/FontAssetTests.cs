@@ -21,6 +21,9 @@ namespace Pathweaver.Game.EditorTests
         /// <summary>Printable Latin-1: 0x20 to 0x7E, then 0xA0 to 0xFF.</summary>
         private const int Latin1PrintableCount = (0x7E - 0x20 + 1) + (0xFF - 0xA0 + 1);
 
+        /// <summary>The seven typographic marks Latin-1 lacks and the game's prose uses.</summary>
+        private const string TypographicPunctuation = "\u2013\u2014\u2018\u2019\u201c\u201d\u2026";
+
         private static TMP_FontAsset Load()
         {
             var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
@@ -41,9 +44,27 @@ namespace Pathweaver.Game.EditorTests
         [Test]
         public void Every_printable_Latin1_character_is_in_the_atlas()
         {
-            // 191 characters. Anything short means glyphs were dropped for want of atlas room, which
-            // is a box on a player's phone rather than an error anywhere.
-            Assert.That(Load().characterTable.Count, Is.EqualTo(Latin1PrintableCount));
+            // 198 characters: 191 of Latin-1, plus seven marks. Anything short means glyphs were
+            // dropped for want of atlas room, which is a box on a player's phone rather than an error
+            // anywhere.
+            Assert.That(
+                Load().characterTable.Count,
+                Is.EqualTo(Latin1PrintableCount + TypographicPunctuation.Length));
+        }
+
+        [Test]
+        public void The_marks_the_prose_actually_uses_are_present()
+        {
+            // Found by rendering a preview sheet: "biome1-01 — First Waters" came out with a gap
+            // where the em dash should be, because an em dash is U+2014 and the atlas stopped at
+            // U+00FF. This project's writing uses em dashes constantly.
+            foreach (var character in TypographicPunctuation)
+            {
+                Assert.That(
+                    Load().HasCharacter(character),
+                    Is.True,
+                    $"The font asset has no glyph for U+{(int)character:X4}.");
+            }
         }
 
         [Test]
