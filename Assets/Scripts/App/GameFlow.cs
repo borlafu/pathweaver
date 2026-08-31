@@ -524,6 +524,13 @@ namespace Pathweaver.Game.App
                 _hud.SetActive(screen == GameScreen.Playing);
             }
 
+            // Named on the way in rather than at build time: the pause screen is built once and the
+            // level changes underneath it.
+            if (screen == GameScreen.Paused && _pause != null && _session != null)
+            {
+                _pause.SetLevelName(_session.LevelName);
+            }
+
             // Visible while playing and while paused, hidden behind the menus. Pausing is looking
             // at the board; opening the level list is leaving it.
             var isBoardOnScreen = screen == GameScreen.Playing || screen == GameScreen.Paused;

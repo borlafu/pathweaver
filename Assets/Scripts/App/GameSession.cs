@@ -74,6 +74,14 @@ namespace Pathweaver.Game.App
         /// <summary>The level being played.</summary>
         internal string LevelId => _levelId;
 
+        /// <summary>
+        /// The level's authored name, or empty if nothing is loaded.
+        /// </summary>
+        /// <remarks>
+        /// Every level file carries one, and until there was a font there was nowhere to show it.
+        /// </remarks>
+        internal string LevelName => _level?.Name ?? string.Empty;
+
         /// <summary>The score that clears this level.</summary>
         internal long TargetScore => _level?.TargetScore ?? 0;
 
