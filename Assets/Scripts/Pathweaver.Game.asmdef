@@ -1,7 +1,9 @@
 {
     "name": "Pathweaver.Game",
     "rootNamespace": "Pathweaver.Game",
-    "references": [],
+    "references": [
+        "Unity.TextMeshPro"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
