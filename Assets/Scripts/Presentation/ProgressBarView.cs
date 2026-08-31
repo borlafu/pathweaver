@@ -1,3 +1,4 @@
+using System.Globalization;
 using Pathweaver.Core.State;
 using Pathweaver.Game.App;
 using UnityEngine;
@@ -9,10 +10,9 @@ namespace Pathweaver.Game.Presentation
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A bar rather than a number, because the project has no font: digits would mean building
-    /// a glyph renderer before a player could see that anything had happened at all. A bar also
-    /// answers the question a player actually has, which is "am I nearly done", not "what is my
-    /// score to the point".
+    /// The bar answers the question a player actually has, which is "am I nearly done". The number
+    /// beneath it answers the one they ask next, which is "by how much" — and that one cannot be
+    /// answered by a shape. It was a bar alone until there was a font.
     /// </para>
     /// <para>
     /// It exists because a completed route produced no visible change whatsoever on the first
@@ -21,7 +21,16 @@ namespace Pathweaver.Game.Presentation
     /// </remarks>
     internal sealed class ProgressBarView : MonoBehaviour
     {
-        private const float ViewportY = 0.94f;
+        internal const float ViewportY = 0.94f;
+
+        /// <summary>
+        /// Where the score sits, just below the bar.
+        /// </summary>
+        /// <remarks>
+        /// Below rather than inside: the bar is 0.12 world units tall and body text at the same
+        /// camera is around 0.18, so a number placed inside it would overflow its own track.
+        /// </remarks>
+        internal const float ScoreViewportY = 0.905f;
 
         /// <summary>
         /// How much of the screen width the bar spans.
@@ -46,6 +55,7 @@ namespace Pathweaver.Game.Presentation
         private Transform _bar;
         private Transform _fill;
         private MeshRenderer _fillRenderer;
+        private Text.TextLabel _score;
         private float _shownFraction;
         private float _targetFraction;
 
@@ -117,6 +127,10 @@ namespace Pathweaver.Game.Presentation
             if (state == null || _session.TargetScore <= 0)
             {
                 _targetFraction = 0f;
+
+                // Cleared rather than left alone, or the previous level's score stays on screen over
+                // the next one's empty bar.
+                _score?.SetText(string.Empty);
                 return;
             }
 
@@ -128,6 +142,35 @@ namespace Pathweaver.Game.Presentation
                     ? BoardPalette.ProgressComplete
                     : BoardPalette.ProgressFill;
             }
+
+            ShowScore(state.Score, _session.TargetScore);
+        }
+
+        /// <summary>
+        /// Writes the score against the target.
+        /// </summary>
+        /// <remarks>
+        /// Grouped with separators, because a five-figure endless score read as one run of digits is
+        /// slower to compare against a target than the bar it sits under. Invariant culture, so the
+        /// separator does not change with the device's locale while the rest of the interface has no
+        /// language at all.
+        /// </remarks>
+        private void ShowScore(long score, long target)
+        {
+            if (_score == null)
+            {
+                return;
+            }
+
+            _score.SetText(
+                $"{score.ToString("N0", CultureInfo.InvariantCulture)} / "
+                + target.ToString("N0", CultureInfo.InvariantCulture));
+
+            // Matches the fill, so the moment the quota is met is said twice — once by the bar
+            // turning and once by the number — and neither says it by colour alone, because the
+            // number itself has passed the target.
+            _score.SetColour(
+                score >= target ? BoardPalette.ProgressComplete : BoardPalette.TextPrimary);
         }
 
         private void Build()
@@ -149,6 +192,16 @@ namespace Pathweaver.Game.Presentation
 
             _fill = fill.transform;
             _fillRenderer = fill;
+
+            // Parented here so it is hidden and shown with the bar. TextLabel places itself in world
+            // space, so being a child does not move it.
+            _score = Text.TextLabel.Create(
+                transform,
+                ResolvedCamera,
+                "score",
+                new Vector2(0.5f, ScoreViewportY),
+                Text.LabelMetrics.BodyHeightFraction,
+                BoardPalette.TextPrimary);
         }
 
         private float WorldWidth()
