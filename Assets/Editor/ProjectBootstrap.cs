@@ -209,6 +209,7 @@ namespace Pathweaver.EditorTools
             var pauseScreen = new GameObject("PauseScreen").AddComponent<PauseView>();
             var settingsScreen = new GameObject("SettingsScreen").AddComponent<SettingsView>();
             var atlasScreen = new GameObject("AtlasScreen").AddComponent<AtlasView>();
+            var helpScreen = new GameObject("HelpScreen").AddComponent<HelpView>();
 
             var routerSerialised = new SerializedObject(router);
             routerSerialised.FindProperty("_mainMenu").objectReferenceValue = mainMenu.gameObject;
@@ -216,6 +217,7 @@ namespace Pathweaver.EditorTools
             routerSerialised.FindProperty("_paused").objectReferenceValue = pauseScreen.gameObject;
             routerSerialised.FindProperty("_settings").objectReferenceValue = settingsScreen.gameObject;
             routerSerialised.FindProperty("_atlas").objectReferenceValue = atlasScreen.gameObject;
+            routerSerialised.FindProperty("_help").objectReferenceValue = helpScreen.gameObject;
             routerSerialised.ApplyModifiedPropertiesWithoutUndo();
 
             var flow = new GameObject("GameFlow").AddComponent<GameFlow>();
@@ -228,6 +230,7 @@ namespace Pathweaver.EditorTools
                 ("_pause", pauseScreen),
                 ("_settings", settingsScreen),
                 ("_atlas", atlasScreen),
+                ("_help", helpScreen),
                 ("_boardView", board),
                 ("_camera", camera));
 

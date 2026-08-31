@@ -22,9 +22,9 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
-        public void Hiding_the_atlas_leaves_three_secondary_buttons()
+        public void Hiding_the_atlas_leaves_four_secondary_buttons()
         {
-            Assert.That(MainMenuView.SecondaryCount, Is.EqualTo(3));
+            Assert.That(MainMenuView.SecondaryCount, Is.EqualTo(4));
         }
 
         [Test]
@@ -42,6 +42,8 @@ namespace Pathweaver.Game.EditorTests
         [Test]
         public void Three_buttons_stay_centred()
         {
+            // Not the current count, but the arithmetic has to survive one leaving as well as one
+            // arriving — the atlas returns as a fifth, and could be withheld again.
             Assert.That(MainMenuView.SecondaryX(0, 3), Is.EqualTo(0.27f).Within(0.0001f));
             Assert.That(MainMenuView.SecondaryX(1, 3), Is.EqualTo(0.5f).Within(0.0001f));
             Assert.That(MainMenuView.SecondaryX(2, 3), Is.EqualTo(0.73f).Within(0.0001f));
@@ -60,6 +62,20 @@ namespace Pathweaver.Game.EditorTests
                     Is.EqualTo(0.5f).Within(0.0001f),
                     $"A row of {count} is not centred.");
             }
+        }
+
+        [Test]
+        public void A_fifth_button_closes_the_row_up_rather_than_running_off_the_screen()
+        {
+            // The atlas returns as a fifth. At a fixed spacing the outermost two would sit at 0.04 and
+            // 0.96, half off a phone; the row narrows instead.
+            for (var index = 0; index < 5; index++)
+            {
+                Assert.That(MainMenuView.SecondaryX(index, 5), Is.InRange(0.1f, 0.9f));
+            }
+
+            Assert.That(MainMenuView.SecondaryX(0, 5), Is.EqualTo(0.155f).Within(0.0001f));
+            Assert.That(MainMenuView.SecondaryX(4, 5), Is.EqualTo(0.845f).Within(0.0001f));
         }
 
         [Test]

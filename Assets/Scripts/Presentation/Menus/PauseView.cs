@@ -22,6 +22,17 @@ namespace Pathweaver.Game.Presentation.Menus
         internal const string ResumeId = "resume";
         internal const string RestartId = "restart";
         internal const string MenuId = "menu";
+        internal const string HelpId = "help";
+
+        /// <summary>
+        /// Where the help control sits, below the row that leaves or restarts.
+        /// </summary>
+        /// <remarks>
+        /// Reachable from here as well as from the main menu, because a player who is stuck is stuck
+        /// mid-level. Making them abandon the board to read how it works is the one moment help is
+        /// least affordable.
+        /// </remarks>
+        internal const float HelpViewportY = 0.22f;
 
         /// <summary>
         /// Where the level's name sits, clear of the resume button below it.
@@ -31,7 +42,9 @@ namespace Pathweaver.Game.Presentation.Menus
         private HexButton _resume;
         private HexButton _restart;
         private HexButton _menu;
+        private HexButton _help;
         private Text.TextLabel _title;
+        private Text.TextLabel _helpMark;
 
         internal void Build(Camera camera, Material material)
         {
@@ -57,6 +70,21 @@ namespace Pathweaver.Game.Presentation.Menus
                 transform, MenuId, camera, material,
                 new Vector2(0.67f, 0.38f), 0.45f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.13f);
             MenuGlyphs.AddLevelStack(_menu, pipRadius: 0.06f, spacing: 0.14f);
+
+            _help = HexButton.Create(
+                transform, HelpId, camera, material,
+                new Vector2(0.5f, HelpViewportY), 0.36f, BoardPalette.MenuSecondary,
+                touchRadiusFraction: 0.11f);
+
+            _helpMark = Text.TextLabel.Create(
+                transform,
+                camera,
+                HelpId,
+                new Vector2(0.5f, HelpViewportY),
+                Text.LabelMetrics.BodyHeightFraction,
+                BoardPalette.MenuGlyph);
+
+            _helpMark.SetText("?");
         }
 
         /// <summary>
@@ -83,7 +111,12 @@ namespace Pathweaver.Game.Presentation.Menus
                 return RestartId;
             }
 
-            return _menu != null && _menu.IsPressed(screenPosition) ? MenuId : null;
+            if (_menu != null && _menu.IsPressed(screenPosition))
+            {
+                return MenuId;
+            }
+
+            return _help != null && _help.IsPressed(screenPosition) ? HelpId : null;
         }
     }
 }
