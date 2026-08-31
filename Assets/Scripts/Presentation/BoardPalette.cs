@@ -155,6 +155,34 @@ namespace Pathweaver.Game.Presentation
         /// </remarks>
         internal static readonly Color Destructive = new Color(0.74f, 0.29f, 0.27f);
 
+        /// <summary>
+        /// What the camera clears to, and therefore what every colour here is read against.
+        /// </summary>
+        /// <remarks>
+        /// Named because contrast is a relationship rather than a property: a text colour cannot be
+        /// judged without it, and it was previously a bare triple repeated in two capture tools.
+        /// </remarks>
+        internal static readonly Color Background = new Color(0.08f, 0.09f, 0.11f);
+
+        /// <summary>
+        /// Text that carries the meaning of a screen.
+        /// </summary>
+        /// <remarks>
+        /// About 16:1 against <see cref="Background"/>, far above the 4.5:1 WCAG asks of body text.
+        /// Text gets its own colours rather than borrowing a control's because the requirement is
+        /// different: a dim pip is still legibly a pip, and dim text is not legibly anything. The
+        /// first text preview was drawn in <see cref="TokenEmpty"/> and came out at 1.8:1.
+        /// </remarks>
+        internal static readonly Color TextPrimary = new Color(0.93f, 0.95f, 0.97f);
+
+        /// <summary>
+        /// Text that qualifies something else — a unit, a level id, a caption.
+        /// </summary>
+        /// <remarks>
+        /// About 7:1, which still clears 4.5:1 with room for the smallest size the game draws.
+        /// </remarks>
+        internal static readonly Color TextSecondary = new Color(0.62f, 0.65f, 0.71f);
+
         internal static readonly Color Spring = new Color(0.95f, 0.85f, 0.35f);
         internal static readonly Color Hub = new Color(0.55f, 0.40f, 0.85f);
 

@@ -125,10 +125,64 @@ namespace Pathweaver.Game.EditorTests
                 "Game state gained a time-dependent field, which the PRD forbids.");
         }
 
+        [Test]
+        public void Text_meets_the_contrast_ratio_WCAG_asks_of_body_text()
+        {
+            // 4.5:1 is the AA threshold for text below large-print size, and the game's smallest label
+            // is well below it. This is not a rule of thumb like the luminance gaps above: it is the
+            // published formula, so it is worth applying properly.
+            Assert.That(
+                ContrastRatio(BoardPalette.TextPrimary, BoardPalette.Background),
+                Is.GreaterThanOrEqualTo(4.5f));
+
+            Assert.That(
+                ContrastRatio(BoardPalette.TextSecondary, BoardPalette.Background),
+                Is.GreaterThanOrEqualTo(4.5f));
+        }
+
+        [Test]
+        public void A_control_colour_would_not_have_done_for_text()
+        {
+            // Why text has its own two colours rather than borrowing a control's. The first text
+            // preview was drawn in TokenEmpty, the colour of an unfilled pip, and came out unreadable.
+            // A dim pip is still legibly a pip; dim text is not legibly anything.
+            Assert.That(
+                ContrastRatio(BoardPalette.TokenEmpty, BoardPalette.Background),
+                Is.LessThan(4.5f),
+                "TokenEmpty now passes for text, so the reason these colours are separate has gone.");
+        }
+
         /// <summary>
         /// Relative luminance, weighted the way human vision responds to each channel.
         /// </summary>
         private static float Luminance(Color colour)
             => (0.2126f * colour.r) + (0.7152f * colour.g) + (0.0722f * colour.b);
+
+        /// <summary>
+        /// The WCAG contrast ratio between two colours, from 1:1 to 21:1.
+        /// </summary>
+        /// <remarks>
+        /// Uses WCAG's own relative luminance, which linearises each channel first. That differs from
+        /// <see cref="Luminance"/>, which is a weighted average of the raw values — good enough for
+        /// asking whether two fills are distinguishable, but not for a published threshold. Text gets
+        /// the real formula.
+        /// </remarks>
+        private static float ContrastRatio(Color first, Color second)
+        {
+            var lighter = Mathf.Max(WcagLuminance(first), WcagLuminance(second));
+            var darker = Mathf.Min(WcagLuminance(first), WcagLuminance(second));
+
+            return (lighter + 0.05f) / (darker + 0.05f);
+        }
+
+        private static float WcagLuminance(Color colour)
+            => (0.2126f * Linearise(colour.r))
+               + (0.7152f * Linearise(colour.g))
+               + (0.0722f * Linearise(colour.b));
+
+        private static float Linearise(float channel)
+            => channel <= 0.03928f
+                ? channel / 12.92f
+                : Mathf.Pow((channel + 0.055f) / 1.055f, 2.4f);
     }
 }

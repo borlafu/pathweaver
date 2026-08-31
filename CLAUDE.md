@@ -217,6 +217,19 @@ import rather than performing it, so under `-batchmode -quit` the Editor exits b
 anything lands. It unpacks the same `.unitypackage` by hand, keeping each `asset.meta` so
 the GUIDs the package's assets use to reference one another survive.
 
+Text can be reviewed the same way the board can — at phone aspect, with no device:
+
+```bash
+unity -batchmode -quit -projectPath . \
+  -executeMethod Pathweaver.EditorTools.TextPreview.Capture \
+  -output Artifacts/text-preview.png -logFile /tmp/unity.log
+```
+
+Every size in `LabelMetrics` on one sheet, in both languages the atlas covers. Worth
+re-running after any change to those numbers; it is what caught the em dash rendering as a
+gap, and what put `BoardPalette.TextPrimary` and `TextSecondary` in the palette after the
+first sheet was drawn in a pip colour at 1.8:1 against the background.
+
 Rendering can be reviewed without opening the Editor or a device:
 
 ```bash
