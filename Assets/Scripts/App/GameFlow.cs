@@ -48,6 +48,9 @@ namespace Pathweaver.Game.App
         private AtlasView _atlas;
 
         [SerializeField]
+        private HelpView _help;
+
+        [SerializeField]
         private GameObject _hud;
 
         /// <summary>
@@ -78,6 +81,15 @@ namespace Pathweaver.Game.App
         private HexButton _pauseButton;
         private HexButton _nextButton;
         private bool _hasRecordedThisClear;
+
+        /// <summary>
+        /// Where the back button on the help screen goes.
+        /// </summary>
+        /// <remarks>
+        /// Help is reachable from two places and has to return to the one it was opened from. Held here
+        /// rather than in <c>HelpView</c> because it is a fact about the route, not about the screen.
+        /// </remarks>
+        private GameScreen _helpReturnsTo = GameScreen.MainMenu;
 
         /// <summary>
         /// Whether the board on screen is a generated endless round rather than a campaign level.
@@ -113,6 +125,7 @@ namespace Pathweaver.Game.App
             _settings.Build(_camera, material);
             _levelSelect.Build(_camera, material, _campaign, _progress);
             _atlas.Build(_camera, material, _atlasMap, _atlasProgress);
+            _help.Build(_camera, material);
 
             // Top right, opposite restart. The two controls that leave a board sit in the two
             // corners furthest from the thumb's resting position, where a mis-tap costs the most.
@@ -168,6 +181,8 @@ namespace Pathweaver.Game.App
                     return HandleSettings(_settings.ButtonAt(screenPosition));
                 case GameScreen.Atlas:
                     return HandleAtlas(_atlas.ButtonAt(screenPosition));
+                case GameScreen.Help:
+                    return HandleHelp(_help.ButtonAt(screenPosition));
                 case GameScreen.Playing:
                     if (_pauseButton != null && _pauseButton.IsPressed(screenPosition))
                     {
@@ -206,6 +221,9 @@ namespace Pathweaver.Game.App
                     return true;
                 case MainMenuView.AtlasId:
                     ShowAtlas();
+                    return true;
+                case MainMenuView.HelpId:
+                    ShowHelp(GameScreen.MainMenu);
                     return true;
                 case MainMenuView.SettingsId:
                     // Opened disarmed, always. An arming left behind from a previous visit would turn
@@ -250,6 +268,9 @@ namespace Pathweaver.Game.App
                 case PauseView.MenuId:
                     ShowLevelSelect();
                     return true;
+                case PauseView.HelpId:
+                    ShowHelp(GameScreen.Paused);
+                    return true;
                 default:
                     return false;
             }
@@ -289,6 +310,50 @@ namespace Pathweaver.Game.App
             // combination wrong.
             _atlas.Build(_camera, _boardView.TileMaterial, _atlasMap, _atlasProgress);
             return true;
+        }
+
+        /// <summary>
+        /// Turns a page, or goes back to whichever screen asked for help.
+        /// </summary>
+        /// <remarks>
+        /// Returning to where the player came from, rather than always to the main menu, is what makes
+        /// help reachable mid-level: a player who paused to read how tokens work should land back on
+        /// their board, not outside it.
+        /// </remarks>
+        private bool HandleHelp(string button)
+        {
+            if (button == null)
+            {
+                return false;
+            }
+
+            if (button == HelpView.NextId)
+            {
+                _help.Advance();
+                return true;
+            }
+
+            if (button == HelpView.BackId)
+            {
+                if (_helpReturnsTo == GameScreen.Paused)
+                {
+                    // The board is still framed as it was, so the camera is left alone.
+                    _router.Show(GameScreen.Paused);
+                    return true;
+                }
+
+                _router.Show(GameScreen.MainMenu);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void ShowHelp(GameScreen returnTo)
+        {
+            _helpReturnsTo = returnTo;
+            _help.ShowPage(0);
+            _router.Show(GameScreen.Help);
         }
 
         /// <summary>

@@ -72,6 +72,11 @@ namespace Pathweaver.Game.Presentation.Menus
             button._face = button.AddPart(
                 "Face", HexMeshFactory.CreateHexagon(radius), colour, depth: 0f);
 
+            // Placed here as well as in Update. Update is what keeps it in place when the camera
+            // changes, but it does not run in an Editor scene assembled for a preview capture — which
+            // left every button of a screen stacked at the origin in the first help-screen capture.
+            button.transform.position = button.WorldPosition;
+
             return button;
         }
 

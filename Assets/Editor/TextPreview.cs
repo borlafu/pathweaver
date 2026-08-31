@@ -46,15 +46,7 @@ namespace Pathweaver.EditorTools
 
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            var camera = new GameObject("Camera").AddComponent<Camera>();
-            camera.tag = "MainCamera";
-            camera.transform.position = new Vector3(0f, 0f, -10f);
-            camera.orthographic = true;
-            camera.orthographicSize = MenuCamera.OrthographicSize;
-            camera.backgroundColor = BoardPalette.Background;
-            camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.aspect = (float)Width / Height;
-
+            var camera = BuildPreviewCamera();
             var sheet = new GameObject("Sheet").transform;
 
             // Realistic strings rather than lorem ipsum, and both languages the atlas covers, because
@@ -83,6 +75,53 @@ namespace Pathweaver.EditorTools
             Write(camera, outputPath);
         }
 
+        /// <summary>
+        /// Renders the help screen as a player would meet it, one image per page.
+        /// </summary>
+        /// <remarks>
+        /// Run with:
+        /// <code>
+        /// unity -batchmode -quit -projectPath . \
+        ///   -executeMethod Pathweaver.EditorTools.TextPreview.CaptureHelp \
+        ///   -output Artifacts/help -logFile /tmp/unity.log
+        /// </code>
+        /// Writes <c>&lt;output&gt;-1.png</c> and so on. Wrapping is the reason this exists: how many
+        /// lines a paragraph becomes depends on the screen, so the only way to know a page fits is to
+        /// render it at the size a phone will.
+        /// </remarks>
+        internal static void CaptureHelp()
+        {
+            var prefix = OutputPath("Artifacts/help");
+
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var camera = BuildPreviewCamera();
+            var material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            var help = new GameObject("HelpScreen").AddComponent<HelpView>();
+
+            help.Build(camera, material);
+
+            for (var page = 0; page < HelpView.PageCount; page++)
+            {
+                help.ShowPage(page);
+                Write(camera, $"{prefix}-{page + 1}.png");
+            }
+        }
+
+        private static Camera BuildPreviewCamera()
+        {
+            var camera = new GameObject("Camera").AddComponent<Camera>();
+            camera.tag = "MainCamera";
+            camera.transform.position = new Vector3(0f, 0f, -10f);
+            camera.orthographic = true;
+            camera.orthographicSize = MenuCamera.OrthographicSize;
+            camera.backgroundColor = BoardPalette.Background;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.aspect = (float)Width / Height;
+
+            return camera;
+        }
+
         private static TextLabel Line(
             Transform parent, Camera camera, string name, float viewportY, float heightFraction, string content)
         {
@@ -99,7 +138,7 @@ namespace Pathweaver.EditorTools
             return label;
         }
 
-        private static string OutputPath()
+        private static string OutputPath(string fallback = "Artifacts/text-preview.png")
         {
             var arguments = System.Environment.GetCommandLineArgs();
 
@@ -111,7 +150,7 @@ namespace Pathweaver.EditorTools
                 }
             }
 
-            return "Artifacts/text-preview.png";
+            return fallback;
         }
 
         private static void Write(Camera camera, string outputPath)
