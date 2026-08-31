@@ -12,10 +12,10 @@ namespace Pathweaver.Game.Presentation.Menus
     /// </summary>
     /// <remarks>
     /// <para>
-    /// There is no font, so a level cannot be labelled with a number. Drawing each level as a small
-    /// version of its shape turns that constraint into something better than a digit: a player
-    /// recognises "the tall corridor" faster than they recognise "3", and the preview says something
-    /// about the level rather than only where it sits in a list.
+    /// Each level is drawn as a small version of its own shape, which is better than a digit alone: a
+    /// player recognises "the tall corridor" faster than they recognise "3", and the preview says
+    /// something about the level rather than only where it sits in a list. The number underneath says
+    /// where it sits in the list, which the shape cannot, and answers "how far in am I".
     /// </para>
     /// <para>
     /// Locked levels are dimmed rather than hidden, so the length of the campaign is visible from
@@ -47,7 +47,18 @@ namespace Pathweaver.Game.Presentation.Menus
 
         private const float HorizontalMargin = 0.1f;
 
+        /// <summary>
+        /// How far below a level's hexagon its number sits, in viewport fractions.
+        /// </summary>
+        /// <remarks>
+        /// Fixed rather than derived from the button radius, because the radius shrinks as the
+        /// campaign grows while a legible caption does not. The row band caps the grid well before
+        /// this becomes tight — twenty levels leave roughly 0.15 between rows against 0.017 of text.
+        /// </remarks>
+        internal const float NumberOffset = 0.038f;
+
         private readonly List<HexButton> _levelButtons = new List<HexButton>();
+        private readonly List<Text.TextLabel> _levelNumbers = new List<Text.TextLabel>();
 
         private HexButton _back;
         private Camera _camera;
@@ -87,7 +98,19 @@ namespace Pathweaver.Game.Presentation.Menus
                 button.SetEnabled(unlocked, colour);
                 AddShapePreview(button, id, unlocked);
 
+                var number = Text.TextLabel.Create(
+                    transform,
+                    camera,
+                    $"{id}-number",
+                    new Vector2(viewport.x, viewport.y - NumberOffset),
+                    Text.LabelMetrics.CaptionHeightFraction,
+                    unlocked ? BoardPalette.TextSecondary : BoardPalette.LevelLockedGlyph);
+
+                // One-based, because it is the level a player would name out loud, not an index.
+                number.SetText((index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture));
+
                 _levelButtons.Add(button);
+                _levelNumbers.Add(number);
             }
 
             _back = HexButton.Create(
@@ -217,6 +240,16 @@ namespace Pathweaver.Game.Presentation.Menus
             }
 
             _levelButtons.Clear();
+
+            foreach (var number in _levelNumbers)
+            {
+                if (number != null)
+                {
+                    Destroy(number.gameObject);
+                }
+            }
+
+            _levelNumbers.Clear();
 
             if (_back != null)
             {
