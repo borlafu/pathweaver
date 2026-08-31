@@ -9,9 +9,8 @@ namespace Pathweaver.Game.Presentation.Menus
     /// </summary>
     /// <remarks>
     /// Buttons and no text, because the project has no font. A play triangle, a small stack of hexes
-    /// for the level list, an endless spiral, a small constellation for the World Atlas, and a gear for
-    /// settings — symbols that carry meaning without language, which is what a localised game would
-    /// need anyway.
+    /// for the level list, an endless spiral, and a gear for settings — symbols that carry meaning
+    /// without language, which is what a localised game would need anyway.
     /// </remarks>
     internal sealed class MainMenuView : MonoBehaviour
     {
@@ -21,11 +20,56 @@ namespace Pathweaver.Game.Presentation.Menus
         internal const string AtlasId = "atlas";
         internal const string SettingsId = "settings";
 
+        /// <summary>The secondary row's height, as a fraction of the viewport.</summary>
+        private const float SecondaryRowY = 0.36f;
+
+        /// <summary>Centre-to-centre spacing along the secondary row, in viewport fractions.</summary>
+        private const float SecondarySpacing = 0.23f;
+
+        private const float SecondaryRadius = 0.38f;
+        private const float SecondaryTouchRadius = 0.11f;
+
         private HexButton _continue;
         private HexButton _levels;
         private HexButton _endless;
         private HexButton _atlas;
         private HexButton _settings;
+
+        /// <summary>
+        /// Whether the World Atlas is offered at all.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The atlas is built, saved, and covered by tests, but nothing on screen says what Star
+        /// Essence is, what a node costs, or what a relic does — so a player meets a constellation of
+        /// coloured hexagons and has to guess. It is withheld until it can be read rather than
+        /// guessed, which needs a font the project does not yet have.
+        /// </para>
+        /// <para>
+        /// Withheld, not disabled: <c>GameFlow.AwardEssence</c> keeps paying on every clear while this
+        /// is false, so essence banks up and a player loses nothing by the wait.
+        /// </para>
+        /// <para>
+        /// A property rather than a <c>const</c> deliberately. A constant false condition makes the
+        /// guarded branch unreachable code, which the compiler is right to warn about and which would
+        /// have to be silenced; this reads the same and does not.
+        /// </para>
+        /// </remarks>
+        internal static bool IsAtlasVisible => false;
+
+        /// <summary>How many buttons the secondary row holds.</summary>
+        internal static int SecondaryCount => IsAtlasVisible ? 4 : 3;
+
+        /// <summary>
+        /// Where the given secondary button sits horizontally, as a viewport fraction.
+        /// </summary>
+        /// <remarks>
+        /// Spacing is fixed and the row is centred, so removing a button closes the gap rather than
+        /// leaving a hole, and the remaining buttons keep the density a thumb learned. With four
+        /// buttons this reproduces the hand-placed 0.155, 0.385, 0.615, 0.845 exactly.
+        /// </remarks>
+        internal static float SecondaryX(int index, int count)
+            => 0.5f + (SecondarySpacing * (index - ((count - 1) * 0.5f)));
 
         internal void Build(Camera camera, Material material)
         {
@@ -35,30 +79,30 @@ namespace Pathweaver.Game.Presentation.Menus
 
             MenuGlyphs.AddPlay(_continue, 0.34f);
 
-            _levels = HexButton.Create(
-                transform, LevelsId, camera, material,
-                new Vector2(0.155f, 0.36f), 0.38f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.11f);
+            var count = SecondaryCount;
+            var index = 0;
 
+            _levels = CreateSecondary(camera, material, LevelsId, SecondaryX(index++, count));
             MenuGlyphs.AddLevelStack(_levels, pipRadius: 0.07f, spacing: 0.17f);
 
-            _endless = HexButton.Create(
-                transform, EndlessId, camera, material,
-                new Vector2(0.385f, 0.36f), 0.38f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.11f);
-
+            _endless = CreateSecondary(camera, material, EndlessId, SecondaryX(index++, count));
             MenuGlyphs.AddEndlessSpiral(_endless);
 
-            _atlas = HexButton.Create(
-                transform, AtlasId, camera, material,
-                new Vector2(0.615f, 0.36f), 0.38f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.11f);
+            if (IsAtlasVisible)
+            {
+                _atlas = CreateSecondary(camera, material, AtlasId, SecondaryX(index++, count));
+                MenuGlyphs.AddConstellation(_atlas);
+            }
 
-            MenuGlyphs.AddConstellation(_atlas);
-
-            _settings = HexButton.Create(
-                transform, SettingsId, camera, material,
-                new Vector2(0.845f, 0.36f), 0.38f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.11f);
-
+            _settings = CreateSecondary(camera, material, SettingsId, SecondaryX(index, count));
             MenuGlyphs.AddSettingsGear(_settings);
         }
+
+        private HexButton CreateSecondary(Camera camera, Material material, string id, float viewportX)
+            => HexButton.Create(
+                transform, id, camera, material,
+                new Vector2(viewportX, SecondaryRowY), SecondaryRadius, BoardPalette.MenuSecondary,
+                touchRadiusFraction: SecondaryTouchRadius);
 
         /// <summary>
         /// Which button a tap landed on, or null.
