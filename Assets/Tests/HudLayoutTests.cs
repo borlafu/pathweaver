@@ -82,5 +82,39 @@ namespace Pathweaver.Game.EditorTests
         {
             Assert.That(PauseView.TitleViewportY, Is.InRange(0.05f, 0.95f));
         }
+
+        [Test]
+        public void A_settings_label_sits_between_its_own_control_and_the_next()
+        {
+            // Below its switch, and clear of the switch beneath it. The three controls are 0.18 and
+            // 0.22 apart, so an offset that grew past half of the smaller gap would put a label nearer
+            // the wrong control than the right one.
+            var smallestGap = Mathf.Min(
+                SettingsView.HapticsViewportY - SettingsView.ReduceMotionViewportY,
+                SettingsView.ReduceMotionViewportY - SettingsView.ResetViewportY);
+
+            Assert.That(SettingsView.LabelOffset, Is.GreaterThan(LabelMetrics.CaptionHeightFraction));
+            Assert.That(SettingsView.LabelOffset, Is.LessThan(smallestGap * 0.5f));
+        }
+
+        [Test]
+        public void The_reset_label_stays_on_screen_below_its_control()
+        {
+            Assert.That(SettingsView.ResetViewportY - SettingsView.LabelOffset, Is.GreaterThan(0.05f));
+        }
+
+        [Test]
+        public void A_level_number_clears_its_hexagon_without_reaching_the_row_below()
+        {
+            // Twenty levels give a four-column grid of five rows in a band 0.60 tall, so about 0.15
+            // between rows. The number has to be further from its own button than a line of text is
+            // tall, and nearer to it than to the button beneath.
+            const float rowStepAtTwentyLevels = 0.15f;
+
+            Assert.That(
+                LevelSelectView.NumberOffset, Is.GreaterThan(LabelMetrics.CaptionHeightFraction));
+            Assert.That(
+                LevelSelectView.NumberOffset, Is.LessThan(rowStepAtTwentyLevels * 0.5f));
+        }
     }
 }

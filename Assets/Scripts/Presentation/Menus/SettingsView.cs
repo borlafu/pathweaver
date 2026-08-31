@@ -12,16 +12,17 @@ namespace Pathweaver.Game.Presentation.Menus
     /// for something that does nothing tells a player the game is broken rather than unfinished.
     /// </para>
     /// <para>
-    /// State is shown by fill rather than by a label. A filled hexagon reads as on and a hollow one
-    /// as off, which needs no words and survives being looked at by someone who does not read the
-    /// game's language — of which there currently is none.
+    /// State is shown by fill as well as named. A filled hexagon reads as on and a hollow one as
+    /// off, which survives being looked at by someone who does not read the game's language; the
+    /// label underneath says which setting it is, which the fill never could.
     /// </para>
     /// <para>
     /// The reset control is the odd one out, and it is deliberately below the two switches and
     /// smaller than them: it is not a preference, and nothing about it should invite a stray thumb.
-    /// It arms on the first tap and acts on the second, which is the only confirmation available
-    /// without a font to write a question in — and the same mode-then-act shape the Pivot Token
-    /// already uses for the other tap in this game that spends something scarce.
+    /// It arms on the first tap and acts on the second, the same mode-then-act shape the Pivot Token
+    /// uses for the other tap in this game that spends something scarce. Its label is now the
+    /// confirmation question that used to be impossible to write: armed, it reads as a warning, in
+    /// the destructive colour and in words, because neither on its own should have to carry it.
     /// </para>
     /// </remarks>
     internal sealed class SettingsView : MonoBehaviour
@@ -31,10 +32,29 @@ namespace Pathweaver.Game.Presentation.Menus
         internal const string ResetId = "reset";
         internal const string BackId = "back";
 
+        /// <summary>Where each switch sits, and therefore where its label goes.</summary>
+        internal const float HapticsViewportY = 0.66f;
+
+        internal const float ReduceMotionViewportY = 0.48f;
+
+        internal const float ResetViewportY = 0.26f;
+
+        /// <summary>
+        /// How far below a control its label sits, in viewport fractions.
+        /// </summary>
+        /// <remarks>
+        /// Below rather than beside, so a longer word in another language lengthens the label sideways
+        /// into empty screen rather than into the control it names.
+        /// </remarks>
+        internal const float LabelOffset = 0.055f;
+
         private HexButton _haptics;
         private HexButton _reduceMotion;
         private HexButton _reset;
         private HexButton _back;
+        private Text.TextLabel _hapticsLabel;
+        private Text.TextLabel _reduceMotionLabel;
+        private Text.TextLabel _resetLabel;
 
         /// <summary>
         /// Whether the next tap on the reset control would actually erase everything.
@@ -49,15 +69,24 @@ namespace Pathweaver.Game.Presentation.Menus
         {
             _haptics = HexButton.Create(
                 transform, HapticsId, camera, material,
-                new Vector2(0.5f, 0.66f), 0.55f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.16f);
+                new Vector2(0.5f, HapticsViewportY), 0.55f, BoardPalette.MenuSecondary,
+                touchRadiusFraction: 0.16f);
+
+            _hapticsLabel = Label(camera, HapticsId, HapticsViewportY, "Vibration");
 
             _reduceMotion = HexButton.Create(
                 transform, ReduceMotionId, camera, material,
-                new Vector2(0.5f, 0.48f), 0.55f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.16f);
+                new Vector2(0.5f, ReduceMotionViewportY), 0.55f, BoardPalette.MenuSecondary,
+                touchRadiusFraction: 0.16f);
+
+            _reduceMotionLabel = Label(camera, ReduceMotionId, ReduceMotionViewportY, "Reduced motion");
 
             _reset = HexButton.Create(
                 transform, ResetId, camera, material,
-                new Vector2(0.5f, 0.26f), 0.42f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.12f);
+                new Vector2(0.5f, ResetViewportY), 0.42f, BoardPalette.MenuSecondary,
+                touchRadiusFraction: 0.12f);
+
+            _resetLabel = Label(camera, ResetId, ResetViewportY, string.Empty);
 
             _back = HexButton.Create(
                 transform, BackId, camera, material,
@@ -74,6 +103,14 @@ namespace Pathweaver.Game.Presentation.Menus
         {
             DrawSwitch(_haptics, GameSettings.HapticsEnabled, MenuGlyphs.Haptics());
             DrawSwitch(_reduceMotion, GameSettings.ReduceMotion, MenuGlyphs.Motion());
+
+            // The label follows the fill, so a switch that is off is dimmer in both places rather
+            // than half-lit in one.
+            _hapticsLabel?.SetColour(
+                GameSettings.HapticsEnabled ? BoardPalette.TextPrimary : BoardPalette.TextSecondary);
+            _reduceMotionLabel?.SetColour(
+                GameSettings.ReduceMotion ? BoardPalette.TextPrimary : BoardPalette.TextSecondary);
+
             DrawReset();
         }
 
@@ -110,6 +147,20 @@ namespace Pathweaver.Game.Presentation.Menus
             return _back != null && _back.IsPressed(screenPosition) ? BackId : null;
         }
 
+        private Text.TextLabel Label(Camera camera, string id, float controlViewportY, string content)
+        {
+            var label = Text.TextLabel.Create(
+                transform,
+                camera,
+                id,
+                new Vector2(0.5f, controlViewportY - LabelOffset),
+                Text.LabelMetrics.CaptionHeightFraction,
+                BoardPalette.TextSecondary);
+
+            label.SetText(content);
+            return label;
+        }
+
         private void DrawReset()
         {
             if (_reset == null)
@@ -120,6 +171,12 @@ namespace Pathweaver.Game.Presentation.Menus
             _reset.ClearGlyphs();
             _reset.SetColour(IsResetArmed ? BoardPalette.Destructive : BoardPalette.SwitchOff);
             MenuGlyphs.AddErase(_reset, IsResetArmed);
+
+            // The question the game could not ask before. Armed, it says what the next tap does; the
+            // colour agrees with it rather than replacing it.
+            _resetLabel?.SetText(IsResetArmed ? "Tap again to erase everything" : "Erase all progress");
+            _resetLabel?.SetColour(
+                IsResetArmed ? BoardPalette.Destructive : BoardPalette.TextSecondary);
         }
 
         private static void DrawSwitch(HexButton button, bool isOn, (Mesh Mesh, Vector3 Offset)[] glyph)
