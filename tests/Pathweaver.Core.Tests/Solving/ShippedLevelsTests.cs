@@ -8,9 +8,19 @@ namespace Pathweaver.Core.Tests.Solving;
 /// The gate that keeps an unsolvable level out of the game.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Every file under <c>levels/</c> must load and must be completable. A level that
 /// cannot be cleared fails CI here rather than reaching a player who then cannot
 /// tell whether the fault is theirs.
+/// </para>
+/// <para>
+/// There are two ways a level may prove it. A level with no <c>solve:</c> lines is searched, which is
+/// the stronger check: something that did not know the answer found one. A level that carries an
+/// authored solution has it replayed instead, because the search cannot finish on a board large enough
+/// to need panning — a twenty-eight cell board with a five-row footprint exhausted six hundred
+/// thousand states in fourteen seconds without a verdict. The search stays the default wherever it
+/// can run, so the weaker check is used only where the stronger one cannot reach.
+/// </para>
 /// </remarks>
 public class ShippedLevelsTests
 {
@@ -51,6 +61,20 @@ public class ShippedLevelsTests
     {
         // The puzzle players actually get.
         var level = LevelLoader.Parse(File.ReadAllText(path));
+
+        if (level.Solution.Count > 0)
+        {
+            // Certified by replay rather than by search. Any illegal move throws, naming the step, so a
+            // solution that has drifted out of step with its level says so rather than merely failing.
+            var replayed = AuthoredSolution.Replay(level);
+
+            Assert.True(
+                replayed.Score >= level.TargetScore,
+                $"{level.Id}: its own solution reached {replayed.Score}, short of {level.TargetScore}.");
+
+            return;
+        }
+
         var result = LevelSolver.Solve(level, level.Seed);
 
         // Three failures needing three different responses: widen the search, look at the level, or
@@ -99,6 +123,14 @@ public class ShippedLevelsTests
         // solver certify a level the game cannot actually clear.
         // Arrange
         var level = LevelLoader.Parse(File.ReadAllText(path));
+
+        if (level.Solution.Count > 0)
+        {
+            // Nothing to double-check: an authored solution is only ever proven by being replayed, so
+            // the test above is already this test.
+            return;
+        }
+
         var result = LevelSolver.Solve(level, level.Seed);
         Assert.True(result.Solved);
 
@@ -113,6 +145,46 @@ public class ShippedLevelsTests
         Assert.True(
             state.Score >= level.TargetScore,
             $"Replaying the solution reached {state.Score}, short of {level.TargetScore}.");
+    }
+
+    [Theory]
+    [MemberData(nameof(LevelFiles))]
+    public void An_authored_solution_never_places_twice_on_the_same_cell(string path)
+    {
+        // An authoring slip rather than a rule: the engine would refuse the second placement and the
+        // replay would report it, but "cannot be placed there" is a much worse message than this one
+        // when the cause is a duplicated line.
+        // Arrange
+        var level = LevelLoader.Parse(File.ReadAllText(path));
+        var seen = new HashSet<Pathweaver.Core.Hex.HexCoord>();
+
+        // Act and assert
+        foreach (var move in AuthoredSolution.Placements(level))
+        {
+            Assert.True(seen.Add(move.At), $"{level.Id} places on {move.At} twice.");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(LevelFiles))]
+    public void An_authored_solution_is_only_used_where_the_search_cannot_reach(string path)
+    {
+        // The weaker check earns its place by being necessary. A small board that carries a solution is
+        // a board that could have been searched, and searching it is worth more.
+        // Arrange
+        var level = LevelLoader.Parse(File.ReadAllText(path));
+
+        if (level.Solution.Count == 0)
+        {
+            return;
+        }
+
+        // The largest shape biome one uses is hexagon 3, which is 37 cells. Everything at or below that
+        // has been searched successfully, so anything that size wanting a solution should be looked at.
+        Assert.True(
+            level.Shape.Count > 23,
+            $"{level.Id} is only {level.Shape.Count} cells and should be proven by search, not by its "
+            + "own solution.");
     }
 
     /// <summary>

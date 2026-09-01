@@ -88,6 +88,7 @@ namespace Pathweaver.Core.Levels
             var cells = new List<HexCoord>();
             var endpoints = new List<FlowEndpoint>();
             var bagTiles = new List<ConduitTile>();
+            var solution = new List<AuthoredMove>();
 
             var lines = text.Replace("\r\n", "\n").Split('\n');
             for (var index = 0; index < lines.Length; index++)
@@ -147,6 +148,9 @@ namespace Pathweaver.Core.Levels
                     case "tile":
                         bagTiles.AddRange(ParseTiles(value, lineNumber));
                         break;
+                    case "solve":
+                        solution.Add(ParseAuthoredMove(value, lineNumber));
+                        break;
                     default:
                         throw new LevelFormatException($"Unknown key \"{key}\".", lineNumber);
                 }
@@ -154,7 +158,7 @@ namespace Pathweaver.Core.Levels
 
             return Build(
                 id, name, baseScore, targetScore, startingTokens, startingSkips, seed,
-                radius, cells, endpoints, bagTiles);
+                radius, cells, endpoints, bagTiles, solution);
         }
 
         private static LevelDefinition Build(
@@ -168,7 +172,8 @@ namespace Pathweaver.Core.Levels
             int? radius,
             List<HexCoord> cells,
             List<FlowEndpoint> endpoints,
-            List<ConduitTile> bagTiles)
+            List<ConduitTile> bagTiles,
+            List<AuthoredMove> solution)
         {
             if (id is null)
             {
@@ -234,7 +239,58 @@ namespace Pathweaver.Core.Levels
                 targetScore.Value,
                 startingTokens,
                 startingSkips,
-                seed);
+                seed,
+                solution: solution.Count == 0 ? null : solution.ToArray());
+        }
+
+        /// <summary>
+        /// One step of an authored solution: <c>skip</c>, or a cell with an optional rotation.
+        /// </summary>
+        /// <remarks>
+        /// The rotation is optional because on a board with one route through a cell there is exactly one
+        /// rotation that fits, so writing it down is transcription rather than information — and a
+        /// solution nobody can read by eye is a solution nobody will maintain. <c>rot</c> is there for
+        /// the cases where more than one fits and the author means a particular one.
+        /// </remarks>
+        private static AuthoredMove ParseAuthoredMove(string value, int lineNumber)
+        {
+            if (value.Equals("skip", StringComparison.OrdinalIgnoreCase))
+            {
+                return AuthoredMove.Skip();
+            }
+
+            var parts = value.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length != 1 && parts.Length != 3)
+            {
+                throw new LevelFormatException(
+                    $"Expected \"solve: q,r\", \"solve: q,r rot n\" or \"solve: skip\" but found \"{value}\".",
+                    lineNumber);
+            }
+
+            var at = ParseCoordinate(parts[0], lineNumber);
+
+            if (parts.Length == 1)
+            {
+                return AuthoredMove.Place(at);
+            }
+
+            if (!parts[1].Equals("rot", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new LevelFormatException(
+                    $"Expected \"rot\" before a rotation but found \"{parts[1]}\".", lineNumber);
+            }
+
+            var rotation = (int)ParseNonNegativeNumber(parts[2], "rotation", lineNumber);
+
+            if (rotation >= HexCoord.Directions.Count)
+            {
+                throw new LevelFormatException(
+                    $"A rotation of {rotation} is not one of the {HexCoord.Directions.Count} a hexagon has.",
+                    lineNumber);
+            }
+
+            return AuthoredMove.Place(at, rotation);
         }
 
         private static List<HexCoord> ResolveShape(int? radius, List<HexCoord> cells)

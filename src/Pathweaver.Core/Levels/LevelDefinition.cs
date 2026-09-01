@@ -24,6 +24,7 @@ namespace Pathweaver.Core.Levels
         private readonly HexCoord[] _shape;
         private readonly FlowEndpoint[] _endpoints;
         private readonly ConduitTile[] _bagTiles;
+        private readonly AuthoredMove[] _solution;
 
         internal LevelDefinition(
             string id,
@@ -37,7 +38,8 @@ namespace Pathweaver.Core.Levels
             int startingSkips,
             ulong seed,
             int tokenCapacity = TokenRules.BaseCapacity,
-            int skipCapacity = TokenRules.BaseCapacity)
+            int skipCapacity = TokenRules.BaseCapacity,
+            AuthoredMove[]? solution = null)
         {
             Id = id;
             Name = name;
@@ -51,6 +53,7 @@ namespace Pathweaver.Core.Levels
             Seed = seed;
             TokenCapacity = tokenCapacity;
             SkipCapacity = skipCapacity;
+            _solution = solution ?? Array.Empty<AuthoredMove>();
         }
 
         /// <summary>Stable identifier, used by progression and save data.</summary>
@@ -67,6 +70,16 @@ namespace Pathweaver.Core.Levels
         /// One cycle of the tile supply. A repeated tile is a more common tile.
         /// </summary>
         public IReadOnlyList<ConduitTile> BagTiles => _bagTiles;
+
+        /// <summary>
+        /// A way through the level, written down by whoever authored it, or empty.
+        /// </summary>
+        /// <remarks>
+        /// Only large boards carry one. The solvability gate searches for a solution wherever it can and
+        /// replays an authored one only where the search cannot finish — see <see cref="AuthoredSolution"/>
+        /// for why that trade exists and what it costs.
+        /// </remarks>
+        public IReadOnlyList<AuthoredMove> Solution => _solution;
 
         public long BaseRouteScore { get; }
 
@@ -170,7 +183,7 @@ namespace Pathweaver.Core.Levels
             return new LevelDefinition(
                 Id, Name, _shape, _endpoints, _bagTiles, BaseRouteScore, TargetScore,
                 Math.Min(startingTokens, tokenCapacity), Math.Min(startingSkips, skipCapacity), Seed,
-                tokenCapacity, skipCapacity);
+                tokenCapacity, skipCapacity, _solution);
         }
 
         public GameState CreateGame(ulong seed)
