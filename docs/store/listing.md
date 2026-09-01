@@ -125,6 +125,12 @@ unity -batchmode -quit -projectPath . -buildTarget Android \
 Wait a few seconds after launching before capturing: this phone draws a vendor "game mode" overlay
 over the first frames, and it lands in the screenshot.
 
+**Whose phone it is.** Capture through `./scripts/shot.sh`, which refuses unless the game is the focused
+window. Taken with `adb exec-out screencap` directly, a capture is a picture of whatever is on screen —
+which twice turned out to be somebody's own applications rather than the board, once after a stray swipe
+opened the recents view and once after a launch silently failed. The check belongs in the tool rather
+than in whoever is holding the keyboard.
+
 **The shape.** This device is 1080×2376, which is taller than 9:16 and too tall for Play. Each shot is
 therefore cropped 30 px at each side — removing the sliver of the vendor's edge panel — scaled to
 1920 tall, and padded to 1080 wide in the game's own background colour, which makes the padding
