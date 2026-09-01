@@ -50,16 +50,28 @@ namespace Pathweaver.Game.Presentation
             var minimum = new Vector2(float.MaxValue, float.MaxValue);
             var maximum = new Vector2(float.MinValue, float.MinValue);
 
+            var board = _boardView != null ? _boardView.transform : null;
+
             foreach (var coordinate in state.Board.Coordinates)
             {
-                var centre = HexMetrics.ToWorld(coordinate);
+                // Measured where the cell actually is rather than where the hex maths puts it. The board
+                // leans, so its own coordinates are no longer its screen extents — and going through the
+                // transform means any future change to the lean needs no change here.
+                var local = HexMetrics.ToWorld(coordinate);
+                var centre = board != null ? board.TransformPoint(local) : local;
+
                 minimum = Vector2.Min(minimum, new Vector2(centre.x, centre.y));
                 maximum = Vector2.Max(maximum, new Vector2(centre.x, centre.y));
             }
 
-            // A cell reaches HexMetrics.Size beyond its centre in every direction.
+            // A cell reaches HexMetrics.Size beyond its centre in every direction, and a leaning block
+            // also hangs below the plane of its own top face. Without the overhang the near rim of the
+            // bottom row is clipped, which reads as a rendering fault rather than a framing one.
             var halfWidth = ((maximum.x - minimum.x) * 0.5f) + HexMetrics.Size + MarginWorldUnits;
-            var halfHeight = ((maximum.y - minimum.y) * 0.5f) + HexMetrics.Size + MarginWorldUnits;
+            var halfHeight = ((maximum.y - minimum.y) * 0.5f)
+                             + (HexMetrics.Size * BoardTilt.VerticalForeshortening)
+                             + BoardTilt.ScreenOverhang
+                             + MarginWorldUnits;
 
             var aspect = camera.aspect > 0f ? camera.aspect : 1f;
 

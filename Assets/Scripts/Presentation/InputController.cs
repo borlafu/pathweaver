@@ -363,7 +363,7 @@ namespace Pathweaver.Game.Presentation
 
         private HexCoord CellUnder(Vector2 screenPosition)
         {
-            var world = ToWorld(screenPosition);
+            var world = BoardPointUnder(screenPosition);
             var local = _boardView != null
                 ? _boardView.transform.InverseTransformPoint(world)
                 : world;
@@ -371,6 +371,44 @@ namespace Pathweaver.Game.Presentation
             return HexMetrics.FromWorld(local);
         }
 
+        /// <summary>
+        /// Where the pointer meets the plane the board's top faces lie in.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A ray against a plane rather than a point at a fixed depth. The board leans, so the depth at
+        /// which the pointer crosses it depends on how far up the screen the pointer is; reading a point
+        /// at z = 0 and inverse-transforming it gives a cell that drifts further from the thumb the
+        /// nearer the top or bottom of the board it is.
+        /// </para>
+        /// <para>
+        /// The plane is the board's own local z = 0, which is where <c>HexMetrics.ToWorld</c> puts every
+        /// cell centre, so it follows the board's transform without knowing the angle.
+        /// </para>
+        /// </remarks>
+        private Vector3 BoardPointUnder(Vector2 screenPosition)
+        {
+            var camera = _camera != null ? _camera : Camera.main;
+            var ray = camera.ScreenPointToRay(screenPosition);
+
+            if (_boardView == null)
+            {
+                return ToWorld(screenPosition);
+            }
+
+            var board = _boardView.transform;
+            var topFaces = new Plane(board.forward, board.position);
+
+            return topFaces.Raycast(ray, out var distance) ? ray.GetPoint(distance) : ToWorld(screenPosition);
+        }
+
+        /// <summary>
+        /// Where the pointer is, flat, for anything drawn in front of the board.
+        /// </summary>
+        /// <remarks>
+        /// The tray and the tile that follows the thumb are not on the board and do not lean with it, so
+        /// they want the screen position and not a point on the board's plane.
+        /// </remarks>
         private Vector3 ToWorld(Vector2 screenPosition)
         {
             var camera = _camera != null ? _camera : Camera.main;

@@ -63,6 +63,49 @@ namespace Pathweaver.Game.EditorTests
             AssertFacesCamera("Disc", GlyphMeshFactory.CreateDisc(0.1f));
         }
 
+        [Test]
+        public void A_blocks_sides_face_outward()
+        {
+            // The one mesh in the game that must not face the camera. A skirt is checked against the
+            // radial direction instead: a side face pointing at the viewer would be invisible from every
+            // angle the board is ever seen from, and its XY area is zero, so the test above cannot
+            // measure it at all.
+            var mesh = HexMeshFactory.CreateHexagonSkirt(0.46f, 0.25f);
+            var vertices = mesh.vertices;
+            var triangles = mesh.triangles;
+
+            Assert.That(triangles.Length, Is.EqualTo(6 * 6), "A hexagonal skirt is six quads.");
+
+            for (var index = 0; index < triangles.Length; index += 3)
+            {
+                var a = vertices[triangles[index]];
+                var b = vertices[triangles[index + 1]];
+                var c = vertices[triangles[index + 2]];
+
+                var normal = Vector3.Cross(b - a, c - a).normalized;
+
+                // The face's own middle, pointing away from the prism's axis.
+                var middle = (a + b + c) / 3f;
+                var outward = new Vector3(middle.x, middle.y, 0f).normalized;
+
+                Assert.That(
+                    Vector3.Dot(normal, outward),
+                    Is.GreaterThan(0.5f),
+                    $"A side face at {middle} points inward or along the axis.");
+            }
+        }
+
+        [Test]
+        public void A_block_stands_behind_its_own_top_face()
+        {
+            // Extruded away from the camera, so every decal the board draws at z near zero — spokes,
+            // motifs, the endpoint ring — stays in front of the block rather than inside it.
+            var mesh = HexMeshFactory.CreateHexagonSkirt(0.46f, 0.25f);
+
+            Assert.That(mesh.bounds.min.z, Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(mesh.bounds.max.z, Is.EqualTo(0.25f).Within(0.0001f));
+        }
+
         private static void AssertFacesCamera(string what, Mesh mesh)
         {
             var signs = SignsOf(mesh);
