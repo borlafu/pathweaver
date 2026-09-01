@@ -82,6 +82,26 @@ namespace Pathweaver.Game.Presentation
         }
 
         /// <summary>
+        /// Keeps the tile in the tray as the camera moves.
+        /// </summary>
+        /// <remarks>
+        /// Every other view anchored by viewport fraction does this — <c>TokenPipsView</c>,
+        /// <c>ProgressBarView</c>, <c>HexButton</c> — and this one did not, because until a board could
+        /// be larger than a screen the camera never moved after a tile had been dealt. The opening
+        /// flight moves it, and the tray tile stayed at the world position the tray used to occupy:
+        /// on the first large level it ended up clipped off the bottom edge.
+        /// </remarks>
+        private void Update()
+        {
+            // Only when the tile is not under a thumb. Overriding a drag would drag the tile back to
+            // the tray while the player was still holding it.
+            if (!_isFollowingPointer)
+            {
+                transform.position = TrayWorldPosition;
+            }
+        }
+
+        /// <summary>
         /// Twists the tile for the rotation hint, in degrees.
         /// </summary>
         /// <remarks>
