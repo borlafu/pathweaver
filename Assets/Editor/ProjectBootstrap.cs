@@ -115,7 +115,6 @@ namespace Pathweaver.EditorTools
             var input = new GameObject("Input").AddComponent<InputController>();
 
             var fitter = new GameObject("CameraFitter").AddComponent<BoardCameraFitter>();
-            Wire(fitter, ("_camera", camera), ("_boardView", board));
 
             var rotateHint = new GameObject("RotateHint").AddComponent<RotateHintAnimator>();
             Wire(rotateHint, ("_heldTileView", heldTile), ("_session", session));
@@ -159,6 +158,14 @@ namespace Pathweaver.EditorTools
             var frameRate = platform.AddComponent<FrameRateGovernor>();
             var haptics = platform.AddComponent<HapticsService>();
 
+            // Wired after the governor exists, because the opening camera flight asks for the active
+            // frame rate while it runs.
+            Wire(
+                fitter,
+                ("_camera", camera),
+                ("_boardView", board),
+                ("_frameRateGovernor", frameRate));
+
             Wire(heldTile, ("_boardView", board), ("_camera", camera));
             Wire(
                 session,
@@ -176,7 +183,8 @@ namespace Pathweaver.EditorTools
                 ("_restartButton", restart),
                 ("_restartConfirm", restartConfirm),
                 ("_skipButton", skip),
-                ("_pivotButton", pivotButton));
+                ("_pivotButton", pivotButton),
+                ("_cameraFitter", fitter));
 
             // Two groups, because they are hidden for different reasons. The HUD goes away while a
             // menu is up; the controls inside it also go away when a board is finished, leaving the
