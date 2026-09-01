@@ -22,9 +22,9 @@ namespace Pathweaver.Game.Presentation
     /// Counted as pips rather than written as a number: at these quantities a count of shapes reads
     /// faster than a digit, and the shapes survive a glance the digit would need a pause for.
     /// <para>
-    /// An icon sits at the foot of each column, matching the button beneath it, because two columns of
-    /// identical shapes at opposite edges of the screen are distinguishable only by position — and a
-    /// player who has not read the help screen has no way to learn which is which.
+    /// Each block sits directly above the control that spends it, which is what says which currency it
+    /// counts: an icon of its own was tried and was both redundant beside that control's glyph and
+    /// overlapping it.
     /// </para>
     /// <para>
     /// Without this, tokens are earned and spent invisibly — and a resource the player cannot
@@ -95,13 +95,6 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private GameSession _session;
 
-        /// <summary>How far below the first row the block's icon sits, in world units.</summary>
-        /// <remarks>
-        /// Between the button and the first row of pips, so it reads as belonging to both — which it does:
-        /// it says what the button spends and what the pips count.
-        /// </remarks>
-        private const float IconOffset = 0.26f;
-
         private readonly List<MeshRenderer> _pips = new List<MeshRenderer>();
 
         private Camera ResolvedCamera => _camera != null ? _camera : Camera.main;
@@ -140,11 +133,10 @@ namespace Pathweaver.Game.Presentation
                 new Vector3(_viewportPosition.x, _viewportPosition.y, 0f));
             transform.position = new Vector3(world.x, world.y, -0.4f);
 
-            // Scaled for the same reason the controls are: a pip's radius and the gaps between pips are
-            // world units chosen against the menu camera, so without this the block shrank on a board
-            // zoomed out and grew on one zoomed in. Scaling the parent scales the spacing with it, because
-            // the pips are children placed at multiples of it.
-            transform.localScale = Vector3.one * Menus.HexButton.ScaleFor(camera.orthographicSize);
+            // Deliberately not scaled against the camera. The three board controls are world-sized —
+            // their radii were chosen against a board's zoom, not a menu's — and a block that sits above
+            // one of them has to move and grow with it. Normalising only the pips made a row placed above
+            // a button drift away from it at every zoom but one.
         }
 
         private void OnStateChanged(GameState state)
@@ -198,7 +190,6 @@ namespace Pathweaver.Game.Presentation
                 _pips.Add(renderer);
             }
 
-            AddIcon(mesh);
         }
 
         /// <summary>
@@ -221,53 +212,5 @@ namespace Pathweaver.Game.Presentation
                 0f);
         }
 
-        /// <summary>
-        /// Puts the matching control's glyph at the foot of the column.
-        /// </summary>
-        /// <remarks>
-        /// The same shapes the buttons below use — a cell with a bar across it for the Pivot Token, a
-        /// double chevron for a skip — so the column and the control that spends it read as one thing.
-        /// Dimmer than a held pip, because it labels the column rather than counting anything.
-        /// </remarks>
-        private void AddIcon(Mesh unused)
-        {
-            var icon = new GameObject("Icon");
-            icon.transform.SetParent(transform, worldPositionStays: false);
-            icon.transform.localPosition = new Vector3(0f, FirstRowOffset - IconOffset, 0f);
-
-            if (_kind == TokenKind.Pivot)
-            {
-                AddPart(icon.transform, "Cell", HexMeshFactory.CreateHexagon(0.1f), BoardPalette.PivotReady);
-                AddPart(
-                    icon.transform,
-                    "Bar",
-                    HexMeshFactory.CreateRectangle(0.14f, 0.035f),
-                    BoardPalette.TextSecondary,
-                    depth: -0.01f);
-
-                return;
-            }
-
-            // Two chevrons, matching the button below rather than merely resembling it. One would read as
-            // a different mark, which is the opposite of what an icon that labels a column is for.
-            var chevron = GlyphMeshFactory.CreateChevron(0.075f, 0.065f, 0.028f);
-
-            AddPart(icon.transform, "ChevronLeft", chevron, BoardPalette.SkipReady, offsetX: -0.035f);
-            AddPart(icon.transform, "ChevronRight", chevron, BoardPalette.SkipReady, offsetX: 0.035f, depth: -0.01f);
-        }
-
-        private void AddPart(
-            Transform parent, string childName, Mesh mesh, Color colour, float depth = 0f, float offsetX = 0f)
-        {
-            var child = new GameObject(childName);
-            child.transform.SetParent(parent, worldPositionStays: false);
-            child.transform.localPosition = new Vector3(offsetX, 0f, depth);
-
-            child.AddComponent<MeshFilter>().sharedMesh = mesh;
-
-            var renderer = child.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = _boardView.TileMaterial;
-            renderer.material.color = colour;
-        }
     }
 }
