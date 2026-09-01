@@ -14,8 +14,11 @@ namespace Pathweaver.Game.EditorTests
     /// </remarks>
     public class BoardTiltTests
     {
-        /// <summary>Roughly the half-height of the largest shipped board, in world units.</summary>
-        private const float LargeBoardHalfHeight = 2.5f;
+        /// <summary>Half-height of a biome-one board, in world units.</summary>
+        private const float SmallBoardHalfHeight = 2.5f;
+
+        /// <summary>Half-height of the valley in biome two, which is where the constant broke.</summary>
+        private const float LargeBoardHalfHeight = 6.5f;
 
         [Test]
         public void The_lean_is_enough_to_read_and_not_enough_to_cost_the_board()
@@ -49,21 +52,41 @@ namespace Pathweaver.Game.EditorTests
             Assert.That(BoardTilt.ScreenOverhang, Is.LessThan(BoardTilt.BlockHeight));
         }
 
-        [Test]
-        public void The_whole_board_stays_behind_the_HUD()
+        [TestCase(SmallBoardHalfHeight)]
+        [TestCase(LargeBoardHalfHeight)]
+        [TestCase(20f)]
+        public void The_whole_board_stays_behind_the_interface(float boardHalfHeight)
         {
-            // The lean swings the near edge toward the viewer. If it reached past the tray at -0.2 or the
-            // pip columns at -0.4, board cells would draw over the controls — which is the fault the
-            // depth offset exists to prevent, and the one a second camera was going to be needed for.
-            const float nearestHudDepth = -0.2f;
+            // The lean swings the near edge toward the viewer, in proportion to how tall the board is.
+            // This was a constant 1.5 chosen against a half height of 2.5, and the first valley large
+            // enough to need panning has 6.5 — its southern rim reached z = -0.18, in front of the
+            // backdrop that keeps the board out from behind the interface.
+            const float nearestInterfaceDepth = -0.1f;
 
-            var nearestBoardDepth = BoardTilt.DepthOffset
-                                    - (LargeBoardHalfHeight * Mathf.Sin(BoardTilt.Degrees * Mathf.Deg2Rad));
+            var nearestBoardDepth = BoardTilt.DepthOffsetFor(boardHalfHeight)
+                                    - (boardHalfHeight * Mathf.Sin(BoardTilt.Degrees * Mathf.Deg2Rad));
 
             Assert.That(
                 nearestBoardDepth,
-                Is.GreaterThan(nearestHudDepth),
-                "The near edge of a large board reaches in front of the tray.");
+                Is.GreaterThan(nearestInterfaceDepth),
+                "The near edge of the board reaches in front of the interface.");
+        }
+
+        [Test]
+        public void A_small_board_is_not_pushed_further_back_than_it_needs()
+        {
+            // The floor still applies, so nothing about a biome-one board changes.
+            Assert.That(
+                BoardTilt.DepthOffsetFor(SmallBoardHalfHeight),
+                Is.EqualTo(BoardTilt.MinimumDepthOffset).Within(0.0001f));
+        }
+
+        [Test]
+        public void A_taller_board_sits_further_back()
+        {
+            Assert.That(
+                BoardTilt.DepthOffsetFor(LargeBoardHalfHeight),
+                Is.GreaterThan(BoardTilt.DepthOffsetFor(SmallBoardHalfHeight)));
         }
 
         [Test]

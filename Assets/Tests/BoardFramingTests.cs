@@ -79,10 +79,39 @@ namespace Pathweaver.Game.EditorTests
         [Test]
         public void The_camera_sits_below_what_it_is_looking_at_so_the_tray_does_not_cover_it()
         {
+            // Below, but only by the difference between the two reserved strips. The tray is the larger,
+            // so the board's middle sits a little above the screen's.
             var position = BoardFraming.CameraPositionFor(Vector2.zero, 4f);
 
             Assert.That(position.y, Is.LessThan(0f));
-            Assert.That(position.y, Is.EqualTo(-4f * BoardFraming.TrayHeightFraction).Within(0.0001f));
+            Assert.That(
+                position.y,
+                Is.EqualTo(-4f * (BoardFraming.TrayHeightFraction - BoardFraming.TopStripFraction))
+                    .Within(0.0001f));
+        }
+
+        [Test]
+        public void The_board_gets_the_middle_of_the_screen_and_nothing_else()
+        {
+            // Everything the player touches is in the bottom quarter and everything that reports is at
+            // the top. The board taking either would put cells behind the progress bar or under the tray,
+            // which is exactly what the first board taller than a screen did.
+            Assert.That(
+                BoardFraming.BoardHeightFraction,
+                Is.EqualTo(1f - BoardFraming.TrayHeightFraction - BoardFraming.TopStripFraction)
+                    .Within(0.0001f));
+
+            Assert.That(BoardFraming.BoardHeightFraction, Is.InRange(0.5f, 0.8f));
+        }
+
+        [Test]
+        public void The_reporting_strip_covers_the_bar_and_the_score_beneath_it()
+        {
+            // The bar sits at 0.94 and the score at 0.905, so the strip has to reach below both or the
+            // board comes up behind them.
+            var stripReachesDownTo = 1f - BoardFraming.TopStripFraction;
+
+            Assert.That(stripReachesDownTo, Is.LessThan(ProgressBarView.ScoreViewportY));
         }
 
         [Test]

@@ -26,8 +26,28 @@ namespace Pathweaver.Game.Presentation
         /// </summary>
         internal const float TrayHeightFraction = 0.24f;
 
+        /// <summary>
+        /// The share of screen height the reporting strip at the top occupies.
+        /// </summary>
+        /// <remarks>
+        /// The progress bar sits at 0.94 and the score beneath it at 0.905, so board content above
+        /// about 0.86 collides with them. It never mattered while every board fitted on screen with room
+        /// to spare; the first board taller than the screen put cells behind the bar and left the score
+        /// unreadable over them.
+        /// </remarks>
+        internal const float TopStripFraction = 0.14f;
+
         /// <summary>Breathing room around the board, in world units.</summary>
         internal const float MarginWorldUnits = 0.25f;
+
+        /// <summary>
+        /// The share of screen height the board may actually use.
+        /// </summary>
+        /// <remarks>
+        /// What is left between the tray and the reporting strip. Everything the player touches is in
+        /// the bottom quarter and everything that reports is at the top; the board gets the middle.
+        /// </remarks>
+        internal static float BoardHeightFraction => 1f - TrayHeightFraction - TopStripFraction;
 
         /// <summary>
         /// The board radius the default zoom is chosen to show, in cells.
@@ -51,7 +71,7 @@ namespace Pathweaver.Game.Presentation
             var safeAspect = aspect > 0f ? aspect : 1f;
 
             var sizeForWidth = halfExtents.x / safeAspect;
-            var sizeForHeight = halfExtents.y / (1f - TrayHeightFraction);
+            var sizeForHeight = halfExtents.y / BoardHeightFraction;
 
             return Mathf.Max(sizeForWidth, sizeForHeight);
         }
@@ -117,12 +137,15 @@ namespace Pathweaver.Game.Presentation
         /// The camera position that centres the board area on a point.
         /// </summary>
         /// <remarks>
-        /// The board area is the screen above the tray, so its centre sits above the screen centre by
-        /// the tray's share of the half-height — which means the camera sits below the point it is
-        /// looking at.
+        /// The board area is the screen between the tray and the reporting strip, so its centre sits
+        /// slightly above the screen centre — which means the camera sits slightly below the point it is
+        /// looking at. When the two strips were the same size this offset would be zero; the tray is the
+        /// larger, so it is not.
         /// </remarks>
         internal static Vector2 CameraPositionFor(Vector2 lookAt, float orthographicSize)
-            => new Vector2(lookAt.x, lookAt.y - (orthographicSize * TrayHeightFraction));
+            => new Vector2(
+                lookAt.x,
+                lookAt.y - (orthographicSize * (TrayHeightFraction - TopStripFraction)));
 
         /// <summary>
         /// Holds a look-at point inside the board, so panning cannot lose it.
@@ -139,7 +162,7 @@ namespace Pathweaver.Game.Presentation
             var reach = boardHalfExtents + CellReach();
             var visible = new Vector2(
                 orthographicSize * (aspect > 0f ? aspect : 1f),
-                orthographicSize * (1f - TrayHeightFraction));
+                orthographicSize * BoardHeightFraction);
 
             var slack = new Vector2(
                 Mathf.Max(0f, reach.x - visible.x),
