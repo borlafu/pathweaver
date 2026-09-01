@@ -81,6 +81,56 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void The_pause_score_sits_under_the_level_name()
+        {
+            // Pausing is when a player asks how it is going, and the name alone answers half the question.
+            Assert.That(PauseView.ScoreViewportY, Is.LessThan(PauseView.TitleViewportY));
+            Assert.That(
+                PauseView.TitleViewportY - PauseView.ScoreViewportY,
+                Is.GreaterThan(LabelMetrics.BodyHeightFraction),
+                "The score would touch the name above it.");
+        }
+
+        [Test]
+        public void The_pause_panel_covers_the_whole_block_of_controls()
+        {
+            // Centred between the title at the top and the help control at the bottom, so it cannot be
+            // centred on the screen and miss one end.
+            Assert.That(PauseView.PanelViewportY, Is.LessThan(PauseView.TitleViewportY));
+            Assert.That(PauseView.PanelViewportY, Is.GreaterThan(PauseView.HelpViewportY));
+        }
+
+        [Test]
+        public void The_pause_panel_reaches_past_everything_it_is_behind()
+        {
+            // The first attempt cut the title and the score off above its own top edge. The panel's size is
+            // in world units and the things it has to contain are viewport fractions, which is the
+            // conversion this codebase keeps getting wrong.
+            var halfHeight = MenuCamera.ViewportHalfHeight(PauseView.PanelHeight * 0.5f);
+
+            var top = PauseView.PanelViewportY + halfHeight;
+            var bottom = PauseView.PanelViewportY - halfHeight;
+
+            Assert.That(top, Is.GreaterThan(PauseView.TitleViewportY), "The level name spills out the top.");
+            Assert.That(
+                bottom,
+                Is.LessThan(PauseView.HelpViewportY),
+                "The help control spills out the bottom.");
+        }
+
+        [Test]
+        public void The_pause_panel_leaves_the_board_visible_around_it()
+        {
+            // A panel filling the screen would make pausing feel like leaving, which is the thing the board
+            // staying visible was always for.
+            var halfWidth = MenuCamera.ViewportHalfWidth(PauseView.PanelWidth * 0.5f, PhoneAspect);
+            var halfHeight = MenuCamera.ViewportHalfHeight(PauseView.PanelHeight * 0.5f);
+
+            Assert.That(0.5f - halfWidth, Is.GreaterThan(0.02f));
+            Assert.That(PauseView.PanelViewportY + halfHeight, Is.LessThan(0.98f));
+        }
+
+        [Test]
         public void The_level_name_is_on_screen()
         {
             Assert.That(PauseView.TitleViewportY, Is.InRange(0.05f, 0.95f));

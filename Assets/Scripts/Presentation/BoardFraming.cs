@@ -148,6 +148,62 @@ namespace Pathweaver.Game.Presentation
                 lookAt.y - (orthographicSize * (TrayHeightFraction - TopStripFraction)));
 
         /// <summary>
+        /// How much further the view may still be moved, in world units, in each direction.
+        /// </summary>
+        /// <remarks>
+        /// Zero in a direction means the clamp has been reached that way. Nothing on screen said so
+        /// before, which left a player on a large board with no way to know the board continued past the
+        /// edge — or that they had run out of board.
+        /// </remarks>
+        internal readonly struct PanRoom
+        {
+            internal PanRoom(float left, float right, float down, float up)
+            {
+                Left = left;
+                Right = right;
+                Down = down;
+                Up = up;
+            }
+
+            internal float Left { get; }
+
+            internal float Right { get; }
+
+            internal float Down { get; }
+
+            internal float Up { get; }
+
+            /// <summary>Whether there is anywhere left to go at all.</summary>
+            internal bool IsAnywhere => Left > 0f || Right > 0f || Down > 0f || Up > 0f;
+        }
+
+        /// <summary>
+        /// How far the view may still move from where it is, in each direction.
+        /// </summary>
+        /// <remarks>
+        /// The same slack <see cref="ClampLookAt"/> enforces, measured from the current point rather than
+        /// applied to it — so the two cannot disagree about where the edge of the board is.
+        /// </remarks>
+        internal static PanRoom RoomFor(
+            Vector2 lookAt, Vector2 boardCentre, Vector2 boardHalfExtents, float orthographicSize, float aspect)
+        {
+            var reach = boardHalfExtents + CellReach();
+            var visible = new Vector2(
+                orthographicSize * (aspect > 0f ? aspect : 1f),
+                orthographicSize * BoardHeightFraction);
+
+            var slack = new Vector2(
+                Mathf.Max(0f, reach.x - visible.x),
+                Mathf.Max(0f, reach.y - visible.y));
+
+            return new PanRoom(
+                Mathf.Max(0f, lookAt.x - (boardCentre.x - slack.x)),
+                Mathf.Max(0f, (boardCentre.x + slack.x) - lookAt.x),
+                Mathf.Max(0f, lookAt.y - (boardCentre.y - slack.y)),
+                Mathf.Max(0f, (boardCentre.y + slack.y) - lookAt.y));
+        }
+
+        /// <summary>
         /// Holds a look-at point inside the board, so panning cannot lose it.
         /// </summary>
         /// <remarks>

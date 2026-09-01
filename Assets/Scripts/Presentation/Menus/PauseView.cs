@@ -7,8 +7,11 @@ namespace Pathweaver.Game.Presentation.Menus
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The board stays visible behind it. A player who pauses mid-puzzle is usually still looking
-    /// at the board, and hiding it would make pausing feel like leaving.
+    /// The board stays visible around it, but not behind it. A player who pauses mid-puzzle is usually
+    /// still looking at the board, so blanking the screen would make pausing feel like leaving — and
+    /// leaving the board directly behind full-size controls made both hard to read. A panel settles it,
+    /// the same way the restart question already does, and for the same reason: the material the board is
+    /// drawn with is opaque, so there is no dimming to be had, only covering or not covering.
     /// </para>
     /// <para>
     /// It is also where the level's name goes. Every level file carries one and there was nowhere to
@@ -39,15 +42,51 @@ namespace Pathweaver.Game.Presentation.Menus
         /// </summary>
         internal const float TitleViewportY = 0.75f;
 
+        /// <summary>Where the score sits, just under the level's name.</summary>
+        internal const float ScoreViewportY = 0.685f;
+
+        /// <summary>
+        /// Where the panel is centred, as a viewport fraction.
+        /// </summary>
+        /// <remarks>
+        /// Between the title at the top of the block and the help control at the bottom of it, so the panel
+        /// covers the whole screen rather than being centred on the screen and missing one end.
+        /// </remarks>
+        internal static float PanelViewportY => (TitleViewportY + HelpViewportY) * 0.5f;
+
+        /// <summary>How large the panel behind the controls is, in world units.</summary>
+        /// <remarks>
+        /// <para>
+        /// Sized so that at the menu camera it covers about 0.10 to 0.90 of the width and 0.15 to 0.82 of
+        /// the height — which is everything on this screen, from above the level's name down to below the
+        /// help control, with board still visible around all four sides.
+        /// </para>
+        /// <para>
+        /// The first attempt was 2.6 tall and cut the title and the score off above its own top edge. The
+        /// numbers are in world units and the things they have to contain are in viewport fractions, which
+        /// is the conversion this codebase keeps getting wrong; <c>MenuCamera.ViewportHalfHeight</c> is
+        /// what makes it checkable.
+        /// </para>
+        /// </remarks>
+        internal const float PanelWidth = 2.33f;
+
+        internal const float PanelHeight = 4.22f;
+
         private HexButton _resume;
         private HexButton _restart;
         private HexButton _menu;
         private HexButton _help;
         private Text.TextLabel _title;
+        private Text.TextLabel _score;
         private Text.TextLabel _helpMark;
+        private Transform _panel;
+        private MeshRenderer _panelRenderer;
+        private Camera _panelCamera;
 
         internal void Build(Camera camera, Material material)
         {
+            _panel = BuildPanel(camera, material);
+
             _title = Text.TextLabel.Create(
                 transform,
                 camera,
@@ -55,6 +94,16 @@ namespace Pathweaver.Game.Presentation.Menus
                 new Vector2(0.5f, TitleViewportY),
                 Text.LabelMetrics.HeadingHeightFraction,
                 BoardPalette.TextPrimary,
+                TMPro.TextAlignmentOptions.Center,
+                HexButton.LabelDepth);
+
+            _score = Text.TextLabel.Create(
+                transform,
+                camera,
+                "score",
+                new Vector2(0.5f, ScoreViewportY),
+                Text.LabelMetrics.BodyHeightFraction,
+                BoardPalette.TextSecondary,
                 TMPro.TextAlignmentOptions.Center,
                 HexButton.LabelDepth);
 
@@ -92,7 +141,47 @@ namespace Pathweaver.Game.Presentation.Menus
         }
 
         /// <summary>
-        /// Names the level being paused.
+        /// The panel the controls are read against.
+        /// </summary>
+        /// <remarks>
+        /// Behind every control and in front of the board. Sized in world units and scaled against the
+        /// camera like the controls on it, so the whole screen keeps its proportions at any board zoom.
+        /// </remarks>
+        private Transform BuildPanel(Camera camera, Material material)
+        {
+            var panel = new GameObject("Panel");
+            panel.transform.SetParent(transform, worldPositionStays: false);
+
+            panel.AddComponent<MeshFilter>().sharedMesh =
+                HexMeshFactory.CreateRectangle(PanelWidth, PanelHeight);
+
+            var renderer = panel.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.material.color = BoardPalette.DialogPanel;
+
+            _panelRenderer = renderer;
+            _panelCamera = camera;
+
+            return panel.transform;
+        }
+
+        private void Update()
+        {
+            if (_panel == null || _panelCamera == null)
+            {
+                return;
+            }
+
+            // Centred on the block of controls rather than on the screen, and behind the deepest of them.
+            var world = _panelCamera.ViewportToWorldPoint(new Vector3(0.5f, PanelViewportY, 0f));
+
+            _panel.position = new Vector3(world.x, world.y, HexButton.FaceDepth + 0.2f);
+            _panel.localScale =
+                Vector3.one * HexButton.ScaleFor(_panelCamera.orthographicSize);
+        }
+
+        /// <summary>
+        /// Names the level being paused, and says how the run is going.
         /// </summary>
         /// <remarks>
         /// Set when the screen opens rather than at build time, because the screen is built once and
@@ -101,6 +190,23 @@ namespace Pathweaver.Game.Presentation.Menus
         internal void SetLevelName(string name)
         {
             _title?.SetText(name ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Repeats the score, because pausing is when a player asks how it is going.
+        /// </summary>
+        /// <remarks>
+        /// The same wording and grouping as the number under the progress bar. Two different renderings of
+        /// one figure would read as two figures.
+        /// </remarks>
+        internal void SetScore(long score, long target)
+        {
+            _score?.SetText(
+                $"{score.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} / "
+                + target.ToString("N0", System.Globalization.CultureInfo.InvariantCulture));
+
+            _score?.SetColour(
+                score >= target ? BoardPalette.ProgressComplete : BoardPalette.TextSecondary);
         }
 
         internal string ButtonAt(Vector2 screenPosition)
