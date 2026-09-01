@@ -106,6 +106,85 @@ namespace Pathweaver.Game.EditorTests
             Assert.That(mesh.bounds.max.z, Is.EqualTo(0.25f).Within(0.0001f));
         }
 
+        [Test]
+        public void No_generated_mesh_folds_over_itself()
+        {
+            // The check the winding test cannot make. GlyphMeshFactory.AddTriangle re-winds every triangle
+            // to face the camera whichever order it is given, so for any mesh built through it the winding
+            // assertion above is guaranteed to pass and proves nothing.
+            //
+            // What it hides is a quad given in the wrong order, which draws as a bow tie: two triangles
+            // that cross rather than sitting side by side. The chevron's lower arm was built that way and
+            // rendered as a twisted band on the skip control and the pan hints for as long as it existed.
+            //
+            // The gear is deliberately absent. It is a union of a bored body and eight teeth, and a tooth
+            // root overlapping the body is how it is drawn rather than a fault — which is harmless in an
+            // opaque mesh. This invariant belongs to a single stroke that should not fold, not to every
+            // shape that happens to be one mesh.
+            AssertSimple("Chevron", GlyphMeshFactory.CreateChevron(0.16f, 0.11f, 0.05f));
+            AssertSimple("ChevronNarrow", GlyphMeshFactory.CreateChevron(0.075f, 0.065f, 0.028f));
+            AssertSimple("ChevronTall", GlyphMeshFactory.CreateChevron(0.11f, 0.16f, 0.035f));
+            AssertSimple("Ring", GlyphMeshFactory.CreateRing(0.4f, 0.09f));
+            AssertSimple("Spiral", GlyphMeshFactory.CreateSpiral(0.06f, 0.1f, 1.75f, 0.04f));
+            AssertSimple("CircularArrow", HexMeshFactory.CreateCircularArrow(0.21f, 0.07f, 265f));
+            AssertSimple("Play", GlyphMeshFactory.CreatePlayTriangle(0.3f));
+            AssertSimple("Back", GlyphMeshFactory.CreateBackTriangle(0.19f));
+        }
+
+        /// <summary>
+        /// Asserts no triangle of the mesh lies on top of another.
+        /// </summary>
+        /// <remarks>
+        /// Tested by asking whether one triangle's middle falls strictly inside another. That is not a
+        /// general overlap test — two triangles can cross without either centre being inside the other —
+        /// but it catches a quad given in the wrong order, which is the mistake that actually happens
+        /// here, and it costs nothing.
+        /// </remarks>
+        private static void AssertSimple(string what, Mesh mesh)
+        {
+            var vertices = mesh.vertices;
+            var triangles = mesh.triangles;
+            var count = triangles.Length / 3;
+
+            for (var i = 0; i < count; i++)
+            {
+                var centre = (vertices[triangles[i * 3]]
+                              + vertices[triangles[(i * 3) + 1]]
+                              + vertices[triangles[(i * 3) + 2]]) / 3f;
+
+                for (var j = 0; j < count; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        IsInside(
+                            centre,
+                            vertices[triangles[j * 3]],
+                            vertices[triangles[(j * 3) + 1]],
+                            vertices[triangles[(j * 3) + 2]]),
+                        Is.False,
+                        $"{what}: triangle {i} sits on top of triangle {j}, so the mesh folds over itself.");
+                }
+            }
+        }
+
+        /// <summary>Whether a point is strictly inside a triangle, in the XY plane.</summary>
+        private static bool IsInside(Vector3 point, Vector3 a, Vector3 b, Vector3 c)
+        {
+            var first = Side(point, a, b);
+            var second = Side(point, b, c);
+            var third = Side(point, c, a);
+
+            return (first > 0f && second > 0f && third > 0f)
+                   || (first < 0f && second < 0f && third < 0f);
+        }
+
+        private static float Side(Vector3 point, Vector3 from, Vector3 to)
+            => ((to.x - from.x) * (point.y - from.y)) - ((to.y - from.y) * (point.x - from.x));
+
         private static void AssertFacesCamera(string what, Mesh mesh)
         {
             var signs = SignsOf(mesh);
