@@ -89,9 +89,18 @@ namespace Pathweaver.Game.Presentation
 
         private void Update()
         {
-            var world = ResolvedCamera.ViewportToWorldPoint(
+            var camera = ResolvedCamera;
+
+            var world = camera.ViewportToWorldPoint(
                 new Vector3(_viewportPosition.x, _viewportPosition.y, 0f));
             transform.position = new Vector3(world.x, world.y, -0.4f);
+
+            // Scaled for the same reason the menu buttons are: a pip's radius and the gap between pips
+            // are world units chosen against the menu camera, so on a board zoomed out to fit a large
+            // level the column shrank, and on one zoomed in it grew far enough up the screen to sit over
+            // the board. Scaling the column scales the spacing with it, because the pips are children
+            // placed at multiples of it.
+            transform.localScale = Vector3.one * Menus.HexButton.ScaleFor(camera.orthographicSize);
         }
 
         private void OnStateChanged(GameState state)

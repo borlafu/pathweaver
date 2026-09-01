@@ -69,6 +69,25 @@ namespace Pathweaver.Game.Presentation.Menus
         internal float TouchRadiusPixels
             => Mathf.Min(Screen.width, Screen.height) * _touchRadiusFraction;
 
+        /// <summary>
+        /// How much to scale a button drawn for the menu camera, to keep its size on screen.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Every radius passed to <see cref="Create"/> is in world units and was chosen against
+        /// <c>MenuCamera.OrthographicSize</c>. That is fine on a menu, where the camera is always at that
+        /// size — and wrong everywhere else, because a world size occupies less of the screen the more
+        /// world the camera shows. The pause screen keeps the board's framing on purpose, so over a large
+        /// board its controls were drawn a third of their intended size and lost among the cells.
+        /// </para>
+        /// <para>
+        /// The touch radius is already a fraction of the screen, so it never had this problem — which
+        /// means the visual and the tappable area disagreed, and the visual was the wrong one.
+        /// </para>
+        /// </remarks>
+        internal static float ScaleFor(float orthographicSize)
+            => orthographicSize / MenuCamera.OrthographicSize;
+
         internal static HexButton Create(
             Transform parent,
             string id,
@@ -92,10 +111,11 @@ namespace Pathweaver.Game.Presentation.Menus
             button._face = button.AddPart(
                 "Face", HexMeshFactory.CreateHexagon(radius), colour, depth: 0f);
 
-            // Placed here as well as in Update. Update is what keeps it in place when the camera
-            // changes, but it does not run in an Editor scene assembled for a preview capture — which
-            // left every button of a screen stacked at the origin in the first help-screen capture.
+            // Placed and scaled here as well as in Update. Update is what keeps both right when the
+            // camera changes, but it does not run in an Editor scene assembled for a preview capture —
+            // which left every button of a screen stacked at the origin in the first help-screen capture.
             button.transform.position = button.WorldPosition;
+            button.transform.localScale = Vector3.one * ScaleFor(camera.orthographicSize);
 
             return button;
         }
@@ -168,6 +188,11 @@ namespace Pathweaver.Game.Presentation.Menus
         private void Update()
         {
             transform.position = WorldPosition;
+
+            if (_camera != null)
+            {
+                transform.localScale = Vector3.one * ScaleFor(_camera.orthographicSize);
+            }
         }
 
         private MeshRenderer AddPart(
