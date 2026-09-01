@@ -19,9 +19,13 @@ namespace Pathweaver.Game.Presentation
     /// Shows how many of a token the player holds.
     /// </summary>
     /// <remarks>
-    /// Counted as pips rather than written as a number, for the same reason the progress bar is
-    /// a bar: there is no font yet. At these quantities a count of shapes reads faster than a
-    /// digit anyway.
+    /// Counted as pips rather than written as a number: at these quantities a count of shapes reads
+    /// faster than a digit, and the shapes survive a glance the digit would need a pause for.
+    /// <para>
+    /// An icon sits at the foot of each column, matching the button beneath it, because two columns of
+    /// identical shapes at opposite edges of the screen are distinguishable only by position — and a
+    /// player who has not read the help screen has no way to learn which is which.
+    /// </para>
     /// <para>
     /// Without this, tokens are earned and spent invisibly — and a resource the player cannot
     /// see is a resource they will not use, which would quietly undo the whole anti-deadlock
@@ -56,6 +60,9 @@ namespace Pathweaver.Game.Presentation
 
         [SerializeField]
         private GameSession _session;
+
+        /// <summary>How far below the first pip the column's icon sits, in world units.</summary>
+        private const float IconOffset = 0.28f;
 
         private readonly List<MeshRenderer> _pips = new List<MeshRenderer>();
 
@@ -155,6 +162,57 @@ namespace Pathweaver.Game.Presentation
 
                 _pips.Add(renderer);
             }
+
+            AddIcon(mesh);
+        }
+
+        /// <summary>
+        /// Puts the matching control's glyph at the foot of the column.
+        /// </summary>
+        /// <remarks>
+        /// The same shapes the buttons below use — a cell with a bar across it for the Pivot Token, a
+        /// double chevron for a skip — so the column and the control that spends it read as one thing.
+        /// Dimmer than a held pip, because it labels the column rather than counting anything.
+        /// </remarks>
+        private void AddIcon(Mesh unused)
+        {
+            var icon = new GameObject("Icon");
+            icon.transform.SetParent(transform, worldPositionStays: false);
+            icon.transform.localPosition = new Vector3(0f, -IconOffset, 0f);
+
+            if (_kind == TokenKind.Pivot)
+            {
+                AddPart(icon.transform, "Cell", HexMeshFactory.CreateHexagon(0.1f), BoardPalette.PivotReady);
+                AddPart(
+                    icon.transform,
+                    "Bar",
+                    HexMeshFactory.CreateRectangle(0.14f, 0.035f),
+                    BoardPalette.TextSecondary,
+                    depth: -0.01f);
+
+                return;
+            }
+
+            // Two chevrons, matching the button below rather than merely resembling it. One would read as
+            // a different mark, which is the opposite of what an icon that labels a column is for.
+            var chevron = GlyphMeshFactory.CreateChevron(0.075f, 0.065f, 0.028f);
+
+            AddPart(icon.transform, "ChevronLeft", chevron, BoardPalette.SkipReady, offsetX: -0.035f);
+            AddPart(icon.transform, "ChevronRight", chevron, BoardPalette.SkipReady, offsetX: 0.035f, depth: -0.01f);
+        }
+
+        private void AddPart(
+            Transform parent, string childName, Mesh mesh, Color colour, float depth = 0f, float offsetX = 0f)
+        {
+            var child = new GameObject(childName);
+            child.transform.SetParent(parent, worldPositionStays: false);
+            child.transform.localPosition = new Vector3(offsetX, 0f, depth);
+
+            child.AddComponent<MeshFilter>().sharedMesh = mesh;
+
+            var renderer = child.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = _boardView.TileMaterial;
+            renderer.material.color = colour;
         }
     }
 }
