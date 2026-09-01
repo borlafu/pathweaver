@@ -35,6 +35,7 @@ namespace Pathweaver.Game.Presentation.Text
         private Vector2 _viewportPosition;
         private float _heightFraction;
         private float _depth;
+        private float _wrapWidthFraction;
 
         /// <summary>What the label currently reads.</summary>
         internal string Text => _text != null ? _text.text : string.Empty;
@@ -122,20 +123,28 @@ namespace Pathweaver.Game.Presentation.Text
         /// Allows word wrapping within the given width, in viewport fractions.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Off by default because a label that wraps unexpectedly overlaps whatever is beneath it. The
         /// help screen wants it; a number beside a bar does not.
+        /// </para>
+        /// <para>
+        /// The fraction is remembered and the box re-measured every frame, for the same reason the font
+        /// size is. Baking the box once let the two disagree the moment the camera changed: the font
+        /// stayed the size the screen asked for while the box stopped matching it, so the help screen's
+        /// paragraphs re-wrapped narrow and grew tall enough to overlap each other. Reported from a
+        /// device after an Android back press.
+        /// </para>
         /// </remarks>
         internal void SetWrapWidth(float viewportWidthFraction)
         {
-            if (_text == null || _camera == null)
+            if (_text == null)
             {
                 return;
             }
 
+            _wrapWidthFraction = viewportWidthFraction;
             _text.textWrappingMode = TextWrappingModes.Normal;
-            _text.rectTransform.sizeDelta = new Vector2(
-                _camera.orthographicSize * 2f * _camera.aspect * viewportWidthFraction,
-                _text.rectTransform.sizeDelta.y);
+            Place();
         }
 
         private void Update()
@@ -156,6 +165,15 @@ namespace Pathweaver.Game.Presentation.Text
 
             transform.position = new Vector3(world.x, world.y, _depth);
             _text.fontSize = LabelMetrics.FontSize(camera.orthographicSize, _heightFraction);
+
+            if (_wrapWidthFraction > 0f)
+            {
+                var aspect = camera.aspect > 0f ? camera.aspect : 1f;
+
+                _text.rectTransform.sizeDelta = new Vector2(
+                    camera.orthographicSize * 2f * aspect * _wrapWidthFraction,
+                    _text.rectTransform.sizeDelta.y);
+            }
         }
     }
 }
