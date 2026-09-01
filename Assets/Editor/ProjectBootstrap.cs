@@ -145,6 +145,9 @@ namespace Pathweaver.EditorTools
             var skip = new GameObject("SkipButton").AddComponent<SkipButtonView>();
             Wire(skip, ("_boardView", board), ("_camera", camera), ("_session", session));
 
+            var nextTile = new GameObject("NextTile").AddComponent<NextTileView>();
+            Wire(nextTile, ("_session", session), ("_boardView", board), ("_camera", camera));
+
             var skipPips = new GameObject("SkipPips").AddComponent<TokenPipsView>();
             Wire(skipPips, ("_boardView", board), ("_camera", camera), ("_session", session));
             SetPips(skipPips, TokenKind.Skip, new Vector2(0.86f, 0.26f));
@@ -221,7 +224,7 @@ namespace Pathweaver.EditorTools
             foreach (var playObject in new[]
                      {
                          backdrop.gameObject, progress.gameObject, pivotPips.gameObject,
-                         skipPips.gameObject,
+                         skipPips.gameObject, nextTile.gameObject,
                      })
             {
                 playObject.transform.SetParent(hud.transform, worldPositionStays: true);

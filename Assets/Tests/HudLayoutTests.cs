@@ -131,6 +131,26 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void The_next_tile_sits_between_the_tray_and_the_skip_button()
+        {
+            // Right of the tray at 0.5 and clear of the skip button at 0.86, on the side the skip button
+            // is — the two are about the same thing, which is what the bag hands over next.
+            const float trayX = 0.5f;
+            const float skipX = 0.86f;
+
+            Assert.That(NextTileView.ViewportX, Is.GreaterThan(trayX));
+            Assert.That(NextTileView.ViewportX, Is.LessThan(skipX));
+        }
+
+        [Test]
+        public void The_next_tile_reads_as_secondary_to_the_one_in_the_tray()
+        {
+            // Small enough to be clearly not the tile being placed, large enough that its shape is
+            // unambiguous — which is the entire content of the thing.
+            Assert.That(NextTileView.RelativeSize, Is.InRange(0.4f, 0.8f));
+        }
+
+        [Test]
         public void A_control_keeps_its_size_on_screen_whatever_the_camera_shows()
         {
             // At the menu camera nothing changes, which is why every menu is unaffected. The pause screen
