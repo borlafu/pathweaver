@@ -14,7 +14,14 @@ namespace Pathweaver.Game.Presentation.Menus
     /// <para>
     /// State is shown by fill as well as named. A filled hexagon reads as on and a hollow one as
     /// off, which survives being looked at by someone who does not read the game's language; the
-    /// label underneath says which setting it is, which the fill never could.
+    /// label beside it says which setting it is, which the fill never could.
+    /// </para>
+    /// <para>
+    /// Laid out as rows — control on the left, label to its right — rather than as a centred column with
+    /// captions beneath. The captions beneath were tried and did not fit: a switch of radius 0.55 covers
+    /// 0.086 of screen height either side of its centre, and the rows are only 0.18 apart, so any offset
+    /// large enough to clear the switch put the label nearer the switch below it. Rows use the width,
+    /// which a portrait phone has spare and no vertical layout can borrow.
     /// </para>
     /// <para>
     /// The reset control is the odd one out, and it is deliberately below the two switches and
@@ -32,21 +39,32 @@ namespace Pathweaver.Game.Presentation.Menus
         internal const string ResetId = "reset";
         internal const string BackId = "back";
 
-        /// <summary>Where each switch sits, and therefore where its label goes.</summary>
+        /// <summary>Where each row sits, and therefore where its label goes.</summary>
         internal const float HapticsViewportY = 0.66f;
 
         internal const float ReduceMotionViewportY = 0.48f;
 
         internal const float ResetViewportY = 0.26f;
 
+        /// <summary>Where a row's control sits horizontally.</summary>
+        internal const float ControlViewportX = 0.26f;
+
         /// <summary>
-        /// How far below a control its label sits, in viewport fractions.
+        /// Where a label's text begins, as a viewport fraction.
         /// </summary>
         /// <remarks>
-        /// Below rather than beside, so a longer word in another language lengthens the label sideways
-        /// into empty screen rather than into the control it names.
+        /// Clear of the widest control's right edge. A switch of radius 0.55 centred at 0.26 reaches
+        /// about 0.45 on a portrait phone — see <c>MenuCamera.ViewportHalfWidth</c>, which is the
+        /// conversion that makes that checkable rather than guessed at.
         /// </remarks>
-        internal const float LabelOffset = 0.055f;
+        internal const float LabelLeftEdge = 0.5f;
+
+        /// <summary>How much width a label may use before wrapping.</summary>
+        internal const float LabelWidth = 0.46f;
+
+        internal const float SwitchRadius = 0.55f;
+
+        internal const float ResetRadius = 0.42f;
 
         private HexButton _haptics;
         private HexButton _reduceMotion;
@@ -69,22 +87,22 @@ namespace Pathweaver.Game.Presentation.Menus
         {
             _haptics = HexButton.Create(
                 transform, HapticsId, camera, material,
-                new Vector2(0.5f, HapticsViewportY), 0.55f, BoardPalette.MenuSecondary,
-                touchRadiusFraction: 0.16f);
+                new Vector2(ControlViewportX, HapticsViewportY), SwitchRadius,
+                BoardPalette.MenuSecondary, touchRadiusFraction: 0.16f);
 
             _hapticsLabel = Label(camera, HapticsId, HapticsViewportY, "Vibration");
 
             _reduceMotion = HexButton.Create(
                 transform, ReduceMotionId, camera, material,
-                new Vector2(0.5f, ReduceMotionViewportY), 0.55f, BoardPalette.MenuSecondary,
-                touchRadiusFraction: 0.16f);
+                new Vector2(ControlViewportX, ReduceMotionViewportY), SwitchRadius,
+                BoardPalette.MenuSecondary, touchRadiusFraction: 0.16f);
 
             _reduceMotionLabel = Label(camera, ReduceMotionId, ReduceMotionViewportY, "Reduced motion");
 
             _reset = HexButton.Create(
                 transform, ResetId, camera, material,
-                new Vector2(0.5f, ResetViewportY), 0.42f, BoardPalette.MenuSecondary,
-                touchRadiusFraction: 0.12f);
+                new Vector2(ControlViewportX, ResetViewportY), ResetRadius,
+                BoardPalette.MenuSecondary, touchRadiusFraction: 0.12f);
 
             _resetLabel = Label(camera, ResetId, ResetViewportY, string.Empty);
 
@@ -149,14 +167,19 @@ namespace Pathweaver.Game.Presentation.Menus
 
         private Text.TextLabel Label(Camera camera, string id, float controlViewportY, string content)
         {
+            // Anchored at the middle of its own box so that left-aligning the text puts its first
+            // character on LabelLeftEdge, and at the button's own depth so the control cannot cover it.
             var label = Text.TextLabel.Create(
                 transform,
                 camera,
                 id,
-                new Vector2(0.5f, controlViewportY - LabelOffset),
-                Text.LabelMetrics.CaptionHeightFraction,
-                BoardPalette.TextSecondary);
+                new Vector2(LabelLeftEdge + (LabelWidth * 0.5f), controlViewportY),
+                Text.LabelMetrics.BodyHeightFraction,
+                BoardPalette.TextSecondary,
+                TMPro.TextAlignmentOptions.Left,
+                HexButton.LabelDepth);
 
+            label.SetWrapWidth(LabelWidth);
             label.SetText(content);
             return label;
         }

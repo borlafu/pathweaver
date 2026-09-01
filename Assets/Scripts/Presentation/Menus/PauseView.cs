@@ -54,7 +54,9 @@ namespace Pathweaver.Game.Presentation.Menus
                 "level-name",
                 new Vector2(0.5f, TitleViewportY),
                 Text.LabelMetrics.HeadingHeightFraction,
-                BoardPalette.TextPrimary);
+                BoardPalette.TextPrimary,
+                TMPro.TextAlignmentOptions.Center,
+                HexButton.LabelDepth);
 
             _resume = HexButton.Create(
                 transform, ResumeId, camera, material,
@@ -82,7 +84,9 @@ namespace Pathweaver.Game.Presentation.Menus
                 HelpId,
                 new Vector2(0.5f, HelpViewportY),
                 Text.LabelMetrics.BodyHeightFraction,
-                BoardPalette.MenuGlyph);
+                BoardPalette.MenuGlyph,
+                TMPro.TextAlignmentOptions.Center,
+                HexButton.LabelDepth);
 
             _helpMark.SetText("?");
         }

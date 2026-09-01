@@ -1,4 +1,7 @@
-# Biome 1, level 4 — The Long Way Round
+# Biome 1, level 4 — Diagonal Reach
+#
+# Titled "The Long Way Round" until levels gained displayed names, at which point it collided with
+# level 17 — which is a ring, and has the better claim to that phrase.
 #
 # A compact field with the spring and hub set diagonally apart. The direct line
 # scores least; the multiplier rewards the longer route the open cells allow, which
@@ -6,6 +9,7 @@
 # than as a rule.
 
 id: biome1-04
+name: Diagonal Reach
 
 base-score: 100
 target-score: 332

@@ -156,7 +156,9 @@ namespace Pathweaver.Game.Presentation.Menus
                 "heading",
                 new Vector2(0.5f, HeadingViewportY),
                 LabelMetrics.HeadingHeightFraction,
-                BoardPalette.TextPrimary);
+                BoardPalette.TextPrimary,
+                TextAlignmentOptions.Center,
+                HexButton.LabelDepth);
 
             // One label per line of the longest page, reused rather than rebuilt: a page turn should
             // not create and destroy meshes, and the count is known at compile time.
@@ -179,7 +181,8 @@ namespace Pathweaver.Game.Presentation.Menus
                     // paragraph then grows evenly about its anchor instead of climbing over whatever
                     // is above it, which is how the last page's first paragraph came to sit on top of
                     // the heading.
-                    TextAlignmentOptions.Center);
+                    TextAlignmentOptions.Center,
+                    HexButton.LabelDepth);
 
                 line.SetWrapWidth(WrapWidthFraction);
                 _lines.Add(line);

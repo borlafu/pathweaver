@@ -21,6 +21,26 @@ namespace Pathweaver.Game.Presentation.Menus
     /// </remarks>
     internal sealed class HexButton : MonoBehaviour
     {
+        /// <summary>
+        /// How far in front of the board a button's face sits, in world units.
+        /// </summary>
+        /// <remarks>
+        /// Named because other things have to be placed relative to it. The camera looks along +Z from
+        /// negative Z, so a smaller number is nearer the viewer.
+        /// </remarks>
+        internal const float FaceDepth = -1.5f;
+
+        /// <summary>
+        /// Where a text label sitting on or beside a button belongs.
+        /// </summary>
+        /// <remarks>
+        /// In front of the face and in front of the glyphs stacked on it. The help button's question
+        /// mark and every settings label were drawn at <c>TextLabel</c>'s default depth of -0.6, which is
+        /// *behind* a face at -1.5, so they were invisible on the device while rendering perfectly well
+        /// in isolation. Nothing in the label's own code was wrong, which is why this constant lives
+        /// here, next to the number it has to beat.
+        /// </remarks>
+        internal const float LabelDepth = FaceDepth - 0.1f;
         private readonly List<GameObject> _glyphs = new List<GameObject>();
 
         private Camera _camera;
@@ -41,7 +61,7 @@ namespace Pathweaver.Game.Presentation.Menus
             {
                 var world = _camera.ViewportToWorldPoint(
                     new Vector3(_viewportPosition.x, _viewportPosition.y, 0f));
-                world.z = -1.5f;
+                world.z = FaceDepth;
                 return world;
             }
         }

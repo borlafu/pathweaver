@@ -38,6 +38,29 @@ namespace Pathweaver.Game.Presentation.Menus
         }
 
         /// <summary>The world size of the visible area, for converting a layout into world units.</summary>
+        /// <summary>
+        /// How tall a world radius is, as a fraction of screen height.
+        /// </summary>
+        /// <remarks>
+        /// The conversion the layout kept getting wrong. Positions in this codebase are viewport
+        /// fractions while a control's radius is world units, and comparing the two directly is what put
+        /// every settings label inside the switch it was labelling: an offset of 0.055 looked generous
+        /// next to text 0.017 tall and was less than the switch's own 0.086 half-height.
+        /// </remarks>
+        internal static float ViewportHalfHeight(float worldRadius)
+            => worldRadius / (OrthographicSize * 2f);
+
+        /// <summary>
+        /// How wide a world radius is, as a fraction of screen width.
+        /// </summary>
+        /// <remarks>
+        /// Much larger than the vertical figure on a portrait phone, because the same world distance
+        /// covers far more of a narrow screen. A hexagon of radius 0.55 is a fifth of the height and
+        /// two fifths of the width.
+        /// </remarks>
+        internal static float ViewportHalfWidth(float worldRadius, float aspect)
+            => worldRadius / (OrthographicSize * 2f * (aspect > 0f ? aspect : 1f));
+
         internal static Vector2 WorldExtents(Camera camera)
         {
             var height = OrthographicSize * 2f;

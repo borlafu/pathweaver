@@ -17,6 +17,9 @@ namespace Pathweaver.Game.EditorTests
     /// </remarks>
     public class HudLayoutTests
     {
+        /// <summary>The aspect of the phone the game is tested on: 1080 by 2376.</summary>
+        private const float PhoneAspect = 1080f / 2376f;
+
         /// <summary>Where the restart button sits, from <c>RestartButtonView</c>.</summary>
         private static readonly Vector2 Restart = new Vector2(0.12f, 0.94f);
 
@@ -84,23 +87,69 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
-        public void A_settings_label_sits_between_its_own_control_and_the_next()
+        public void A_settings_label_begins_clear_of_the_control_it_names()
         {
-            // Below its switch, and clear of the switch beneath it. The three controls are 0.18 and
-            // 0.22 apart, so an offset that grew past half of the smaller gap would put a label nearer
-            // the wrong control than the right one.
-            var smallestGap = Mathf.Min(
-                SettingsView.HapticsViewportY - SettingsView.ReduceMotionViewportY,
-                SettingsView.ReduceMotionViewportY - SettingsView.ResetViewportY);
+            // The test that was missing. The previous one compared the label's offset against the height
+            // of a line of text and against the gap between rows, and passed — while every label sat
+            // inside the switch it named, because a switch of radius 0.55 covers far more of the screen
+            // than a caption does and nothing here had converted the two into the same units.
+            var switchRightEdge = SettingsView.ControlViewportX
+                                  + MenuCamera.ViewportHalfWidth(SettingsView.SwitchRadius, PhoneAspect);
 
-            Assert.That(SettingsView.LabelOffset, Is.GreaterThan(LabelMetrics.CaptionHeightFraction));
-            Assert.That(SettingsView.LabelOffset, Is.LessThan(smallestGap * 0.5f));
+            Assert.That(
+                SettingsView.LabelLeftEdge,
+                Is.GreaterThan(switchRightEdge),
+                "A settings label starts inside the control it names.");
         }
 
         [Test]
-        public void The_reset_label_stays_on_screen_below_its_control()
+        public void A_settings_label_fits_the_width_left_over()
         {
-            Assert.That(SettingsView.ResetViewportY - SettingsView.LabelOffset, Is.GreaterThan(0.05f));
+            Assert.That(
+                SettingsView.LabelLeftEdge + SettingsView.LabelWidth,
+                Is.LessThanOrEqualTo(1f),
+                "A settings label runs off the right of the screen.");
+        }
+
+        [Test]
+        public void A_settings_control_stays_on_screen_at_its_own_width()
+        {
+            // The same conversion applied to the left edge. A hexagon of radius 0.55 reaches nearly two
+            // fifths of the way across a portrait phone, which is not obvious from the number 0.55.
+            var halfWidth = MenuCamera.ViewportHalfWidth(SettingsView.SwitchRadius, PhoneAspect);
+
+            Assert.That(SettingsView.ControlViewportX - halfWidth, Is.GreaterThan(0f));
+        }
+
+        [Test]
+        public void A_label_on_a_button_is_drawn_in_front_of_it()
+        {
+            // The bug that hid the help screen's question mark and half of every settings label on the
+            // device while each rendered perfectly in isolation. The camera looks along +Z from negative
+            // Z, so nearer the viewer is a smaller number.
+            Assert.That(HexButton.LabelDepth, Is.LessThan(HexButton.FaceDepth));
+        }
+
+        [Test]
+        public void A_labels_default_depth_is_not_enough_for_a_button()
+        {
+            // Why every button label passes a depth explicitly. The default is chosen for labels over the
+            // board, where it sits in front of the tray at -0.2 and the pip columns at -0.4 — and it is
+            // a long way behind a button face at -1.5. Both are right for their own case, and the trap is
+            // that the wrong one renders perfectly in isolation.
+            Assert.That(TextLabel.DefaultDepth, Is.GreaterThan(HexButton.FaceDepth));
+        }
+
+        [Test]
+        public void A_label_on_a_button_is_in_front_of_the_glyphs_too()
+        {
+            // Glyphs stack forward from the face in steps of 0.005, and the settings gear uses several.
+            // A label only just in front of the face would end up behind them.
+            const float deepestGlyphStack = 0.05f;
+
+            Assert.That(
+                HexButton.LabelDepth,
+                Is.LessThan(HexButton.FaceDepth - deepestGlyphStack));
         }
 
         [Test]

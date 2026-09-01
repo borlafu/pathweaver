@@ -5,6 +5,7 @@
 # This is the level where telling the resources apart stops being cosmetic.
 
 id: biome1-06
+name: Crossed Winds
 
 base-score: 100
 target-score: 364

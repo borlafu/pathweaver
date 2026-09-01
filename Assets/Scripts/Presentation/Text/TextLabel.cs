@@ -28,7 +28,7 @@ namespace Pathweaver.Game.Presentation.Text
         /// In front of the tray, which sits at -0.2, and of the pip column at -0.4, because a label
         /// that is occluded by the thing it describes is worse than no label.
         /// </remarks>
-        private const float DefaultDepth = -0.6f;
+        internal const float DefaultDepth = -0.6f;
 
         private TextMeshPro _text;
         private Camera _camera;
