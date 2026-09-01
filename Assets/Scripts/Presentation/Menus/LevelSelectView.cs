@@ -104,7 +104,9 @@ namespace Pathweaver.Game.Presentation.Menus
                     $"{id}-number",
                     new Vector2(viewport.x, viewport.y - NumberOffset),
                     Text.LabelMetrics.CaptionHeightFraction,
-                    unlocked ? BoardPalette.TextSecondary : BoardPalette.LevelLockedGlyph);
+                    unlocked ? BoardPalette.TextSecondary : BoardPalette.LevelLockedGlyph,
+                    TMPro.TextAlignmentOptions.Center,
+                    HexButton.LabelDepth);
 
                 // One-based, because it is the level a player would name out loud, not an index.
                 number.SetText((index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture));

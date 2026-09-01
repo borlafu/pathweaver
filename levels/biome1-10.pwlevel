@@ -4,6 +4,7 @@
 # spent on one is denied to the other, and the order they are built in decides whether both fit.
 
 id: biome1-10
+name: Water and Stone
 
 base-score: 100
 target-score: 364

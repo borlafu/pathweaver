@@ -149,6 +149,35 @@ public class ShippedLevelsTests
 
     [Theory]
     [MemberData(nameof(LevelFiles))]
+    public void A_level_is_named_rather_than_falling_back_to_its_identifier(string path)
+    {
+        // Nine levels shipped without a name: line, and nothing displayed one, so nobody noticed. The
+        // pause screen now does, and the first thing it showed a player was "biome1-03".
+        // Arrange and act
+        var level = LevelLoader.Parse(File.ReadAllText(path));
+
+        // Assert
+        Assert.NotEqual(level.Id, level.Name);
+    }
+
+    [Fact]
+    public void No_two_levels_share_a_name()
+    {
+        // A level list of twenty entries needs twenty distinguishable ones. Two levels were both called
+        // "The Long Way Round" in their header comments, which only mattered once a name reached a
+        // screen.
+        // Arrange and act
+        var names = Directory
+            .GetFiles(LevelsDirectory(), "*.pwlevel")
+            .Select(path => LevelLoader.Parse(File.ReadAllText(path)).Name)
+            .ToList();
+
+        // Assert
+        Assert.Equal(names.Count, names.Distinct().Count());
+    }
+
+    [Theory]
+    [MemberData(nameof(LevelFiles))]
     public void An_authored_solution_never_places_twice_on_the_same_cell(string path)
     {
         // An authoring slip rather than a rule: the engine would refuse the second placement and the

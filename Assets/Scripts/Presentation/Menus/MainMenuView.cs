@@ -137,7 +137,9 @@ namespace Pathweaver.Game.Presentation.Menus
                 HelpId,
                 new Vector2(helpX, SecondaryRowY),
                 Text.LabelMetrics.HeadingHeightFraction,
-                BoardPalette.MenuGlyph);
+                BoardPalette.MenuGlyph,
+                TMPro.TextAlignmentOptions.Center,
+                HexButton.LabelDepth);
 
             _helpMark.SetText("?");
 

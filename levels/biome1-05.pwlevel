@@ -4,6 +4,7 @@
 # order matters: whichever hub is served first shapes the space left for the other.
 
 id: biome1-05
+name: Split Current
 
 base-score: 100
 target-score: 364

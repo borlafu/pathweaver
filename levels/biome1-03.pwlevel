@@ -6,6 +6,7 @@
 # the board also allows.
 
 id: biome1-03
+name: Two Ways Down
 
 base-score: 100
 target-score: 246
