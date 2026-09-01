@@ -88,6 +88,7 @@ namespace Pathweaver.Game.Presentation
         private void Update()
         {
             transform.position = WorldPosition;
+
         }
 
         private void OnStateChanged(GameState state)

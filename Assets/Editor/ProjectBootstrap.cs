@@ -137,7 +137,7 @@ namespace Pathweaver.EditorTools
 
             var pivotPips = new GameObject("PivotPips").AddComponent<TokenPipsView>();
             Wire(pivotPips, ("_boardView", board), ("_camera", camera), ("_session", session));
-            SetPips(pivotPips, TokenKind.Pivot, new Vector2(0.12f, 0.26f));
+            SetPips(pivotPips, TokenKind.Pivot, new Vector2(0.12f, 0.10f));
 
             var pivotButton = new GameObject("PivotButton").AddComponent<PivotButtonView>();
             Wire(pivotButton, ("_boardView", board), ("_camera", camera), ("_session", session));
@@ -150,7 +150,7 @@ namespace Pathweaver.EditorTools
 
             var skipPips = new GameObject("SkipPips").AddComponent<TokenPipsView>();
             Wire(skipPips, ("_boardView", board), ("_camera", camera), ("_session", session));
-            SetPips(skipPips, TokenKind.Skip, new Vector2(0.86f, 0.26f));
+            SetPips(skipPips, TokenKind.Skip, new Vector2(0.86f, 0.10f));
 
             // The two board animations. Outside the HUD and outside the play controls: a finished board
             // hides its controls but keeps its board, and a paused board is still being looked at, so the

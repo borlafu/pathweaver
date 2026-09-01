@@ -22,9 +22,9 @@ namespace Pathweaver.Game.Presentation
     /// Counted as pips rather than written as a number: at these quantities a count of shapes reads
     /// faster than a digit, and the shapes survive a glance the digit would need a pause for.
     /// <para>
-    /// An icon sits at the foot of each column, matching the button beneath it, because two columns of
-    /// identical shapes at opposite edges of the screen are distinguishable only by position — and a
-    /// player who has not read the help screen has no way to learn which is which.
+    /// Each block sits directly above the control that spends it, which is what says which currency it
+    /// counts: an icon of its own was tried and was both redundant beside that control's glyph and
+    /// overlapping it.
     /// </para>
     /// <para>
     /// Without this, tokens are earned and spent invisibly — and a resource the player cannot
@@ -44,13 +44,47 @@ namespace Pathweaver.Game.Presentation
         private const int MaximumPips = TokenRules.MaximumCapacity;
 
         private const float PipRadius = 0.11f;
-        private const float PipSpacing = 0.3f;
+
+        /// <summary>Centre-to-centre spacing along a row, in world units.</summary>
+        /// <remarks>
+        /// A pointy-top pip is <c>radius * sqrt(3)</c> wide, so this leaves a clear gap between
+        /// neighbours. Chosen small enough that three of them reach only about a sixth of the way across
+        /// the screen, which is what keeps a row clear of the tray in the middle.
+        /// </remarks>
+        private const float RowSpacing = 0.25f;
+
+        /// <summary>Centre-to-centre spacing between the two rows, in world units.</summary>
+        private const float StackSpacing = 0.26f;
+
+        /// <summary>How many pips a row holds.</summary>
+        /// <remarks>
+        /// Three, so the base allowance of three is one row and the five a full set of relics allows is
+        /// two. A single column of five reached far enough up the screen to sit over the board.
+        /// </remarks>
+        internal const int PipsPerRow = 3;
+
+        /// <summary>
+        /// How far above the button the first row sits, in world units.
+        /// </summary>
+        /// <remarks>
+        /// Clear of the button's own top edge — a control of radius 0.34 reaches that far above its
+        /// centre — plus a pip's radius and a little air.
+        /// </remarks>
+        private const float FirstRowOffset = 0.51f;
 
         [SerializeField]
         private TokenKind _kind = TokenKind.Pivot;
 
+        /// <summary>
+        /// Where the column's button sits, which is what the pips are placed relative to.
+        /// </summary>
+        /// <remarks>
+        /// The pips used to have their own anchor further up the screen, outside the tray, where they
+        /// obstructed the board on a wide level. They now sit inside the drawer directly above the control
+        /// that spends them, which is also where a player looks when deciding whether they can afford to.
+        /// </remarks>
         [SerializeField]
-        private Vector2 _viewportPosition = new Vector2(0.12f, 0.26f);
+        private Vector2 _viewportPosition = new Vector2(0.12f, 0.10f);
 
         [SerializeField]
         private BoardView _boardView;
@@ -60,9 +94,6 @@ namespace Pathweaver.Game.Presentation
 
         [SerializeField]
         private GameSession _session;
-
-        /// <summary>How far below the first pip the column's icon sits, in world units.</summary>
-        private const float IconOffset = 0.28f;
 
         private readonly List<MeshRenderer> _pips = new List<MeshRenderer>();
 
@@ -102,12 +133,10 @@ namespace Pathweaver.Game.Presentation
                 new Vector3(_viewportPosition.x, _viewportPosition.y, 0f));
             transform.position = new Vector3(world.x, world.y, -0.4f);
 
-            // Scaled for the same reason the menu buttons are: a pip's radius and the gap between pips
-            // are world units chosen against the menu camera, so on a board zoomed out to fit a large
-            // level the column shrank, and on one zoomed in it grew far enough up the screen to sit over
-            // the board. Scaling the column scales the spacing with it, because the pips are children
-            // placed at multiples of it.
-            transform.localScale = Vector3.one * Menus.HexButton.ScaleFor(camera.orthographicSize);
+            // Deliberately not scaled against the camera. The three board controls are world-sized —
+            // their radii were chosen against a board's zoom, not a menu's — and a block that sits above
+            // one of them has to move and grow with it. Normalising only the pips made a row placed above
+            // a button drift away from it at every zoom but one.
         }
 
         private void OnStateChanged(GameState state)
@@ -150,9 +179,7 @@ namespace Pathweaver.Game.Presentation
             {
                 var pip = new GameObject($"Pip{index}");
                 pip.transform.SetParent(transform, worldPositionStays: false);
-                // Stacked upward from the anchor, so a growing count never collides with the
-                // controls below it.
-                pip.transform.localPosition = new Vector3(0f, index * PipSpacing, 0f);
+                pip.transform.localPosition = PipPosition(index);
 
                 pip.AddComponent<MeshFilter>().sharedMesh = mesh;
 
@@ -163,56 +190,27 @@ namespace Pathweaver.Game.Presentation
                 _pips.Add(renderer);
             }
 
-            AddIcon(mesh);
         }
 
         /// <summary>
-        /// Puts the matching control's glyph at the foot of the column.
+        /// Where the given pip sits, relative to its button.
         /// </summary>
         /// <remarks>
-        /// The same shapes the buttons below use — a cell with a bar across it for the Pivot Token, a
-        /// double chevron for a skip — so the column and the control that spends it read as one thing.
-        /// Dimmer than a held pip, because it labels the column rather than counting anything.
+        /// Rows of three, stacked upward, growing away from the nearer screen edge — rightward for the
+        /// left-hand column and leftward for the right-hand one. Growing outward would run a row off the
+        /// side of the phone; growing inward keeps it clear of both the edge and the tray in the middle.
         /// </remarks>
-        private void AddIcon(Mesh unused)
+        internal Vector3 PipPosition(int index)
         {
-            var icon = new GameObject("Icon");
-            icon.transform.SetParent(transform, worldPositionStays: false);
-            icon.transform.localPosition = new Vector3(0f, -IconOffset, 0f);
+            var column = index % PipsPerRow;
+            var row = index / PipsPerRow;
+            var inward = _viewportPosition.x < 0.5f ? 1f : -1f;
 
-            if (_kind == TokenKind.Pivot)
-            {
-                AddPart(icon.transform, "Cell", HexMeshFactory.CreateHexagon(0.1f), BoardPalette.PivotReady);
-                AddPart(
-                    icon.transform,
-                    "Bar",
-                    HexMeshFactory.CreateRectangle(0.14f, 0.035f),
-                    BoardPalette.TextSecondary,
-                    depth: -0.01f);
-
-                return;
-            }
-
-            // Two chevrons, matching the button below rather than merely resembling it. One would read as
-            // a different mark, which is the opposite of what an icon that labels a column is for.
-            var chevron = GlyphMeshFactory.CreateChevron(0.075f, 0.065f, 0.028f);
-
-            AddPart(icon.transform, "ChevronLeft", chevron, BoardPalette.SkipReady, offsetX: -0.035f);
-            AddPart(icon.transform, "ChevronRight", chevron, BoardPalette.SkipReady, offsetX: 0.035f, depth: -0.01f);
+            return new Vector3(
+                inward * column * RowSpacing,
+                FirstRowOffset + (row * StackSpacing),
+                0f);
         }
 
-        private void AddPart(
-            Transform parent, string childName, Mesh mesh, Color colour, float depth = 0f, float offsetX = 0f)
-        {
-            var child = new GameObject(childName);
-            child.transform.SetParent(parent, worldPositionStays: false);
-            child.transform.localPosition = new Vector3(offsetX, 0f, depth);
-
-            child.AddComponent<MeshFilter>().sharedMesh = mesh;
-
-            var renderer = child.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = _boardView.TileMaterial;
-            renderer.material.color = colour;
-        }
     }
 }

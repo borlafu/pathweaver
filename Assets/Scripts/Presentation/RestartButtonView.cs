@@ -94,6 +94,7 @@ namespace Pathweaver.Game.Presentation
         {
             transform.position = WorldPosition;
 
+
             if (_body == null)
             {
                 return;
