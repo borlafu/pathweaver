@@ -144,6 +144,28 @@ namespace Pathweaver.EditorTools
         }
 
         /// <summary>
+        /// Half the drawn cells' height in board coordinates, before the lean foreshortens it.
+        /// </summary>
+        /// <remarks>
+        /// How far back the board has to sit depends on how tall it is, because the lean swings its near
+        /// rim toward the viewer in proportion.
+        /// </remarks>
+        private static float LocalHalfHeight(IReadOnlyList<HexCoord> cells)
+        {
+            var lowest = float.MaxValue;
+            var highest = float.MinValue;
+
+            foreach (var coordinate in cells)
+            {
+                var y = HexMetrics.ToWorld(coordinate).y;
+                lowest = Mathf.Min(lowest, y);
+                highest = Mathf.Max(highest, y);
+            }
+
+            return cells.Count == 0 ? 0f : (highest - lowest) * 0.5f;
+        }
+
+        /// <summary>
         /// Builds an empty scene with a camera and a board view, and returns both.
         /// </summary>
         private static (Camera Camera, BoardView Board) NewScene(
@@ -170,9 +192,17 @@ namespace Pathweaver.EditorTools
         /// Draws cells straight onto the board view, without a game state.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// A state would have to be a legal, reachable position, and a promotional image does not
         /// need one — it needs the tidiest arrangement of the game's own cells. Drawing the cells
         /// directly keeps the pixels honest while leaving the rules out of it.
+        /// </para>
+        /// <para>
+        /// The lean has to be applied here for the same reason. <c>BoardView.Build</c> is what normally
+        /// sets it, and this path never calls it — so the icon and the feature graphic went on showing a
+        /// flat board for as long as the board had been leaning, which is exactly the thing this file
+        /// exists to prevent.
+        /// </para>
         /// </remarks>
         private static void Draw(
             BoardView board,
@@ -180,6 +210,9 @@ namespace Pathweaver.EditorTools
             IReadOnlyDictionary<HexCoord, ConduitTile> tiles,
             IReadOnlyList<FlowEndpoint> endpoints)
         {
+            board.transform.SetPositionAndRotation(
+                BoardTilt.PositionFor(LocalHalfHeight(cells)), BoardTilt.Rotation);
+
             var endpointsByCell = new Dictionary<HexCoord, FlowEndpoint>();
             foreach (var endpoint in endpoints)
             {
