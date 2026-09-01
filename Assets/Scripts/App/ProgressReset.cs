@@ -44,6 +44,10 @@ namespace Pathweaver.Game.App
             atlas?.Delete();
             endless?.Delete();
 
+            // The first-run hints too. Erasing progress and then withholding the tutorial would leave a
+            // player who asked for a clean slate with a board and no explanation.
+            CoachMarks.Forget();
+
             Debug.Log($"[reset] progress cleared, including {boards} board(s) in progress");
         }
     }

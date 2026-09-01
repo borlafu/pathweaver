@@ -69,6 +69,19 @@ namespace Pathweaver.Game.App
         /// </remarks>
         internal event Action HeldRotated;
 
+        /// <summary>
+        /// Raised when a placement was asked for and refused.
+        /// </summary>
+        /// <remarks>
+        /// The board already marks the cell, but a refusal is also the best moment to explain the rule
+        /// that caused it — a player who has just been told no is the one player guaranteed to be
+        /// looking. Carries the cell so anything reacting can point at it.
+        /// </remarks>
+        internal event Action<HexCoord> PlacementRefused;
+
+        /// <summary>Raised on a placement that was accepted.</summary>
+        internal event Action TilePlaced;
+
         /// <summary>Whether the current run was restored from a save.</summary>
         internal bool WasResumed { get; private set; }
 
@@ -377,6 +390,8 @@ namespace Pathweaver.Game.App
             // Retrieving can pay: taking a short cut off the board leaves the resources to take the
             // long way, and the pair is then paid the difference. Without this the biggest payout in
             // the game would arrive with no flash and no buzz.
+            TilePlaced?.Invoke();
+
             var harvestedRoutes = RoutesPaidSince(paidBefore);
             if (harvestedRoutes.Count > 0)
             {
@@ -416,6 +431,7 @@ namespace Pathweaver.Game.App
         {
             if (!CanPlaceAt(coordinate))
             {
+                PlacementRefused?.Invoke(coordinate);
                 return false;
             }
 
