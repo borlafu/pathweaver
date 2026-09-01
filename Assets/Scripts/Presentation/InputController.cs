@@ -124,6 +124,14 @@ namespace Pathweaver.Game.Presentation
                 return;
             }
 
+            // Android's back gesture arrives as Escape. Read before the pointer, because a back press is
+            // never also a tap on the board.
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                HandleBack();
+                return;
+            }
+
             if (TryReadPointer(out var screenPosition, out var phase))
             {
                 switch (phase)
@@ -139,6 +147,34 @@ namespace Pathweaver.Game.Presentation
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Answers the device's back gesture.
+        /// </summary>
+        /// <remarks>
+        /// A modal question takes it first — dismissing, which is the safe answer, and the same thing a
+        /// tap anywhere but the confirmation does. Otherwise the flow routes it to whatever the current
+        /// screen's own back control does. Unconsumed on the main menu, so the game leaves rather than
+        /// swallowing a gesture and appearing stuck.
+        /// </remarks>
+        private void HandleBack()
+        {
+            _frameRateGovernor?.NotifyActivity();
+
+            if (_restartConfirm != null && _restartConfirm.IsOpen)
+            {
+                _restartConfirm.Close();
+                return;
+            }
+
+            if (_flow != null && _flow.HandleBack())
+            {
+                _haptics?.TileLocked();
+                return;
+            }
+
+            Application.Quit();
         }
 
         private void BeginPress(Vector2 screenPosition)

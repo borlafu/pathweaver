@@ -313,6 +313,54 @@ namespace Pathweaver.Game.App
         }
 
         /// <summary>
+        /// Answers the device's own back gesture, exactly as the screen's back control would.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Nothing handled it before, so Android did whatever it does with an unconsumed back — which is
+        /// not what the on-screen back control does, and on a recent Android also animates the window
+        /// shrinking as a preview of leaving the app. A player pressing back on the settings screen
+        /// expects the settings screen to close.
+        /// </para>
+        /// <para>
+        /// Every case here is the same route the screen's own control takes, deliberately: two ways to
+        /// go back that disagree are worse than one way that is inconvenient. On the board it pauses,
+        /// because the board is the one screen with nothing behind it to return to, and pausing is what
+        /// the corner control does. On the main menu it leaves the game, which is what back means on a
+        /// root screen everywhere else on the device.
+        /// </para>
+        /// </remarks>
+        /// <returns>Whether the game consumed the gesture.</returns>
+        internal bool HandleBack()
+        {
+            switch (_router.Current)
+            {
+                case GameScreen.Help:
+                    return HandleHelp(HelpView.BackId);
+                case GameScreen.LevelSelect:
+                    return HandleLevelSelect(LevelSelectView.BackId);
+                case GameScreen.Settings:
+                    return HandleSettings(SettingsView.BackId);
+                case GameScreen.Atlas:
+                    return HandleAtlas(AtlasView.BackId);
+                case GameScreen.Paused:
+                    return HandlePause(PauseView.ResumeId);
+                case GameScreen.Playing:
+                    // A finished board has withdrawn its pause control, so back has nothing to do rather
+                    // than quietly pausing a board that is over.
+                    if (_session != null && _session.IsComplete)
+                    {
+                        return true;
+                    }
+
+                    _router.Show(GameScreen.Paused);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
         /// Turns a page, or goes back to whichever screen asked for help.
         /// </summary>
         /// <remarks>
