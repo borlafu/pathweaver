@@ -55,6 +55,18 @@ namespace Pathweaver.Game.Presentation
         private readonly HashSet<HexCoord> _flashing = new HashSet<HexCoord>();
         private float _flashEndsAt = -1f;
 
+        /// <summary>
+        /// How long a refused cell stays marked, in seconds.
+        /// </summary>
+        /// <remarks>
+        /// Much shorter than a harvest flash. A refusal is an acknowledgement, not an event, and one that
+        /// lingered would read as the cell having changed state.
+        /// </remarks>
+        private const float RefuseSeconds = 0.22f;
+
+        private HexCoord? _refusing;
+        private float _refuseEndsAt = -1f;
+
         /// <summary>The meshes and material cells are drawn with, for other views.</summary>
         internal Mesh HexMesh
         {
@@ -173,6 +185,26 @@ namespace Pathweaver.Game.Presentation
         /// tile could go.
         /// </summary>
         /// <summary>
+        /// Marks a cell that refused a tile, then returns it to normal.
+        /// </summary>
+        /// <remarks>
+        /// A tap that cannot place anything used to do nothing at all, which on a thumb-only game is
+        /// indistinguishable from a tap the game missed. This is the cheapest possible answer: the cell
+        /// says "I saw you, and no".
+        /// </remarks>
+        internal void FlashRefused(HexCoord cell)
+        {
+            if (!_cells.ContainsKey(cell))
+            {
+                return;
+            }
+
+            _refusing = cell;
+            _refuseEndsAt = Time.unscaledTime + RefuseSeconds;
+            Refresh(_lastState, _lastAvailable);
+        }
+
+        /// <summary>
         /// Lights the given conduits, then returns them to normal.
         /// </summary>
         internal void FlashHarvested(IEnumerable<HexCoord> tiles)
@@ -195,14 +227,26 @@ namespace Pathweaver.Game.Presentation
 
         private void Update()
         {
-            if (_flashEndsAt < 0f || Time.unscaledTime < _flashEndsAt)
+            var expired = false;
+
+            if (_flashEndsAt >= 0f && Time.unscaledTime >= _flashEndsAt)
             {
-                return;
+                _flashEndsAt = -1f;
+                _flashing.Clear();
+                expired = true;
             }
 
-            _flashEndsAt = -1f;
-            _flashing.Clear();
-            Refresh(_lastState, _lastAvailable);
+            if (_refuseEndsAt >= 0f && Time.unscaledTime >= _refuseEndsAt)
+            {
+                _refuseEndsAt = -1f;
+                _refusing = null;
+                expired = true;
+            }
+
+            if (expired)
+            {
+                Refresh(_lastState, _lastAvailable);
+            }
         }
 
         /// <summary>
@@ -264,6 +308,12 @@ namespace Pathweaver.Game.Presentation
                         cell.ShowConduit(tile);
                     }
 
+                    continue;
+                }
+
+                if (_refusing.HasValue && _refusing.Value.Equals(coordinate))
+                {
+                    cell.ShowRefused();
                     continue;
                 }
 
