@@ -1,111 +1,137 @@
 # Biome 2, level 1 — The Long Valley
 #
-# The first board that does not fit on a phone. It opens showing all of itself, settles near the
-# spring at the top, and is panned from there — which is the whole reason it is shaped the way it is.
+# The first board that has to be navigated rather than read. It opens showing all of itself, settles
+# near the water spring in the north, and is panned from there.
 #
-# Sprawling rather than crowded. The footprint reaches five rows above and below the middle, but only
-# twenty-eight cells are open: two chambers joined by a zigzag spine, with a corridor branching east.
-# A dense board of the same footprint would be a worse puzzle and a far worse one to verify — the
-# solvability gate searches placements, and open space is what makes that search explode.
+# Sized deliberately. An earlier draft was only about a third wider than a biome-one board, which left
+# the pan 0.86 world units of slack horizontally and none at all vertically — a vertical drag moved
+# nothing, because the default zoom fits a hexagon-3 board by its width and a portrait phone then has
+# two and a half times more vertical room than such a board needs. This one is wide and tall enough
+# that both axes have somewhere to go.
 #
-# The spine is a corridor, so the water pair has exactly one route and it is ten conduits long. That
-# is the point: the score curve makes a long route worth far more, and this is the first board with
-# room for one. Every cell of it wants either a straight or the same 120-degree bend, so the puzzle is
-# reading the corridor rather than hunting for a rare shape.
+# Three pairs, far apart, each needing four or five conduits — rather than one enormous route. A
+# sixteen-conduit forced line down the spine would score absurdly and play as sixteen placements with
+# no decision in them. Separate work sites are also what makes panning meaningful: the player travels
+# between them.
+#
+# Sprawling rather than crowded, at fifty-five open cells over that footprint. Open space is what makes
+# the solvability search explode, which is why this level carries its own solution instead.
 
 id: biome2-01
 name: The Long Valley
 
 base-score: 100
 
-# The water spine alone clears this, and so does the wind branch plus most of the spine. Neither is
-# forced, which is the choice PRD section 3.2A is about.
-target-score: 900
+# Two of the three pairs clear it. Water pays most for the fewest tiles, so the choice is which of the
+# two long straight runs to spend the board on.
+target-score: 550
 
 tokens: 1
 skips: 3
 
 seed: 7
 
-# The north chamber, around the water spring.
-cell: 0,-5
-cell: 1,-5
-cell: -1,-4
-cell: 0,-4
-cell: 1,-4
+# The valley floor: a north-west chamber, a spine down the middle, a trunk running east, and
+# spurs west and south.
+cell: -3,-7
+cell: -3,-6
+cell: -2,-8
+cell: -2,-7
+cell: -2,-6
+cell: -1,-8
+cell: -1,-7
+cell: -2,-5
+cell: -3,-4
+cell: -3,-3
+cell: -4,-2
+cell: -4,-1
+cell: -5,0
+cell: -5,-3
+cell: -5,-2
+cell: -6,-1
+cell: -6,0
+cell: -7,1
+cell: -7,2
+cell: -8,3
+cell: -8,4
+cell: -9,5
+cell: -9,6
+cell: -10,7
+cell: -10,8
+cell: -11,9
+cell: -4,-3
+cell: -2,-3
 cell: -1,-3
 cell: 0,-3
-
-# The spine, zigzagging due south. A straight line down is not a hex direction, so it alternates
-# south-east and south-west and reads as a column.
-cell: 0,-2
-cell: -1,-1
-cell: -1,0
-cell: -2,1
-cell: -2,2
-cell: -3,3
-
-# The east corridor, branching off the spine and turning south.
-cell: 0,-1
-cell: 1,-1
-cell: 2,-1
-cell: 3,-1
+cell: 1,-3
+cell: 2,-3
+cell: 3,-3
+cell: 4,-3
+cell: 4,-2
 cell: 4,-1
 cell: 4,0
 cell: 4,1
 cell: 4,2
+cell: 4,3
+cell: 3,3
+cell: 3,4
+cell: 4,4
+cell: 5,2
+cell: 5,3
+cell: -12,9
+cell: -12,10
+cell: -11,8
+cell: -11,10
+cell: -10,9
+cell: -9,3
+cell: -10,3
+cell: -11,3
+cell: -12,3
+cell: -13,3
 
-# The south chamber, around the water hub.
-cell: -3,4
-cell: -2,3
-cell: -1,3
-cell: -2,4
-cell: -1,4
-cell: -3,5
-cell: -2,5
+spring: -2,-6 water
+hub: -5,0 water
+spring: -2,-3 wind
+hub: 3,-3 wind
+spring: -8,3 crystal
+hub: -13,3 crystal
 
-spring: 0,-5 water
-hub: -2,5 water
-
-spring: 4,2 wind
-hub: 2,-1 wind
-
-# The spine needs two straights and eight of the same bend; the wind branch needs three straights and
-# one bend. Everything beyond that is slack, because a corridor with no spare tile is a corridor that
-# a single unlucky draw ends.
-tile: 0,2 water x10
-tile: 0,3 water x4
-tile: 0,3 wind x4
-tile: 0,2 wind x2
+# Water wants five of the same bend; wind and crystal want four straights each. The rest is slack,
+# because a corridor with no spare tile is a corridor a single unlucky draw ends.
+tile: 0,2 water x7
+tile: 0,3 water x2
+tile: 0,3 wind x6
+tile: 0,2 wind x1
+tile: 0,3 crystal x6
+tile: 0,2 crystal x1
 
 # The board's own solution, replayed by the solvability gate rather than searched for. The search cannot
-# finish on a board this size — it exhausted six hundred thousand states in fourteen seconds without a
-# verdict — so this is how a large level is certified. See AuthoredSolution for what that trade costs.
+# finish on a board this size; see AuthoredSolution for what that trade costs.
 #
-# Rotations are written down. They are optional in the format, because a plain corridor admits exactly
-# one rotation per cell and the replay can find it — but this board has junctions, and at a junction
-# more than one rotation joins something legally while only one continues the route. Leaving them out
-# produced a replay that connected differently and then dead-ended six moves later.
+# Rotations are written down. They are optional in the format, but this board has junctions, and at a
+# junction more than one rotation joins something legally while only one continues the route.
 #
-# Four cells are not on either route: they absorb the surplus tiles the bag deals. None of the three
-# skips is used, which is the slack a single unlucky draw needs. It reaches 1735 against a target of
-# 900, so a player can leave the wind branch alone — which is the choice the target is set for.
+# It completes all three pairs for 824 against a target of 550, using none of its three skips. A player
+# only needs two of the three, so the solution shows the board's ceiling rather than the cheapest way
+# through it.
 
-solve: -2,4 rot 1
-solve: 4,1 rot 1
-solve: 1,-1 rot 0
-solve: 0,-4 rot 1
-solve: -3,4 rot 4
-solve: -3,3 rot 5
-solve: 4,0 rot 1
-solve: -2,2 rot 2
-solve: -2,1 rot 5
-solve: -1,0 rot 2
-solve: 0,-3 rot 1
-solve: 1,-5 rot 0
-solve: 0,-2 rot 2
-solve: 4,-1 rot 1
-solve: -1,-1 rot 5
-solve: -1,-4 rot 3
-solve: -1,4 rot 0
-solve: 3,-1 rot 0
+solve: -7,2 rot 0
+solve: -2,-5 rot 2
+solve: -3,-4 rot 5
+solve: -1,-3 rot 0
+solve: -9,3 rot 0
+solve: -3,-3 rot 2
+solve: -3,-6 rot 0
+solve: -10,3 rot 0
+solve: -2,-7 rot 1
+solve: -11,3 rot 0
+solve: 0,-3 rot 0
+solve: -12,3 rot 0
+solve: -4,-2 rot 5
+solve: -4,-1 rot 2
+solve: -2,-8 rot 1
+solve: 4,-3 rot 1
+solve: 1,-3 rot 0
+solve: -1,-7 rot 0
+solve: -8,4 rot 1
+solve: 2,-3 rot 0
