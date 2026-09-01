@@ -29,10 +29,19 @@ namespace Pathweaver.Game.Presentation
         /// How far in front of the board the bands sit, in world units.
         /// </summary>
         /// <remarks>
-        /// In front of the board, whose leaning near edge reaches about 0.85, and behind every part of
-        /// the HUD — the tray at -0.2, the pip columns at -0.4, the labels at -0.6, the buttons at -1.5.
+        /// <para>
+        /// This is the boundary between the board and the interface, not just a number: everything that
+        /// belongs to the board is behind it and everything that belongs to the HUD is in front. The pip
+        /// columns at -0.4, the labels at -0.6 and the buttons at -1.5 were already in front; the held
+        /// tile rested at zero, so the first band drawn here made the tile in the tray vanish and come
+        /// back the instant it was dragged. <c>HudLayoutTests</c> now holds that ordering.
+        /// </para>
+        /// <para>
+        /// The board's leaning near edge is kept behind by <c>BoardTilt.DepthOffsetFor</c>, which is why
+        /// that had to become a function of the board's height rather than a constant.
+        /// </para>
         /// </remarks>
-        private const float Depth = -0.1f;
+        internal const float Depth = -0.1f;
 
         /// <summary>Overshoot beyond the screen edges, as a fraction of the visible size.</summary>
         /// <remarks>

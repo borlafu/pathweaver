@@ -131,6 +131,31 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void The_held_tile_is_in_front_of_the_backdrop_that_hides_the_board()
+        {
+            // It rested at zero and jumped to -0.2 only while being dragged, which was invisible until an
+            // opaque band appeared at -0.1 between the two: the tile in the tray disappeared and came
+            // back the instant a thumb touched it. Reported from the device.
+            Assert.That(HeldTileView.Depth, Is.LessThan(HudBackdrop.Depth));
+        }
+
+        [Test]
+        public void The_backdrop_is_the_boundary_between_the_board_and_the_interface()
+        {
+            // Board content behind, interface in front. The flow pulse is board content and should be
+            // covered by the bands; the labels are interface and should not.
+            Assert.That(
+                FlowPulseAnimator.Depth,
+                Is.GreaterThan(HudBackdrop.Depth),
+                "The flow pulse would draw over the tray.");
+
+            Assert.That(
+                TextLabel.DefaultDepth,
+                Is.LessThan(HudBackdrop.Depth),
+                "A label over the board would be hidden by the backdrop.");
+        }
+
+        [Test]
         public void A_labels_default_depth_is_not_enough_for_a_button()
         {
             // Why every button label passes a depth explicitly. The default is chosen for labels over the

@@ -18,6 +18,17 @@ namespace Pathweaver.Game.Presentation
         /// </summary>
         private static readonly Vector2 TrayViewportPosition = new Vector2(0.5f, 0.12f);
 
+        /// <summary>
+        /// How far in front of the board the held tile sits, in world units.
+        /// </summary>
+        /// <remarks>
+        /// One depth for both resting and being dragged, so the tile does not change plane when a thumb
+        /// picks it up. It used to rest at zero and jump to -0.2 on a drag, which was invisible until
+        /// <see cref="HudBackdrop"/> put an opaque band at -0.1 between them: the tile in the tray
+        /// disappeared behind the band and came back the moment it was dragged.
+        /// </remarks>
+        internal const float Depth = -0.3f;
+
         [SerializeField]
         private BoardView _boardView;
 
@@ -43,7 +54,7 @@ namespace Pathweaver.Game.Presentation
             {
                 var viewport = new Vector3(TrayViewportPosition.x, TrayViewportPosition.y, 0f);
                 var world = ResolvedCamera.ViewportToWorldPoint(viewport);
-                world.z = 0f;
+                world.z = Depth;
                 return world;
             }
         }
@@ -72,7 +83,7 @@ namespace Pathweaver.Game.Presentation
         internal void FollowPointer(Vector3 worldPosition)
         {
             _isFollowingPointer = true;
-            transform.position = new Vector3(worldPosition.x, worldPosition.y, -0.2f);
+            transform.position = new Vector3(worldPosition.x, worldPosition.y, Depth);
         }
 
         internal void ReturnToTray()
