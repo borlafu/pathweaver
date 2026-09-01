@@ -131,6 +131,51 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void A_row_of_pips_is_centred_on_its_button()
+        {
+            // It grew inward from the button's centre at first, which left the block off to one side of
+            // the control it belongs to and made the two columns mirror images rather than the same thing
+            // twice. Checked on the outermost pair, since that is what a centre means.
+            var pips = new GameObject("pips").AddComponent<TokenPipsView>();
+
+            try
+            {
+                var first = pips.PipPosition(0).x;
+                var last = pips.PipPosition(TokenPipsView.PipsPerRow - 1).x;
+
+                Assert.That(first + last, Is.EqualTo(0f).Within(0.0001f));
+                Assert.That(first, Is.LessThan(0f), "A centred row should start left of its button.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(pips.gameObject);
+            }
+        }
+
+        [Test]
+        public void A_row_of_pips_is_about_as_wide_as_the_button_it_sits_on()
+        {
+            // A row much wider than its button would stop reading as belonging to it. The button's radius
+            // is 0.34 and a pointy-top hexagon is radius * sqrt(3) across.
+            const float buttonRadius = 0.34f;
+            var buttonWidth = buttonRadius * Mathf.Sqrt(3f);
+
+            var pips = new GameObject("pips").AddComponent<TokenPipsView>();
+
+            try
+            {
+                var span = pips.PipPosition(TokenPipsView.PipsPerRow - 1).x - pips.PipPosition(0).x;
+
+                Assert.That(span, Is.LessThan(buttonWidth * 1.3f));
+                Assert.That(span, Is.GreaterThan(buttonWidth * 0.6f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(pips.gameObject);
+            }
+        }
+
+        [Test]
         public void A_pip_block_is_three_across_and_two_deep_at_most()
         {
             // Three per row, so the base allowance of three is one row and the five a full set of relics
