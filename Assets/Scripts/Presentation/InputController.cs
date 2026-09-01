@@ -64,6 +64,9 @@ namespace Pathweaver.Game.Presentation
         private SkipButtonView _skipButton;
 
         [SerializeField]
+        private BoardCameraFitter _cameraFitter;
+
+        [SerializeField]
         private ScreenRouter _router;
 
         [SerializeField]
@@ -77,6 +80,9 @@ namespace Pathweaver.Game.Presentation
         private bool _startedOnSkip;
         private bool _startedOnPivot;
         private bool _startedOnTray;
+        private bool _startedOnBoard;
+        private bool _hasPanned;
+        private Vector2 _panFrom;
         private Vector2 _pressPosition;
         private float _travelled;
 
@@ -172,6 +178,16 @@ namespace Pathweaver.Game.Presentation
                              && !_startedOnPivot
                              && _heldTileView != null
                              && _heldTileView.IsTrayTouch(screenPosition);
+
+            // Whatever is left is the board. A drag that begins there is the one gesture nothing else
+            // claims — placement is a tap on a cell or a drag out of the tray — so it becomes the pan.
+            _startedOnBoard = !_startedOnRestart
+                              && !_startedOnSkip
+                              && !_startedOnPivot
+                              && !_startedOnTray;
+
+            _panFrom = screenPosition;
+            _hasPanned = false;
         }
 
         private void ContinuePress(Vector2 screenPosition)
@@ -197,7 +213,34 @@ namespace Pathweaver.Game.Presentation
             if (_startedOnTray && _travelled > TapThresholdPixels && _heldTileView != null)
             {
                 _heldTileView.FollowPointer(ToWorld(screenPosition));
+                return;
             }
+
+            if (_startedOnBoard && _travelled > TapThresholdPixels)
+            {
+                Pan(screenPosition);
+            }
+        }
+
+        /// <summary>
+        /// Moves the view by however far the thumb has travelled since the last frame.
+        /// </summary>
+        /// <remarks>
+        /// Measured frame to frame rather than from where the press began, so the board keeps up with
+        /// the thumb instead of accelerating away from it once the clamp starts biting at an edge.
+        /// </remarks>
+        private void Pan(Vector2 screenPosition)
+        {
+            if (_cameraFitter == null || !_cameraFitter.CanPan)
+            {
+                return;
+            }
+
+            var delta = ToWorld(screenPosition) - ToWorld(_panFrom);
+            _panFrom = screenPosition;
+            _hasPanned = true;
+
+            _cameraFitter.PanBy(new Vector2(delta.x, delta.y));
         }
 
         private void EndPress(Vector2 screenPosition)
@@ -290,6 +333,13 @@ namespace Pathweaver.Game.Presentation
             if (_startedOnTray && wasTap)
             {
                 _session.RotateHeld();
+                return;
+            }
+
+            // A drag that moved the board is not also a placement. Without this, panning across a board
+            // would drop a tile wherever the thumb happened to lift.
+            if (_hasPanned)
+            {
                 return;
             }
 

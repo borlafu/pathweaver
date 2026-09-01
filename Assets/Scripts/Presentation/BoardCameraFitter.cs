@@ -1,35 +1,25 @@
 using Pathweaver.Core.State;
+using Pathweaver.Game.App;
 using UnityEngine;
 
 namespace Pathweaver.Game.Presentation
 {
     /// <summary>
-    /// Frames the whole board on screen, leaving the bottom clear for the tile tray.
+    /// Frames a board, flies the camera in, and lets a thumb move it afterwards.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A fixed orthographic size cannot work. That value is a half-height, so on a tall
-    /// phone the visible width is the height multiplied by an aspect ratio near 0.45 —
-    /// a board six world units across shows about three. The first build on hardware
-    /// filled the screen with four cells and cut the endpoints off both edges, while the
-    /// square preview looked correct.
+    /// The arithmetic lives in <see cref="BoardFraming"/> and <see cref="BoardIntroFlight"/>; this owns
+    /// the camera and the state that cannot be a pure function — where the player has panned to, and how
+    /// far through the flight they are.
     /// </para>
     /// <para>
-    /// So the fit is computed from the board's own extents, against the width as well as
-    /// the height, and the camera is offset upward so the tray does not cover the board.
+    /// A board small enough to fit does none of it. There is nothing to fly to and nowhere to pan, so
+    /// the camera is simply placed, exactly as it was before boards could be larger than a screen.
     /// </para>
     /// </remarks>
     internal sealed class BoardCameraFitter : MonoBehaviour
     {
-        /// <summary>
-        /// The share of screen height reserved for the tray, matching where
-        /// <see cref="HeldTileView"/> puts it.
-        /// </summary>
-        private const float TrayHeightFraction = 0.24f;
-
-        /// <summary>Breathing room around the board, in world units.</summary>
-        private const float MarginWorldUnits = 0.25f;
-
         [SerializeField]
         private Camera _camera;
 
@@ -37,16 +27,114 @@ namespace Pathweaver.Game.Presentation
         private BoardView _boardView;
 
         /// <summary>
-        /// Sizes and positions the camera for the given board.
+        /// Told when the flight is running, so it is not drawn at the idle rate.
+        /// </summary>
+        /// <remarks>
+        /// Unlike the endpoint and flow pulses, which deliberately never do this, the flight is
+        /// transient and ends. Pinning the active rate for a second is not the same as pinning it for as
+        /// long as the game is open, which is why that rule reads "no animator" and this is not one.
+        /// </remarks>
+        [SerializeField]
+        private Pathweaver.Game.Platform.FrameRateGovernor _frameRateGovernor;
+
+        private Vector2 _boardCentre;
+        private Vector2 _boardHalfExtents;
+        private Vector2 _lookAt;
+        private Vector2 _birdsEyeLookAt;
+        private float _birdsEyeSize;
+        private float _playingSize;
+        private float _flightElapsed = -1f;
+
+        /// <summary>Whether this board is larger than the screen shows at the playing zoom.</summary>
+        internal bool CanPan { get; private set; }
+
+        /// <summary>Whether the opening flight is still running.</summary>
+        internal bool IsFlying => _flightElapsed >= 0f;
+
+        /// <summary>
+        /// Sizes and positions the camera for the given board, and starts the flight if there is one.
         /// </summary>
         internal void Fit(GameState state)
         {
-            var camera = _camera != null ? _camera : Camera.main;
+            var camera = ResolvedCamera;
             if (camera == null || state == null)
             {
                 return;
             }
 
+            Measure(state, camera.aspect);
+
+            camera.orthographic = true;
+
+            if (!CanPan)
+            {
+                _flightElapsed = -1f;
+                Apply(_lookAt, _playingSize);
+                return;
+            }
+
+            // Reduced motion is shown the destination rather than the journey. The flight is the one
+            // animation in this game that moves the whole screen, which is the kind most likely to make
+            // someone ill — so it is skipped outright rather than slowed.
+            if (GameSettings.ReduceMotion)
+            {
+                _flightElapsed = -1f;
+                Apply(_lookAt, _playingSize);
+                return;
+            }
+
+            _flightElapsed = 0f;
+            _frameRateGovernor?.NotifyActivity();
+            ApplyFlight();
+        }
+
+        /// <summary>
+        /// Moves the view by a drag, in world units.
+        /// </summary>
+        /// <remarks>
+        /// The drag is subtracted rather than added: dragging the board left moves the camera right, so
+        /// the board follows the thumb instead of fleeing it.
+        /// </remarks>
+        internal void PanBy(Vector2 worldDelta)
+        {
+            if (!CanPan || IsFlying)
+            {
+                return;
+            }
+
+            _lookAt = BoardFraming.ClampLookAt(
+                _lookAt - worldDelta, _boardCentre, _boardHalfExtents, _playingSize, ResolvedCamera.aspect);
+
+            Apply(_lookAt, _playingSize);
+        }
+
+        private Camera ResolvedCamera => _camera != null ? _camera : Camera.main;
+
+        private void Update()
+        {
+            if (!IsFlying)
+            {
+                return;
+            }
+
+            _flightElapsed += Time.deltaTime;
+            _frameRateGovernor?.NotifyActivity();
+
+            if (_flightElapsed >= BoardIntroFlight.DurationSeconds)
+            {
+                _flightElapsed = -1f;
+                Apply(_lookAt, _playingSize);
+                return;
+            }
+
+            ApplyFlight();
+        }
+
+        /// <summary>
+        /// Works out where the board is, how large it is, and where the flight begins and ends.
+        /// </summary>
+        private void Measure(GameState state, float aspect)
+        {
             var minimum = new Vector2(float.MaxValue, float.MaxValue);
             var maximum = new Vector2(float.MinValue, float.MinValue);
 
@@ -64,33 +152,73 @@ namespace Pathweaver.Game.Presentation
                 maximum = Vector2.Max(maximum, new Vector2(centre.x, centre.y));
             }
 
-            // A cell reaches HexMetrics.Size beyond its centre in every direction, and a leaning block
-            // also hangs below the plane of its own top face. Without the overhang the near rim of the
-            // bottom row is clipped, which reads as a rendering fault rather than a framing one.
-            var halfWidth = ((maximum.x - minimum.x) * 0.5f) + HexMetrics.Size + MarginWorldUnits;
-            var halfHeight = ((maximum.y - minimum.y) * 0.5f)
-                             + (HexMetrics.Size * BoardTilt.VerticalForeshortening)
-                             + BoardTilt.ScreenOverhang
-                             + MarginWorldUnits;
+            _boardCentre = (minimum + maximum) * 0.5f;
+            _boardHalfExtents = (maximum - minimum) * 0.5f;
 
-            var aspect = camera.aspect > 0f ? camera.aspect : 1f;
+            _birdsEyeLookAt = _boardCentre;
+            _birdsEyeSize = BoardFraming.SizeFor(_boardHalfExtents + BoardFraming.CellReach(), aspect);
+            _playingSize = BoardFraming.DefaultSize(_boardHalfExtents, aspect);
+            CanPan = BoardFraming.NeedsPanning(_boardHalfExtents, aspect);
 
-            // Whichever axis runs out of room first decides the zoom.
-            var sizeForWidth = halfWidth / aspect;
-            var sizeForHeight = halfHeight / (1f - TrayHeightFraction);
-            var orthographicSize = Mathf.Max(sizeForWidth, sizeForHeight);
+            _lookAt = BoardFraming.ClampLookAt(
+                CanPan ? OpeningLookAt(state, board) : _boardCentre,
+                _boardCentre,
+                _boardHalfExtents,
+                _playingSize,
+                aspect);
+        }
 
-            camera.orthographic = true;
+        /// <summary>
+        /// Where a large board opens: on a spring.
+        /// </summary>
+        /// <remarks>
+        /// The first spring in board order, so the same level always opens the same way — the board is
+        /// generated deterministically and the camera should not be the one thing that is not. A spring
+        /// rather than a hub because a route is built forwards from one, so it is where the player's
+        /// first placement goes.
+        /// </remarks>
+        private Vector2 OpeningLookAt(GameState state, Transform board)
+        {
+            foreach (var endpoint in state.Endpoints)
+            {
+                if (endpoint.Role != Pathweaver.Core.Flow.EndpointRole.Spring)
+                {
+                    continue;
+                }
+
+                var local = HexMetrics.ToWorld(endpoint.Coordinate);
+                var world = board != null ? board.TransformPoint(local) : local;
+
+                return new Vector2(world.x, world.y);
+            }
+
+            return _boardCentre;
+        }
+
+        private void ApplyFlight()
+        {
+            var (lookAt, size) = BoardIntroFlight.Evaluate(
+                _flightElapsed / BoardIntroFlight.DurationSeconds,
+                _birdsEyeLookAt,
+                _birdsEyeSize,
+                _lookAt,
+                _playingSize);
+
+            Apply(lookAt, size);
+        }
+
+        private void Apply(Vector2 lookAt, float orthographicSize)
+        {
+            var camera = ResolvedCamera;
+            if (camera == null)
+            {
+                return;
+            }
+
             camera.orthographicSize = orthographicSize;
 
-            // The board area is the screen above the tray, so its centre sits above the
-            // screen centre by the tray's share of the half-height.
-            var boardCentre = (minimum + maximum) * 0.5f;
-            var position = camera.transform.position;
-            camera.transform.position = new Vector3(
-                boardCentre.x,
-                boardCentre.y - (orthographicSize * TrayHeightFraction),
-                position.z);
+            var position = BoardFraming.CameraPositionFor(lookAt, orthographicSize);
+            camera.transform.position = new Vector3(position.x, position.y, camera.transform.position.z);
         }
     }
 }
