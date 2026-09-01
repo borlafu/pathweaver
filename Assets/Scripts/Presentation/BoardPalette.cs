@@ -29,6 +29,16 @@ namespace Pathweaver.Game.Presentation
         internal static readonly Color LegalCell = new Color(0.30f, 0.36f, 0.44f);
 
         /// <summary>The restart button at rest.</summary>
+        /// <summary>
+        /// A cell that has just refused a tile.
+        /// </summary>
+        /// <remarks>
+        /// Brighter than an empty cell and cooler than a legal one, so it cannot be mistaken for either.
+        /// Not red: the player asked a question and the answer is no, which is not a mistake worth
+        /// scolding, and red belongs to the one control that destroys something.
+        /// </remarks>
+        internal static readonly Color RefusedCell = new Color(0.42f, 0.40f, 0.46f);
+
         internal static readonly Color RestartIdle = new Color(0.28f, 0.30f, 0.35f);
 
         /// <summary>

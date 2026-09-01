@@ -5,6 +5,7 @@ using Pathweaver.Core.Flow;
 using Pathweaver.Core.Hex;
 using Pathweaver.Core.Levels;
 using Pathweaver.Core.Rules;
+using Pathweaver.Core.Scoring;
 using Pathweaver.Core.State;
 using Pathweaver.Core.Tiles;
 using Pathweaver.Game.Presentation;
@@ -96,6 +97,16 @@ namespace Pathweaver.Game.App
         /// is indistinguishable from a placement that did nothing, which is exactly how the
         /// first device build felt.
         /// </remarks>
+        /// <summary>
+        /// What each route that just paid was worth, and which hub it paid into.
+        /// </summary>
+        /// <remarks>
+        /// The amount is the difference a pair was actually paid, not what its length is worth: a pair
+        /// that already paid for three conduits and now has five is paid the gap. Showing the gross figure
+        /// would tell a player they had earned something they had not.
+        /// </remarks>
+        internal IReadOnlyList<Payout> LastPayouts { get; private set; } = Array.Empty<Payout>();
+
         internal IReadOnlyList<HexCoord> LastHarvestedTiles { get; private set; } =
             Array.Empty<HexCoord>();
 
@@ -448,18 +459,30 @@ namespace Pathweaver.Game.App
         private IReadOnlyList<Route> RoutesPaidSince(Dictionary<(HexCoord Spring, HexCoord Hub), int> paidBefore)
         {
             var paid = new List<Route>();
+            var payouts = new List<Payout>();
+            var baseScore = State?.BaseRouteScore ?? 0;
 
             foreach (var route in ActiveRoutes)
             {
                 var pair = (route.Spring.Coordinate, route.Hub.Coordinate);
                 var before = paidBefore.TryGetValue(pair, out var length) ? length : 0;
 
-                if (route.Length > before)
+                if (route.Length <= before)
                 {
-                    paid.Add(route);
+                    continue;
                 }
+
+                paid.Add(route);
+
+                // The gap, not the gross. A pair paid for three conduits and now holding five earns the
+                // difference, which is the rule PRD section 3.2A's payout curve needs to stay honest.
+                var earned = ScoreTable.ScoreFor(baseScore, route.Length)
+                             - (before > 0 ? ScoreTable.ScoreFor(baseScore, before) : 0);
+
+                payouts.Add(new Payout(route.Hub.Coordinate, earned, route.Kind));
             }
 
+            LastPayouts = payouts;
             return paid;
         }
 

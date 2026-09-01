@@ -390,7 +390,13 @@ namespace Pathweaver.Game.Presentation
             if (_session.TryPlaceAt(cell))
             {
                 _haptics?.TileLocked();
+                return;
             }
+
+            // Say no rather than nothing. A tap that cannot place anything used to leave the board
+            // unchanged, which on a game played with one thumb is indistinguishable from a tap the game
+            // never received.
+            _boardView?.FlashRefused(cell);
         }
 
         /// <summary>

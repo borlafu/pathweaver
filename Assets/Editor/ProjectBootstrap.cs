@@ -155,6 +155,15 @@ namespace Pathweaver.EditorTools
             var endpointPulse = new GameObject("EndpointPulse").AddComponent<EndpointPulseAnimator>();
             Wire(endpointPulse, ("_boardView", board));
 
+            // Outside the HUD, like the two pulses: a payout number belongs to the board, and the board
+            // survives both pausing and finishing.
+            var payoutFloat = new GameObject("PayoutFloat").AddComponent<PayoutFloatAnimator>();
+            Wire(
+                payoutFloat,
+                ("_session", session),
+                ("_boardView", board),
+                ("_camera", camera));
+
             var flowPulse = new GameObject("FlowPulse").AddComponent<FlowPulseAnimator>();
             flowPulse.transform.SetParent(board.transform, worldPositionStays: true);
             Wire(flowPulse, ("_boardView", board), ("_session", session));
@@ -163,13 +172,15 @@ namespace Pathweaver.EditorTools
             var frameRate = platform.AddComponent<FrameRateGovernor>();
             var haptics = platform.AddComponent<HapticsService>();
 
-            // Wired after the governor exists, because the opening camera flight asks for the active
-            // frame rate while it runs.
+            // Wired after the governor exists, because the opening camera flight and a payout number both
+            // ask for the active frame rate while they run.
             Wire(
                 fitter,
                 ("_camera", camera),
                 ("_boardView", board),
                 ("_frameRateGovernor", frameRate));
+
+            Wire(payoutFloat, ("_frameRateGovernor", frameRate));
 
             Wire(heldTile, ("_boardView", board), ("_camera", camera));
             Wire(

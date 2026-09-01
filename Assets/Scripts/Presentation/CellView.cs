@@ -144,6 +144,21 @@ namespace Pathweaver.Game.Presentation
             _visual.ClearMotif();
         }
 
+        /// <summary>
+        /// Marks a cell that has just refused a tile.
+        /// </summary>
+        /// <remarks>
+        /// Brighter than an empty cell rather than red. The cell did nothing wrong and the player made no
+        /// mistake worth scolding — they asked a question and the answer is no. Red is reserved for the one
+        /// control in the game that destroys something.
+        /// </remarks>
+        internal void ShowRefused()
+        {
+            _visual.SetBackground(BoardPalette.RefusedCell);
+            _visual.ClearSpokes();
+            _visual.ClearMotif();
+        }
+
         internal void ShowEndpoint(FlowEndpoint endpoint)
         {
             // No edge marks. A spring used to be starred on all six edges and a hub barred across,
