@@ -147,6 +147,9 @@ namespace Pathweaver.EditorTools
 
             // Outside the play controls, because a hint about placing a tile is still worth reading on a
             // board that has just been finished.
+            var panHint = new GameObject("PanHint").AddComponent<PanHintView>();
+            Wire(panHint, ("_boardView", board), ("_cameraFitter", fitter), ("_camera", camera));
+
             var coach = new GameObject("CoachMarks").AddComponent<CoachMarkView>();
             Wire(coach, ("_session", session), ("_camera", camera));
 
@@ -230,6 +233,7 @@ namespace Pathweaver.EditorTools
                      {
                          backdrop.gameObject, progress.gameObject, pivotPips.gameObject,
                          skipPips.gameObject, nextTile.gameObject, coach.gameObject,
+                         panHint.gameObject,
                      })
             {
                 playObject.transform.SetParent(hud.transform, worldPositionStays: true);

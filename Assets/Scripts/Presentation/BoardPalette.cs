@@ -193,6 +193,15 @@ namespace Pathweaver.Game.Presentation
         /// </remarks>
         internal static readonly Color TextSecondary = new Color(0.62f, 0.65f, 0.71f);
 
+        /// <summary>
+        /// A mark at a screen edge the board continues past.
+        /// </summary>
+        /// <remarks>
+        /// Dim on purpose. It is a standing offer rather than an instruction, and it sits at the edge of
+        /// the screen where a bright mark would pull the eye away from the board for the whole session.
+        /// </remarks>
+        internal static readonly Color PanHint = new Color(0.38f, 0.42f, 0.50f);
+
         internal static readonly Color Spring = new Color(0.95f, 0.85f, 0.35f);
         internal static readonly Color Hub = new Color(0.55f, 0.40f, 0.85f);
 

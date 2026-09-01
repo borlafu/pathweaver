@@ -52,6 +52,29 @@ namespace Pathweaver.Game.Presentation
         internal bool IsFlying => _flightElapsed >= 0f;
 
         /// <summary>
+        /// How much further the view may be moved, in world units, in each direction.
+        /// </summary>
+        /// <remarks>
+        /// Empty on a board that fits and while the flight is running, so nothing offers a player a
+        /// direction they cannot go or a direction they are already being taken.
+        /// </remarks>
+        internal BoardFraming.PanRoom Room
+        {
+            get
+            {
+                var camera = ResolvedCamera;
+
+                if (!CanPan || IsFlying || camera == null)
+                {
+                    return default;
+                }
+
+                return BoardFraming.RoomFor(
+                    _lookAt, _boardCentre, _boardHalfExtents, _playingSize, camera.aspect);
+            }
+        }
+
+        /// <summary>
         /// Sizes and positions the camera for the given board, and starts the flight if there is one.
         /// </summary>
         internal void Fit(GameState state)

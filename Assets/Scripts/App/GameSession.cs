@@ -390,8 +390,6 @@ namespace Pathweaver.Game.App
             // Retrieving can pay: taking a short cut off the board leaves the resources to take the
             // long way, and the pair is then paid the difference. Without this the biggest payout in
             // the game would arrive with no flash and no buzz.
-            TilePlaced?.Invoke();
-
             var harvestedRoutes = RoutesPaidSince(paidBefore);
             if (harvestedRoutes.Count > 0)
             {
@@ -444,6 +442,7 @@ namespace Pathweaver.Game.App
             HeldRotation = 0;
 
             Publish();
+            TilePlaced?.Invoke();
 
             var harvestedRoutes = RoutesPaidSince(paidBefore);
             if (harvestedRoutes.Count > 0)
