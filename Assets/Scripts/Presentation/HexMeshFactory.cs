@@ -53,6 +53,69 @@ namespace Pathweaver.Game.Presentation
         }
 
         /// <summary>
+        /// The six side faces of a hexagonal prism, standing behind the top face.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Extruded along +Z, away from the camera at negative Z, so the top face stays at z = 0 where
+        /// every decal the board already draws — spokes, motifs, the endpoint ring — is positioned
+        /// relative to it. Extruding toward the camera would have buried all of them inside the block.
+        /// </para>
+        /// <para>
+        /// A separate mesh from the top face rather than one prism, so the two can take different
+        /// colours through the renderer the rest of this codebase already colours per object. The
+        /// alternative is vertex colours, which needs a shader that reads them.
+        /// </para>
+        /// <para>
+        /// Faces are wound to point outward rather than at the camera, which is why
+        /// <c>MeshWindingTests</c> checks this one against the radial direction instead of against the
+        /// known-good hexagon: a side face that pointed at the camera would be invisible from every
+        /// angle the board is ever seen from.
+        /// </para>
+        /// </remarks>
+        /// <param name="radius">Centre-to-corner distance, matching the top face.</param>
+        /// <param name="height">How far the block stands, in world units.</param>
+        internal static Mesh CreateHexagonSkirt(float radius, float height)
+        {
+            var vertices = new List<Vector3>(Corners * 2);
+            var triangles = new List<int>(Corners * 6);
+
+            for (var corner = 0; corner < Corners; corner++)
+            {
+                var angle = Mathf.Deg2Rad * ((60f * corner) + 90f);
+                var x = radius * Mathf.Cos(angle);
+                var y = radius * Mathf.Sin(angle);
+
+                vertices.Add(new Vector3(x, y, 0f));
+                vertices.Add(new Vector3(x, y, height));
+            }
+
+            for (var corner = 0; corner < Corners; corner++)
+            {
+                var topHere = corner * 2;
+                var bottomHere = topHere + 1;
+                var topNext = ((corner + 1) % Corners) * 2;
+                var bottomNext = topNext + 1;
+
+                triangles.Add(topHere);
+                triangles.Add(topNext);
+                triangles.Add(bottomNext);
+
+                triangles.Add(topHere);
+                triangles.Add(bottomNext);
+                triangles.Add(bottomHere);
+            }
+
+            var mesh = new Mesh { name = "HexagonSkirt" };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            return mesh;
+        }
+
+        /// <summary>
         /// A filled regular polygon centred on the origin.
         /// </summary>
         /// <remarks>

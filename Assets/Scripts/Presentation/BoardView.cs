@@ -114,6 +114,11 @@ namespace Pathweaver.Game.Presentation
             Clear();
             EnsureResources();
 
+            // The lean lives on this transform, not on the camera. Under an orthographic projection the
+            // two produce the same image, and this way the camera stays axis-aligned — which every HUD
+            // view depends on, because each anchors itself through the camera and then overwrites z.
+            transform.SetPositionAndRotation(BoardTilt.Position, BoardTilt.Rotation);
+
             foreach (var coordinate in state.Board.Coordinates)
             {
                 CreateCell(coordinate);
