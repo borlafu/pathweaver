@@ -31,7 +31,7 @@ namespace Pathweaver.Game.Presentation
         private const float DotRadius = 0.1f;
 
         /// <summary>In front of the spokes and the resource mark, so the light passes over them.</summary>
-        private const float Depth = -0.03f;
+        internal const float Depth = -0.03f;
 
         [SerializeField]
         private BoardView _boardView;
