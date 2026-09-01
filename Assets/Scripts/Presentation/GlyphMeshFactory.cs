@@ -226,8 +226,8 @@ namespace Pathweaver.Game.Presentation
             vertices.Add(upperTail - (upperNormal * halfStroke));  // 1 upper inner tail
             vertices.Add(outerTip);                                // 2
             vertices.Add(innerTip);                                // 3
-            vertices.Add(lowerTail - (lowerNormal * halfStroke));  // 4 lower inner tail
-            vertices.Add(lowerTail + (lowerNormal * halfStroke));  // 5 lower outer tail
+            vertices.Add(lowerTail + (lowerNormal * halfStroke));  // 4 lower inner tail
+            vertices.Add(lowerTail - (lowerNormal * halfStroke));  // 5 lower outer tail
 
             AddTriangle(triangles, vertices, 0, 1, 3);
             AddTriangle(triangles, vertices, 0, 3, 2);
