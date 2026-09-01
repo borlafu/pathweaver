@@ -131,6 +131,28 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void A_control_keeps_its_size_on_screen_whatever_the_camera_shows()
+        {
+            // At the menu camera nothing changes, which is why every menu is unaffected. The pause screen
+            // keeps the board's framing on purpose, and over a large board that is more than twice the
+            // menu size — where its controls were drawn less than half their intended size.
+            Assert.That(
+                HexButton.ScaleFor(MenuCamera.OrthographicSize), Is.EqualTo(1f).Within(0.0001f));
+
+            Assert.That(
+                HexButton.ScaleFor(MenuCamera.OrthographicSize * 2f), Is.EqualTo(2f).Within(0.0001f));
+        }
+
+        [Test]
+        public void A_control_grows_with_the_world_the_camera_shows()
+        {
+            // The direction matters and is easy to invert. Showing more world means a world-sized object
+            // covers less screen, so it has to be made larger, not smaller.
+            Assert.That(
+                HexButton.ScaleFor(8f), Is.GreaterThan(HexButton.ScaleFor(4f)));
+        }
+
+        [Test]
         public void The_held_tile_is_in_front_of_the_backdrop_that_hides_the_board()
         {
             // It rested at zero and jumped to -0.2 only while being dragged, which was invisible until an
