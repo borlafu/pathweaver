@@ -47,9 +47,9 @@ namespace Pathweaver.Game.Presentation
 
         /// <summary>Centre-to-centre spacing along a row, in world units.</summary>
         /// <remarks>
-        /// A pointy-top pip is <c>radius * sqrt(3)</c> wide, so this leaves a clear gap between
-        /// neighbours. Chosen small enough that three of them reach only about a sixth of the way across
-        /// the screen, which is what keeps a row clear of the tray in the middle.
+        /// A pointy-top pip is <c>radius * sqrt(3)</c> wide — about 0.19 — so this leaves a clear gap
+        /// between neighbours while keeping a row of three roughly as wide as the button it is centred on.
+        /// A row much wider than its button would stop reading as belonging to it.
         /// </remarks>
         private const float RowSpacing = 0.25f;
 
@@ -196,18 +196,26 @@ namespace Pathweaver.Game.Presentation
         /// Where the given pip sits, relative to its button.
         /// </summary>
         /// <remarks>
-        /// Rows of three, stacked upward, growing away from the nearer screen edge — rightward for the
-        /// left-hand column and leftward for the right-hand one. Growing outward would run a row off the
-        /// side of the phone; growing inward keeps it clear of both the edge and the tray in the middle.
+        /// <para>
+        /// Rows of three, stacked upward, each centred on the button. The first version grew each row
+        /// inward from the button's centre so it could not run off the screen edge, which left the block
+        /// visibly off to one side of the control it belongs to — and made the two columns mirror images
+        /// rather than the same thing twice.
+        /// </para>
+        /// <para>
+        /// A centred row of three is about as wide as the button itself, so wherever the button fits the
+        /// row does. Each row is centred on its own capacity, so the second row of a full pool of five
+        /// sits centred as a pair rather than hanging off the left.
+        /// </para>
         /// </remarks>
         internal Vector3 PipPosition(int index)
         {
-            var column = index % PipsPerRow;
             var row = index / PipsPerRow;
-            var inward = _viewportPosition.x < 0.5f ? 1f : -1f;
+            var column = index % PipsPerRow;
+            var inRow = Mathf.Min(PipsPerRow, MaximumPips - (row * PipsPerRow));
 
             return new Vector3(
-                inward * column * RowSpacing,
+                (column - ((inRow - 1) * 0.5f)) * RowSpacing,
                 FirstRowOffset + (row * StackSpacing),
                 0f);
         }
