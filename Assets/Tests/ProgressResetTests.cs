@@ -80,10 +80,15 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
-        public void A_wipe_leaves_nothing_behind_in_any_of_the_four_places()
+        public void A_wipe_leaves_nothing_behind_in_any_of_the_five_places()
         {
             // Arrange
             PlayForAWhile();
+
+            foreach (var mark in CoachMarks.All)
+            {
+                CoachMarks.MarkSeen(mark);
+            }
 
             // Act
             ProgressReset.Wipe(_saves, _campaign, _atlas, _endless);
@@ -101,6 +106,13 @@ namespace Pathweaver.Game.EditorTests
             Assert.That(atlas.Essence, Is.EqualTo(0));
 
             Assert.That(_endless.Load().Round, Is.EqualTo(1));
+
+            // A player who asked for a clean slate should be taught again rather than dropped onto a
+            // board with no explanation.
+            foreach (var mark in CoachMarks.All)
+            {
+                Assert.That(CoachMarks.HasSeen(mark), Is.False, $"the {mark} hint survived");
+            }
         }
 
         [Test]

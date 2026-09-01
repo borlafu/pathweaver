@@ -145,6 +145,11 @@ namespace Pathweaver.EditorTools
             var skip = new GameObject("SkipButton").AddComponent<SkipButtonView>();
             Wire(skip, ("_boardView", board), ("_camera", camera), ("_session", session));
 
+            // Outside the play controls, because a hint about placing a tile is still worth reading on a
+            // board that has just been finished.
+            var coach = new GameObject("CoachMarks").AddComponent<CoachMarkView>();
+            Wire(coach, ("_session", session), ("_camera", camera));
+
             var nextTile = new GameObject("NextTile").AddComponent<NextTileView>();
             Wire(nextTile, ("_session", session), ("_boardView", board), ("_camera", camera));
 
@@ -224,7 +229,7 @@ namespace Pathweaver.EditorTools
             foreach (var playObject in new[]
                      {
                          backdrop.gameObject, progress.gameObject, pivotPips.gameObject,
-                         skipPips.gameObject, nextTile.gameObject,
+                         skipPips.gameObject, nextTile.gameObject, coach.gameObject,
                      })
             {
                 playObject.transform.SetParent(hud.transform, worldPositionStays: true);
