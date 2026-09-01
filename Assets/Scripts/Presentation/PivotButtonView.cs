@@ -97,6 +97,12 @@ namespace Pathweaver.Game.Presentation
         private void Update()
         {
             transform.position = WorldPosition;
+
+            // Kept the same size on screen whatever the camera shows, exactly as HexButton is. These
+            // three predate that class and were left world-sized, so they shrank on a board zoomed out to
+            // fit a large level — and the pip column above this one would have drifted away from it.
+            transform.localScale =
+                Vector3.one * Menus.HexButton.ScaleFor(ResolvedCamera.orthographicSize);
         }
 
         private void OnPivotArmedChanged(bool armed)

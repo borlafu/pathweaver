@@ -44,13 +44,47 @@ namespace Pathweaver.Game.Presentation
         private const int MaximumPips = TokenRules.MaximumCapacity;
 
         private const float PipRadius = 0.11f;
-        private const float PipSpacing = 0.3f;
+
+        /// <summary>Centre-to-centre spacing along a row, in world units.</summary>
+        /// <remarks>
+        /// A pointy-top pip is <c>radius * sqrt(3)</c> wide, so this leaves a clear gap between
+        /// neighbours. Chosen small enough that three of them reach only about a sixth of the way across
+        /// the screen, which is what keeps a row clear of the tray in the middle.
+        /// </remarks>
+        private const float RowSpacing = 0.25f;
+
+        /// <summary>Centre-to-centre spacing between the two rows, in world units.</summary>
+        private const float StackSpacing = 0.26f;
+
+        /// <summary>How many pips a row holds.</summary>
+        /// <remarks>
+        /// Three, so the base allowance of three is one row and the five a full set of relics allows is
+        /// two. A single column of five reached far enough up the screen to sit over the board.
+        /// </remarks>
+        internal const int PipsPerRow = 3;
+
+        /// <summary>
+        /// How far above the button the first row sits, in world units.
+        /// </summary>
+        /// <remarks>
+        /// Clear of the button's own top edge — a control of radius 0.34 reaches that far above its
+        /// centre — plus a pip's radius and a little air.
+        /// </remarks>
+        private const float FirstRowOffset = 0.51f;
 
         [SerializeField]
         private TokenKind _kind = TokenKind.Pivot;
 
+        /// <summary>
+        /// Where the column's button sits, which is what the pips are placed relative to.
+        /// </summary>
+        /// <remarks>
+        /// The pips used to have their own anchor further up the screen, outside the tray, where they
+        /// obstructed the board on a wide level. They now sit inside the drawer directly above the control
+        /// that spends them, which is also where a player looks when deciding whether they can afford to.
+        /// </remarks>
         [SerializeField]
-        private Vector2 _viewportPosition = new Vector2(0.12f, 0.26f);
+        private Vector2 _viewportPosition = new Vector2(0.12f, 0.10f);
 
         [SerializeField]
         private BoardView _boardView;
@@ -61,8 +95,12 @@ namespace Pathweaver.Game.Presentation
         [SerializeField]
         private GameSession _session;
 
-        /// <summary>How far below the first pip the column's icon sits, in world units.</summary>
-        private const float IconOffset = 0.28f;
+        /// <summary>How far below the first row the block's icon sits, in world units.</summary>
+        /// <remarks>
+        /// Between the button and the first row of pips, so it reads as belonging to both — which it does:
+        /// it says what the button spends and what the pips count.
+        /// </remarks>
+        private const float IconOffset = 0.26f;
 
         private readonly List<MeshRenderer> _pips = new List<MeshRenderer>();
 
@@ -102,11 +140,10 @@ namespace Pathweaver.Game.Presentation
                 new Vector3(_viewportPosition.x, _viewportPosition.y, 0f));
             transform.position = new Vector3(world.x, world.y, -0.4f);
 
-            // Scaled for the same reason the menu buttons are: a pip's radius and the gap between pips
-            // are world units chosen against the menu camera, so on a board zoomed out to fit a large
-            // level the column shrank, and on one zoomed in it grew far enough up the screen to sit over
-            // the board. Scaling the column scales the spacing with it, because the pips are children
-            // placed at multiples of it.
+            // Scaled for the same reason the controls are: a pip's radius and the gaps between pips are
+            // world units chosen against the menu camera, so without this the block shrank on a board
+            // zoomed out and grew on one zoomed in. Scaling the parent scales the spacing with it, because
+            // the pips are children placed at multiples of it.
             transform.localScale = Vector3.one * Menus.HexButton.ScaleFor(camera.orthographicSize);
         }
 
@@ -150,9 +187,7 @@ namespace Pathweaver.Game.Presentation
             {
                 var pip = new GameObject($"Pip{index}");
                 pip.transform.SetParent(transform, worldPositionStays: false);
-                // Stacked upward from the anchor, so a growing count never collides with the
-                // controls below it.
-                pip.transform.localPosition = new Vector3(0f, index * PipSpacing, 0f);
+                pip.transform.localPosition = PipPosition(index);
 
                 pip.AddComponent<MeshFilter>().sharedMesh = mesh;
 
@@ -167,6 +202,26 @@ namespace Pathweaver.Game.Presentation
         }
 
         /// <summary>
+        /// Where the given pip sits, relative to its button.
+        /// </summary>
+        /// <remarks>
+        /// Rows of three, stacked upward, growing away from the nearer screen edge — rightward for the
+        /// left-hand column and leftward for the right-hand one. Growing outward would run a row off the
+        /// side of the phone; growing inward keeps it clear of both the edge and the tray in the middle.
+        /// </remarks>
+        internal Vector3 PipPosition(int index)
+        {
+            var column = index % PipsPerRow;
+            var row = index / PipsPerRow;
+            var inward = _viewportPosition.x < 0.5f ? 1f : -1f;
+
+            return new Vector3(
+                inward * column * RowSpacing,
+                FirstRowOffset + (row * StackSpacing),
+                0f);
+        }
+
+        /// <summary>
         /// Puts the matching control's glyph at the foot of the column.
         /// </summary>
         /// <remarks>
@@ -178,7 +233,7 @@ namespace Pathweaver.Game.Presentation
         {
             var icon = new GameObject("Icon");
             icon.transform.SetParent(transform, worldPositionStays: false);
-            icon.transform.localPosition = new Vector3(0f, -IconOffset, 0f);
+            icon.transform.localPosition = new Vector3(0f, FirstRowOffset - IconOffset, 0f);
 
             if (_kind == TokenKind.Pivot)
             {

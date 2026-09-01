@@ -131,6 +131,18 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void A_pip_block_is_three_across_and_two_deep_at_most()
+        {
+            // Three per row, so the base allowance of three is one row and the five a full set of relics
+            // allows is two. A single column of five reached far enough up the screen to sit over the board.
+            Assert.That(TokenPipsView.PipsPerRow, Is.EqualTo(3));
+            Assert.That(
+                Pathweaver.Core.Rules.TokenRules.MaximumCapacity,
+                Is.LessThanOrEqualTo(TokenPipsView.PipsPerRow * 2),
+                "The ceiling no longer fits two rows of three.");
+        }
+
+        [Test]
         public void The_next_tile_sits_between_the_tray_and_the_skip_button()
         {
             // Right of the tray at 0.5 and clear of the skip button at 0.86, on the side the skip button

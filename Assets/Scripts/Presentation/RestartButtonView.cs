@@ -94,6 +94,12 @@ namespace Pathweaver.Game.Presentation
         {
             transform.position = WorldPosition;
 
+            // Kept the same size on screen whatever the camera shows, exactly as HexButton is. This
+            // predates that class and was left world-sized, so it shrank on a board zoomed out to fit a
+            // large level.
+            transform.localScale =
+                Vector3.one * Menus.HexButton.ScaleFor(ResolvedCamera.orthographicSize);
+
             if (_body == null)
             {
                 return;
