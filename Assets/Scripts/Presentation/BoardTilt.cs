@@ -41,15 +41,39 @@ namespace Pathweaver.Game.Presentation
         internal const float BlockHeight = HexMetrics.Size * 0.5f;
 
         /// <summary>
-        /// How far back the whole board sits, in world units.
+        /// The least far back the board ever sits, in world units.
         /// </summary>
         /// <remarks>
-        /// The lean swings the near edge of the board toward the viewer by up to the board's own half
-        /// height times the sine of the angle — around 0.65 on a large level. Without this offset that
-        /// edge would cross in front of the tray at -0.2 and the pip columns at -0.4, and board cells
-        /// would draw over the HUD. One offset does what a second camera and a layer mask were going to.
+        /// A floor rather than the answer. <see cref="DepthOffsetFor"/> is what a board actually uses.
         /// </remarks>
-        internal const float DepthOffset = 1.5f;
+        internal const float MinimumDepthOffset = 1.5f;
+
+        /// <summary>
+        /// How much clearance the board keeps in front of itself, in world units.
+        /// </summary>
+        internal const float DepthClearance = 0.3f;
+
+        /// <summary>
+        /// How far back a board of the given half height has to sit, in world units.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The lean swings the near edge of the board toward the viewer by the board's own half height
+        /// times the sine of the angle. This has to be a function of the board rather than a constant,
+        /// which a fixed 1.5 was: it was chosen against a half height of 2.5, and the first valley large
+        /// enough to need panning has a half height of 6.5. Its southern rim reached z = -0.18 — in front
+        /// of the backdrop that keeps the board out from behind the interface, and almost in front of the
+        /// tray.
+        /// </para>
+        /// <para>
+        /// The half height is the board's own, before the lean foreshortens it, because the swing is
+        /// driven by the untilted distance from the middle.
+        /// </para>
+        /// </remarks>
+        internal static float DepthOffsetFor(float boardHalfHeight)
+            => Mathf.Max(
+                MinimumDepthOffset,
+                (boardHalfHeight * Mathf.Sin(Degrees * Mathf.Deg2Rad)) + DepthClearance);
 
         /// <summary>The board root's rotation.</summary>
         /// <remarks>
@@ -58,8 +82,9 @@ namespace Pathweaver.Game.Presentation
         /// </remarks>
         internal static Quaternion Rotation => Quaternion.Euler(Degrees, 0f, 0f);
 
-        /// <summary>The board root's position.</summary>
-        internal static Vector3 Position => new Vector3(0f, 0f, DepthOffset);
+        /// <summary>Where the board root sits, for a board of the given half height.</summary>
+        internal static Vector3 PositionFor(float boardHalfHeight)
+            => new Vector3(0f, 0f, DepthOffsetFor(boardHalfHeight));
 
         /// <summary>
         /// How much a vertical distance on the board shrinks on screen.

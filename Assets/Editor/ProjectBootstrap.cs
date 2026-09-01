@@ -127,6 +127,11 @@ namespace Pathweaver.EditorTools
 
             var hud = new GameObject("Hud");
 
+            // Behind the HUD and in front of the board, so a board larger than the screen runs under
+            // the interface rather than competing with it.
+            var backdrop = new GameObject("HudBackdrop").AddComponent<HudBackdrop>();
+            Wire(backdrop, ("_boardView", board), ("_camera", camera));
+
             var progress = new GameObject("ProgressBar").AddComponent<ProgressBarView>();
             Wire(progress, ("_boardView", board), ("_camera", camera), ("_session", session));
 
@@ -204,7 +209,8 @@ namespace Pathweaver.EditorTools
 
             foreach (var playObject in new[]
                      {
-                         progress.gameObject, pivotPips.gameObject, skipPips.gameObject,
+                         backdrop.gameObject, progress.gameObject, pivotPips.gameObject,
+                         skipPips.gameObject,
                      })
             {
                 playObject.transform.SetParent(hud.transform, worldPositionStays: true);

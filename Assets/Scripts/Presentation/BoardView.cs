@@ -117,7 +117,12 @@ namespace Pathweaver.Game.Presentation
             // The lean lives on this transform, not on the camera. Under an orthographic projection the
             // two produce the same image, and this way the camera stays axis-aligned — which every HUD
             // view depends on, because each anchors itself through the camera and then overwrites z.
-            transform.SetPositionAndRotation(BoardTilt.Position, BoardTilt.Rotation);
+            //
+            // How far back it sits depends on how tall it is, because the lean swings the near rim toward
+            // the viewer in proportion to that. Measured here from the board's own coordinates rather
+            // than through this transform, which is the thing being set.
+            transform.SetPositionAndRotation(
+                BoardTilt.PositionFor(LocalHalfHeight(state)), BoardTilt.Rotation);
 
             foreach (var coordinate in state.Board.Coordinates)
             {
@@ -277,6 +282,24 @@ namespace Pathweaver.Game.Presentation
         /// </summary>
         internal Vector3 WorldPositionOf(HexCoord coordinate)
             => transform.TransformPoint(HexMetrics.ToWorld(coordinate));
+
+        /// <summary>
+        /// Half the board's height in its own coordinates, before the lean foreshortens it.
+        /// </summary>
+        private static float LocalHalfHeight(GameState state)
+        {
+            var lowest = float.MaxValue;
+            var highest = float.MinValue;
+
+            foreach (var coordinate in state.Board.Coordinates)
+            {
+                var y = HexMetrics.ToWorld(coordinate).y;
+                lowest = Mathf.Min(lowest, y);
+                highest = Mathf.Max(highest, y);
+            }
+
+            return state.Board.Coordinates.Count == 0 ? 0f : (highest - lowest) * 0.5f;
+        }
 
         private void EnsureResources()
         {
