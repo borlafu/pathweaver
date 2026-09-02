@@ -1,0 +1,120 @@
+# Biome 2, level 20 — The Whole Country
+#
+# The last board in the biome, and every kind it has: an elbow across the north, a drop down the
+# east, a run along the south, and a short descent through the middle. Four pairs, four kinds, and
+# the largest footprint of anything shipped.
+#
+# It repeats rather than inventing. Nothing here is a shape the biome has not already taught, which
+# is what a last level should be — the biome's whole vocabulary at once, on a board large enough
+# that a player has to decide what to ignore.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-20
+name: The Whole Country
+
+base-score: 100
+
+# The drop pays 605, the elbow 448, the southern run 332 and the middle descent 332. Any three
+# reach at least 1,385 against this; the best two reach 1,053 and do not. All four reach 1,717.
+target-score: 1300
+
+tokens: 1
+skips: 3
+
+seed: 103
+
+# 39 cells, 13.4 by 10.0 world units.
+cell: -6,-5
+cell: -5,-5
+cell: -4,-5
+cell: -3,-5
+cell: -3,-4
+cell: -3,-3
+cell: -3,-2
+cell: -3,-1
+cell: 4,-6
+cell: 4,-5
+cell: 4,-4
+cell: 4,-3
+cell: 4,-2
+cell: 4,-1
+cell: 4,0
+cell: 4,1
+cell: 4,2
+cell: -6,5
+cell: -5,5
+cell: -4,5
+cell: -3,5
+cell: -2,5
+cell: -1,5
+cell: 0,5
+cell: -1,-2
+cell: -1,-1
+cell: -2,0
+cell: -2,1
+cell: -3,2
+cell: -3,3
+cell: -4,4
+cell: -6,-4
+cell: -2,-1
+cell: 5,-6
+cell: 5,2
+cell: -6,6
+cell: 1,5
+cell: 0,-2
+cell: -3,4
+
+spring: -6,-5 water
+hub: -3,-1 water
+spring: 4,-6 wind
+hub: 4,2 wind
+spring: -6,5 crystal
+hub: 0,5 crystal
+spring: -1,-2 trade
+hub: -4,4 trade
+
+# Every shape the biome uses, in four kinds, at the counts the routes need plus a spare each.
+tile: 0,3 crystal x6
+tile: 0,2 trade x6
+tile: 0,2 water x2
+tile: 0,3 water x6
+tile: 0,3 wind x8
+
+
+# The board's own solution, replayed by the solvability gate rather than searched for. The search
+# exhausted six hundred thousand states here without a verdict: what costs it is open space rather
+# than cell count, and a board with room to travel is a board with room to search.
+#
+# It reaches 1,717 against a target of 1,300 in 26 moves. None of its three skips are spent.
+#
+# Rotations are written down. They are optional in the format, but a spur will accept the wrong one
+# legally and a corner will not accept the right one twice.
+
+solve: -5,-5 rot 0
+solve: -1,-1 rot 2
+solve: -2,0 rot 5
+solve: -5,5 rot 0
+solve: 4,-5 rot 1
+solve: -4,-5 rot 0
+solve: 4,-4 rot 1
+solve: -3,-2 rot 1
+solve: -2,1 rot 2
+solve: -3,-5 rot 1
+solve: -3,2 rot 5
+solve: 4,-3 rot 1
+solve: -3,-4 rot 1
+solve: 4,-2 rot 1
+solve: 4,-1 rot 1
+solve: -6,-4 rot 2
+solve: -4,5 rot 0
+solve: 4,0 rot 1
+solve: 4,1 rot 1
+solve: -3,3 rot 2
+solve: 5,-6 rot 0
+solve: -3,5 rot 0
+solve: -2,5 rot 0
+solve: -1,5 rot 0
+solve: -6,6 rot 1
+solve: -3,-3 rot 1

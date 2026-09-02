@@ -1,0 +1,59 @@
+# Biome 2, level 9 — The Basin Road
+#
+# Two roads curving round the rim of a basin nothing fills. Each turns four times by sixty degrees,
+# so almost every cell is a bend and the two straights are the ones that read as mistakes.
+#
+# The empty middle is the point. It is the largest open space in the biome and no route may cross it,
+# which makes the board feel like a place with a hole in it rather than a puzzle with a gap.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-09
+name: The Basin Road
+
+base-score: 100
+
+# Either road reaches 605 against this. Both reach 1,210.
+target-score: 550
+
+tokens: 1
+skips: 3
+
+seed: 53
+
+# 22 cells, 12.1 by 7.0 world units.
+cell: -4,-4
+cell: -3,-4
+cell: -2,-4
+cell: -2,-3
+cell: -2,-2
+cell: -3,-1
+cell: -4,0
+cell: -5,0
+cell: -6,0
+cell: 4,4
+cell: 3,4
+cell: 2,4
+cell: 2,3
+cell: 2,2
+cell: 3,1
+cell: 4,0
+cell: 5,0
+cell: 6,0
+cell: -4,-3
+cell: -6,1
+cell: 5,4
+cell: 7,0
+
+spring: -4,-4 water
+hub: -6,0 water
+spring: 4,4 crystal
+hub: 6,0 crystal
+
+# Mostly bends, because a curve is mostly corners.
+tile: 0,2 crystal x4
+tile: 0,3 crystal x5
+tile: 0,2 water x4
+tile: 0,3 water x5
+

@@ -140,10 +140,13 @@ namespace Pathweaver.Game.Presentation.Menus
         /// is what converts between them.
         /// </para>
         /// </remarks>
-        private static (int Columns, float Radius, float ColumnStep, float RowStep, float FirstRow,
+        internal static (int Columns, float Radius, float ColumnStep, float RowStep, float FirstRow,
             float TouchRadiusFraction) Arrange(int levelCount, Vector2 worldExtents)
         {
-            // Wider grids for longer campaigns, so everything stays on one screen.
+            // Wider grids for longer campaigns, so everything stays on one screen. Internal rather
+            // than private so a test can ask what the grid does at the number of levels that actually
+            // ship: the campaign went from twenty to forty when biome two was finished, which halved the
+            // row spacing, and the test that guards the level numbers had the old spacing written into it.
             var columns = levelCount <= 12 ? 3 : levelCount <= 20 ? 4 : 5;
             var rows = Mathf.Max(1, Mathf.CeilToInt(levelCount / (float)columns));
 

@@ -59,7 +59,12 @@ public class ShippedLevelsTests
     [MemberData(nameof(LevelFiles))]
     public void A_shipped_level_can_be_completed_at_its_own_seed(string path)
     {
-        // The puzzle players actually get.
+        // The puzzle players actually get, and the only test here that searches. It used to be two:
+        // one asked the solver whether a level could be cleared and the next asked it again so that it
+        // could replay the answer. On biome one, where a search takes a moment, that was a reasonable
+        // way to keep the two questions separate. On biome two it doubled the slowest thing in the
+        // suite — every searchable board was searched twice — and the two questions are answered by
+        // one search followed by one replay.
         var level = LevelLoader.Parse(File.ReadAllText(path));
 
         if (level.Solution.Count > 0)
@@ -86,6 +91,18 @@ public class ShippedLevelsTests
                 : "was not solved; the search narrowed its options, so this is not proof it is impossible";
 
         Assert.True(result.Solved, $"{level.Id} (seed {level.Seed}) {reason}.");
+
+        // And the solver's verdict is not taken on trust: the moves it reports are replayed through the
+        // engine from a fresh game, so a bug in the solver cannot certify a level the game cannot clear.
+        var state = level.CreateGame();
+        foreach (var command in result.Commands)
+        {
+            state = GameEngine.Apply(state, command);
+        }
+
+        Assert.True(
+            state.Score >= level.TargetScore,
+            $"{level.Id}: replaying the solution reached {state.Score}, short of {level.TargetScore}.");
     }
 
     [Theory]
@@ -113,38 +130,6 @@ public class ShippedLevelsTests
             level.TargetScore > trivialRoute,
             $"{level.Id} targets {level.TargetScore}, which a single two-conduit route "
             + $"({trivialRoute}) already clears.");
-    }
-
-    [Theory]
-    [MemberData(nameof(LevelFiles))]
-    public void A_solution_actually_reaches_the_target_when_replayed(string path)
-    {
-        // Trusting the solver's verdict without replaying it would let a bug in the
-        // solver certify a level the game cannot actually clear.
-        // Arrange
-        var level = LevelLoader.Parse(File.ReadAllText(path));
-
-        if (level.Solution.Count > 0)
-        {
-            // Nothing to double-check: an authored solution is only ever proven by being replayed, so
-            // the test above is already this test.
-            return;
-        }
-
-        var result = LevelSolver.Solve(level, level.Seed);
-        Assert.True(result.Solved);
-
-        // Act — replay the reported moves from a fresh game
-        var state = level.CreateGame();
-        foreach (var command in result.Commands)
-        {
-            state = GameEngine.Apply(state, command);
-        }
-
-        // Assert
-        Assert.True(
-            state.Score >= level.TargetScore,
-            $"Replaying the solution reached {state.Score}, short of {level.TargetScore}.");
     }
 
     [Theory]

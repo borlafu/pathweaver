@@ -75,6 +75,7 @@ Pathweaver.slnx                 solution (.NET 10 SDK emits .slnx, not .sln)
 src/Pathweaver.Core/            netstandard2.1, no UnityEngine references
 tests/Pathweaver.Core.Tests/    net10.0, xUnit, and the level solvability gate
 levels/*.pwlevel                authored levels, verified solvable by CI
+scripts/author-biome2.py        generates the biome-two levels from their specifications
 atlas/*.pwatlas                 World Atlas packs, verified reachable by CI
 scripts/build-core.sh           builds the simulation into Assets/Plugins
 
@@ -193,10 +194,20 @@ load and be completable, so an unsolvable level fails CI rather than reaching a 
 There are two ways a level proves it. A level with no `solve:` lines is **searched**, which
 is the stronger check because nothing had to know the answer. A level that carries an
 authored solution has it **replayed** instead, because the search cannot finish on a board
-large enough to need panning — a 28-cell board with a five-row footprint exhausted 600,000
-states in 14 seconds without a verdict and took the level tests from under a minute to
-nearly seventeen. The search stays the default wherever it can run, and a test refuses an
-authored solution on a board small enough to be searched.
+large enough to need panning. The search stays the default wherever it can run, and a test
+refuses an authored solution on a board of 23 cells or fewer, which is a size that has been
+searched successfully.
+
+Of the twenty biome-two boards, **nine are searched and eleven are replayed**, and what
+decides it is open space rather than cell count: `The Wheel` is 28 cells and searched in
+seconds because its spokes are forced corridors, while `The Bramble` is also 28 and exhausted
+600,000 states in 16 seconds without a verdict.
+
+The whole gate runs in about 22 seconds for 40 levels. It briefly took **ten minutes**, and
+the cause was not the new boards: two tests each ran a full search, one to ask whether a level
+could be cleared and the next to ask again so it could replay the answer. On biome one that
+was a reasonable way to keep two questions apart; on biome two it doubled the slowest thing in
+the suite. They are one test now — one search, then one replay of what it found.
 
 Batch operations on the Unity project, useful because they need no GUI:
 
@@ -208,6 +219,26 @@ unity -batchmode -quit -projectPath . -executeMethod <Type>.<Method> ...  # run 
 `Assets/Editor/ProjectBootstrap.cs` holds the setup steps that were run through
 that route, so project configuration is reproducible rather than a sequence of
 remembered clicks.
+
+Biome two's twenty levels are generated rather than transcribed:
+
+```bash
+python3 scripts/author-biome2.py
+```
+
+It reads `scripts/author_biome2_specs.py`, where a route is a kind, the cell its spring sits on, and
+the directions walked to its hub. The cells, the dead ends beyond each endpoint, the shape every
+conduit needs and the tile bag are all derived from that. It refuses a specification rather than
+emitting a bad board, and every refusal it makes is a mistake it caught while these levels were being
+written: two routes wanting the same cell, a dead end placed on a route, a board too small to need
+panning or too large to walk, and — the one that justifies the whole script — **a target score higher
+than everything on the board pays**, which three of the seventeen had.
+
+It rewrites the level files in place and keeps any `solve:` lines they carry, because those depend on
+the order the tile bag deals rather than on geometry. Finding them needs a greedy replay through
+`GameEngine`: place the tile in hand at whichever end of its own route accepts it, skip when nothing
+does, and dump on a dead end once the skips are gone. Both ends matter — a route whose cells do not all
+want the same shape is unbuildable from one end only.
 
 The font atlas is one of those steps. Both its inputs and its output are committed, so
 neither command is needed on a fresh clone — they are here because the settings are what
@@ -372,6 +403,7 @@ lose.
 | How is a Pivot Token spent? | Tap the remove button under the pip column to arm it, then tap a conduit to retrieve it. Arming is a mode rather than a bare tap on a conduit, because the board is the one thing a thumb touches constantly and a token is the scarcest thing the player holds. Arming spends nothing, and a tap anywhere else cancels. |
 | What does the World Atlas cost and pay? | Star Essence, one per base score harvested on any cleared board, in both modes. Nodes are relics — extra skips, extra Pivot Tokens, extra essence per clear — and are additive on top of a board's own allowance, because an upgrade that replaced it would make a generous level worse than a mean one. The whole first region costs 51 and clearing the twenty levels once pays at least 77, a relationship CI checks. |
 | What makes a biome-two board different from a biome-one board? | Footprint, not cell count. `The Long Valley` is fifty-five cells and `The Bramble` twenty-eight, over nearly the same nine-by-ten world units — the second is a thin path across a wide place and the first a sprawl, and both need panning for the same reason. What decides whether the solvability search can prove a level is open space rather than size: the twenty-eight-cell `Wheel` is searched in seconds because its spokes are forced corridors, while `The Bramble` exhausted six hundred thousand states in sixteen seconds and carries its own solution. A large board is also built as several work sites rather than one long route, because a sixteen-conduit forced line is sixteen placements with no decision in them — and because separate sites are what makes travelling between them mean something. |
+| What is a biome-two board, and how many are there? | Twenty, matching biome one, and what makes one is footprint rather than cell count: every board is at least seven by seven world units against a default zoom that fits about five by five, and none is wider than fourteen or taller than twelve — panning should be travel, not a commute. They are built as several work sites rather than one long route, because a sixteen-conduit forced line is sixteen placements with no decision in them, and because separate sites are what makes travelling between them mean anything. Every board also carries dead ends beyond its endpoints, so there is somewhere plausible to waste a tile. The shapes escalate: wide bends, then a single corner in a long straight, then sharp hundred-and-twenty-degree turns, then curves, then four kinds at once. |
 | Why does biome two have no atlas pack yet? | Because the relic ceiling is already full. `AtlasPackTests.Full_unlock_stays_within_a_sane_bonus` holds a full unlock to at most three extra skips, three extra Pivot Tokens, and three extra Star Essence per clear, and biome one's eight nodes already spend 3, 3, and 2 of that. So a second region can add exactly one more essence node and nothing else without either inventing a new relic kind — a change to `AtlasEffectKind` and to the rules that read it — or raising a ceiling that exists because levels are proved solvable on three skips. Both are balance decisions rather than deductions, so the levels ship first and the pack waits for one. Nothing is lost by waiting: the levels pay essence into the region that already exists. |
 | How does a future biome pack dock on? | It adds a file under `atlas/` with its own `pack:` line and a `docks:` line naming the nodes it attaches to. Nothing already shipped changes. The `docks:` declaration exists because otherwise a prerequisite living in another file is indistinguishable from a typo, and one of the two has to be an error. |
 | Do tokens survive the end of a board? | Yes. Endless rounds carry both Pivot Tokens and skips; campaign levels carry Pivot Tokens, in `CampaignProgress`. In both cases the board's own allowance is a floor rather than a replacement. They are earned, so taking them back at a boundary is taking back a reward — and since clearing a board ends it, a token earned by the clearing route would otherwise be unspendable. A fresh endless run keeps none. Campaign skips are not carried: three per level is an allowance rather than a reward, and every authored level is solvable within its own. |

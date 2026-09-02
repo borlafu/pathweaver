@@ -1,0 +1,65 @@
+# Biome 2, level 7 — The Long Bend
+#
+# Two routes that each run straight, turn once, and run straight again — mirrored, so one comes down
+# from the north-west and the other climbs from the south-east, and they end up pointing at each
+# other's start.
+#
+# The corner is the whole idea. Seven of a route's eight conduits want a straight and exactly one wants
+# a bend, so a bend drawn early has one place it belongs and a straight drawn at the corner has none.
+# That is the first board on which the skip control is a plan rather than a rescue.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-07
+name: The Long Bend
+
+base-score: 100
+
+# Either bend alone reaches 817 against this, so one route clears the board and the second is
+# there to be attempted rather than needed.
+target-score: 650
+
+tokens: 1
+skips: 3
+
+seed: 43
+
+# 24 cells, 12.6 by 7.8 world units.
+cell: -5,-5
+cell: -4,-5
+cell: -3,-5
+cell: -2,-5
+cell: -2,-4
+cell: -2,-3
+cell: -2,-2
+cell: -2,-1
+cell: -2,0
+cell: -2,1
+cell: 3,4
+cell: 2,4
+cell: 1,4
+cell: 0,4
+cell: 0,3
+cell: 0,2
+cell: 0,1
+cell: 0,0
+cell: 0,-1
+cell: 0,-2
+cell: -5,-4
+cell: -1,1
+cell: 4,4
+cell: 1,-2
+
+spring: -5,-5 water
+hub: -2,1 water
+spring: 3,4 crystal
+hub: 0,-2 crystal
+
+# Almost all straights, and one bend per kind for the corner. The counts are exact plus a spare,
+# because a bag with three spare bends would make the corner free.
+tile: 0,2 crystal x2
+tile: 0,3 crystal x8
+tile: 0,2 water x2
+tile: 0,3 water x8
+

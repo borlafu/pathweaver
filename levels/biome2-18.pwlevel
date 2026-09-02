@@ -1,0 +1,58 @@
+# Biome 2, level 18 — The Great Circuit
+#
+# A route that goes almost all the way round and comes back nearly to where it started: ten conduits
+# and five turns, enclosing a space it never enters.
+#
+# The circuit is the biome's answer to biome one's The Long Way Round, which asked the same question
+# on a board a player could see. Here the far side of the circuit is off screen while the near side
+# is being built, so the shape has to be held in the head rather than read off the board.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-18
+name: The Great Circuit
+
+base-score: 100
+
+# The circuit alone reaches 1,489. The wind run beside it pays 246, which is not the difference.
+target-score: 1200
+
+tokens: 1
+skips: 3
+
+seed: 97
+
+# 21 cells, 13.0 by 7.0 world units.
+cell: -3,-4
+cell: -2,-4
+cell: -1,-4
+cell: -1,-3
+cell: -1,-2
+cell: -1,-1
+cell: -2,0
+cell: -3,1
+cell: -4,1
+cell: -5,1
+cell: -5,0
+cell: -5,-1
+cell: 2,3
+cell: 3,3
+cell: 4,3
+cell: 5,3
+cell: 6,3
+cell: -3,-3
+cell: -4,-1
+cell: 2,4
+cell: 7,3
+
+spring: -3,-4 water
+hub: -5,-1 water
+spring: 2,3 wind
+hub: 6,3 wind
+
+# Bends where the circuit turns and straights where it runs, in the proportions it needs.
+tile: 0,2 water x5
+tile: 0,3 water x7
+tile: 0,3 wind x4
+

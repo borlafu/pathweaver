@@ -1,0 +1,111 @@
+# Biome 2, level 19 — Watersheds
+#
+# Two descents that lean away from each other and two runs beneath them, so the board reads as a
+# ridge with the country falling away on both sides. Four pairs, and the last board before the one
+# that uses everything.
+#
+# The two descents are mirror images and the two runs are not, which is deliberate: a player who has
+# learned the biome will recognise the descents and have to read the runs.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-19
+name: Watersheds
+
+base-score: 100
+
+# Either descent plus either run reaches at least 787 against this. All four reach 1,638.
+target-score: 780
+
+tokens: 1
+skips: 3
+
+seed: 101
+
+# 37 cells, 12.6 by 10.0 world units.
+cell: -2,-6
+cell: -2,-5
+cell: -3,-4
+cell: -3,-3
+cell: -4,-2
+cell: -4,-1
+cell: -5,0
+cell: -5,1
+cell: -6,2
+cell: 4,-6
+cell: 3,-5
+cell: 3,-4
+cell: 2,-3
+cell: 2,-2
+cell: 1,-1
+cell: 1,0
+cell: 0,1
+cell: 0,2
+cell: -6,3
+cell: -5,3
+cell: -4,3
+cell: -3,3
+cell: -2,3
+cell: -1,3
+cell: 1,5
+cell: 2,5
+cell: 3,5
+cell: 4,5
+cell: 5,5
+cell: -1,-6
+cell: -5,2
+cell: 5,-6
+cell: 1,2
+cell: -6,4
+cell: 0,3
+cell: 1,6
+cell: 6,5
+
+spring: -2,-6 water
+hub: -6,2 water
+spring: 4,-6 wind
+hub: 0,2 wind
+spring: -6,3 crystal
+hub: -1,3 crystal
+spring: 1,5 trade
+hub: 5,5 trade
+
+# Bends for the descents, straights for the runs, in four kinds.
+tile: 0,3 crystal x5
+tile: 0,3 trade x4
+tile: 0,2 water x8
+tile: 0,2 wind x8
+
+
+# The board's own solution, replayed by the solvability gate rather than searched for. The search
+# exhausted six hundred thousand states here without a verdict: what costs it is open space rather
+# than cell count, and a board with room to travel is a board with room to search.
+#
+# It reaches 1,033 against a target of 780 in 22 moves. None of its three skips are spent.
+#
+# Rotations are written down. They are optional in the format, but a spur will accept the wrong one
+# legally and a corner will not accept the right one twice.
+
+solve: -5,3 rot 0
+solve: 2,5 rot 0
+solve: -2,-5 rot 2
+solve: -3,-4 rot 5
+solve: 3,5 rot 0
+solve: 3,-5 rot 5
+solve: 3,-4 rot 2
+solve: -3,-3 rot 2
+solve: -4,3 rot 0
+solve: -4,-2 rot 5
+solve: -3,3 rot 0
+solve: 2,-3 rot 5
+solve: -4,-1 rot 2
+solve: -2,3 rot 0
+solve: 2,-2 rot 2
+solve: 1,-1 rot 5
+solve: 4,5 rot 0
+solve: 1,0 rot 2
+solve: -6,4 rot 1
+solve: 1,6 rot 1
+solve: -5,0 rot 5
+solve: 0,1 rot 5

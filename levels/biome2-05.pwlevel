@@ -1,0 +1,90 @@
+# Biome 2, level 5 — The Far Shore
+#
+# Two zigzags coming down the far edges of the board and a straight run along the bottom joining
+# their feet. Three sites, and no two of them fit on one screen — which is the first time that is
+# true of a level rather than of a level's ambition.
+#
+# The bottom run is the cheapest thing here and the most useful: it is the only route a player can
+# reach from either descent without crossing the whole board.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-05
+name: The Far Shore
+
+base-score: 100
+
+# Any two of the three reach 664 against this. One alone pays 332 and does not.
+target-score: 600
+
+tokens: 1
+skips: 3
+
+seed: 37
+
+# 27 cells, 12.6 by 8.5 world units.
+cell: -6,-4
+cell: -6,-3
+cell: -7,-2
+cell: -7,-1
+cell: -8,0
+cell: -8,1
+cell: -9,2
+cell: 5,-4
+cell: 4,-3
+cell: 4,-2
+cell: 3,-1
+cell: 3,0
+cell: 2,1
+cell: 2,2
+cell: -4,5
+cell: -3,5
+cell: -2,5
+cell: -1,5
+cell: 0,5
+cell: 1,5
+cell: 2,5
+cell: -5,-4
+cell: -8,2
+cell: 6,-4
+cell: 3,2
+cell: -4,6
+cell: 3,5
+
+spring: -6,-4 water
+hub: -9,2 water
+spring: 5,-4 wind
+hub: 2,2 wind
+spring: -4,5 crystal
+hub: 2,5 crystal
+
+# Bends for the two descents, straights for the shore.
+tile: 0,3 crystal x6
+tile: 0,2 water x6
+tile: 0,2 wind x6
+
+
+# The board's own solution, replayed by the solvability gate rather than searched for. The search
+# exhausted six hundred thousand states here without a verdict: what costs it is open space rather
+# than cell count, and a board with room to travel is a board with room to search.
+#
+# It reaches 664 against a target of 600 in 14 moves. None of its three skips are spent.
+#
+# Rotations are written down. They are optional in the format, but a spur will accept the wrong one
+# legally and a corner will not accept the right one twice.
+
+solve: -3,5 rot 0
+solve: 4,-3 rot 5
+solve: -6,-3 rot 2
+solve: 4,-2 rot 2
+solve: -7,-2 rot 5
+solve: -2,5 rot 0
+solve: -1,5 rot 0
+solve: -7,-1 rot 2
+solve: 3,-1 rot 5
+solve: 0,5 rot 0
+solve: 3,0 rot 2
+solve: 2,1 rot 5
+solve: -8,0 rot 5
+solve: -8,1 rot 2
