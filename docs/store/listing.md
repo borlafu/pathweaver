@@ -102,9 +102,13 @@ Four, committed under `docs/store/screenshots/`, in upload order:
 | File | What it shows |
 |---|---|
 | `1-building-a-route.png` | a route under construction, the next tile in hand, legal cells lit |
-| `2-route-complete.png` | the route closed, the quota bar full, and the one control a finished board offers |
-| `3-level-list.png` | twenty levels, each drawn as its own board, cleared ones in green |
-| `4-endless-three-networks.png` | an endless round with water, wind and crystal at once |
+| `2-route-complete.png` | the route closed, its payout floating at the hub, the quota met |
+| `3-level-list.png` | twenty-one levels, each drawn as its own board, cleared ones in green |
+| `4-three-networks.png` | the biome-two valley: three resource pairs, and the marks saying the board continues past the screen |
+
+The fourth used to be an endless round, chosen because it was the quickest way to get three resources
+on one board. Biome two does it better: it is authored, it shows the panning that makes a large board
+work, and an endless round deep enough to carry three kinds takes several clears to reach.
 
 They are committed rather than regenerated, because unlike the icon and the feature graphic they come
 from a device session rather than from a command.
