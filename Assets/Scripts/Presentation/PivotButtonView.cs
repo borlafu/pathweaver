@@ -26,9 +26,7 @@ namespace Pathweaver.Game.Presentation
         /// </summary>
         private static readonly Vector2 ViewportPosition = new Vector2(0.12f, 0.10f);
 
-        private const float ButtonRadius = 0.34f;
-        private const float GlyphWidth = 0.22f;
-        private const float GlyphThickness = 0.075f;
+        private const float ButtonRadius = BoardGlyphs.ButtonRadius;
 
         [SerializeField]
         private BoardView _boardView;
@@ -135,11 +133,13 @@ namespace Pathweaver.Game.Presentation
 
             // A hexagon with a bar struck through it: this cell, taken off the board. A plain minus
             // would say "less" rather than "remove that tile".
-            AddPart(
-                "Cell", HexMeshFactory.CreateHexagon(0.15f), BoardPalette.PivotGlyphCell, -0.02f);
-            AddPart(
-                "Bar", HexMeshFactory.CreateRectangle(GlyphWidth, GlyphThickness),
-                BoardPalette.RestartArrow, -0.04f);
+            //
+            // The shapes come from BoardGlyphs so the help screen can draw this same mark, rather than a
+            // second drawing of it that would drift.
+            foreach (var part in BoardGlyphs.Pivot())
+            {
+                AddPart(part.Name, part.Mesh, part.Colour, part.Depth, part.Offset);
+            }
         }
 
         private MeshRenderer AddPart(

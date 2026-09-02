@@ -43,7 +43,14 @@ namespace Pathweaver.Game.Presentation
         /// </remarks>
         private const int MaximumPips = TokenRules.MaximumCapacity;
 
-        private const float PipRadius = 0.11f;
+        /// <summary>
+        /// How large one pip is, in world units.
+        /// </summary>
+        /// <remarks>
+        /// Readable from outside because the help screen draws a row of these next to the control they
+        /// count for, and a diagram in a second size would stop looking like the thing it explains.
+        /// </remarks>
+        internal const float PipRadius = 0.11f;
 
         /// <summary>Centre-to-centre spacing along a row, in world units.</summary>
         /// <remarks>
@@ -208,7 +215,7 @@ namespace Pathweaver.Game.Presentation
         /// sits centred as a pair rather than hanging off the left.
         /// </para>
         /// </remarks>
-        internal Vector3 PipPosition(int index)
+        internal static Vector3 PipPosition(int index)
         {
             var row = index / PipsPerRow;
             var column = index % PipsPerRow;

@@ -22,10 +22,7 @@ namespace Pathweaver.Game.Presentation
     {
         private static readonly Vector2 ViewportPosition = new Vector2(0.86f, 0.10f);
 
-        private const float ButtonRadius = 0.34f;
-        private const float GlyphLength = 0.13f;
-        private const float GlyphHeight = 0.115f;
-        private const float GlyphThickness = 0.05f;
+        private const float ButtonRadius = BoardGlyphs.ButtonRadius;
 
         [SerializeField]
         private BoardView _boardView;
@@ -117,10 +114,13 @@ namespace Pathweaver.Game.Presentation
             //
             // One mitred mesh each, rather than the two loose rectangles per chevron this used to be —
             // those crossed at the apex and left a notch on the outside of the joint.
-            var chevron = GlyphMeshFactory.CreateChevron(GlyphLength, GlyphHeight, GlyphThickness);
-
-            AddPart("Near", chevron, BoardPalette.RestartArrow, -0.02f, new Vector3(-0.06f, 0f, 0f));
-            AddPart("Far", chevron, BoardPalette.RestartArrow, -0.02f, new Vector3(0.06f, 0f, 0f));
+            //
+            // The shapes come from BoardGlyphs so the help screen can draw this same mark, rather than a
+            // second drawing of it that would drift.
+            foreach (var part in BoardGlyphs.Skip())
+            {
+                AddPart(part.Name, part.Mesh, part.Colour, part.Depth, part.Offset);
+            }
         }
 
         private MeshRenderer AddPart(

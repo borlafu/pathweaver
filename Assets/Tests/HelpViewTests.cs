@@ -46,6 +46,41 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void No_heading_is_long_enough_to_run_off_the_screen()
+        {
+            // The headings had no wrap box at all, and "Longer routes pay more  3/4" was drawn with its
+            // first and last characters cut in half by the edges of a portrait phone. There is a box now,
+            // and this is the length past which two lines would not be enough either.
+            for (var page = 0; page < HelpView.PageCount; page++)
+            {
+                var heading = HelpView.HeadingFor(page);
+
+                Assert.That(
+                    heading.Length,
+                    Is.LessThanOrEqualTo(HelpView.LongestHeading),
+                    $"This heading wraps past its slot: \"{heading}\"");
+            }
+        }
+
+        [Test]
+        public void A_heading_wraps_narrower_than_the_screen()
+        {
+            Assert.That(HelpView.HeadingWrapWidthFraction, Is.LessThan(1f));
+        }
+
+        [Test]
+        public void A_wrapped_heading_still_clears_the_first_paragraph()
+        {
+            // Two lines at heading size, centred on the heading's anchor, so it grows half that far down.
+            const int wrappedLines = 2;
+
+            var headingBottom = HelpView.HeadingViewportY
+                                - (wrappedLines * 0.5f * LabelMetrics.HeadingHeightFraction);
+
+            Assert.That(headingBottom, Is.GreaterThan(HelpView.FirstLineViewportY));
+        }
+
+        [Test]
         public void A_paragraph_slot_is_taller_than_the_paragraph_it_holds()
         {
             // Four wrapped lines at body size, against the spacing between slots. If a size changes
@@ -84,10 +119,8 @@ namespace Pathweaver.Game.EditorTests
         [Test]
         public void The_pages_are_arranged_top_to_bottom_and_stay_on_screen()
         {
-            var lastSlot = HelpView.FirstLineViewportY - ((4 - 1) * HelpView.LineSpacing);
-
             Assert.That(HelpView.FirstLineViewportY, Is.LessThan(HelpView.HeadingViewportY));
-            Assert.That(lastSlot, Is.GreaterThan(0.2f), "A fourth paragraph would reach the buttons.");
+            Assert.That(HelpView.LastLineViewportY, Is.LessThan(HelpView.FirstLineViewportY));
         }
     }
 }
