@@ -7,9 +7,19 @@ namespace Pathweaver.Game.Presentation
     /// Draws the tile in hand, either resting in its tray or following the thumb.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The tray sits low on the screen because that is where a thumb rests. Reaching
     /// the top of a phone one-handed is the awkward part of single-thumb play, so the
     /// thing the player touches most often is kept closest.
+    /// </para>
+    /// <para>
+    /// This is the one thing on the interface that is deliberately <em>not</em> scaled against the camera.
+    /// Every control is, so that a button keeps its size on screen whatever the board shows — but this is
+    /// not a control, it is a preview of a cell. It has to be the size of the space it is about to occupy,
+    /// so it tracks the board rather than the screen, and it therefore looks larger on a small level than
+    /// on a valley. That difference is the feature: a ghost that did not match the gap it fits would be
+    /// a worse lie than a tile that changes size between levels.
+    /// </para>
     /// </remarks>
     internal sealed class HeldTileView : MonoBehaviour
     {

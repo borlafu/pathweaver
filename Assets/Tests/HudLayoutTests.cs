@@ -50,6 +50,23 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void The_bar_keeps_its_thickness_whatever_the_camera_shows()
+        {
+            // Its length was measured from two viewport points and so already tracked the screen; its
+            // thickness was a world constant, so a board zoomed out to fit a valley drew a visibly thinner
+            // bar than a small level did. Both are a fixed share of the screen now.
+            var atMenu = ProgressBarView.Height
+                         * HexButton.ScaleFor(MenuCamera.OrthographicSize)
+                         / MenuCamera.OrthographicSize;
+
+            var atValley = ProgressBarView.Height
+                           * HexButton.ScaleFor(MenuCamera.OrthographicSize * 2f)
+                           / (MenuCamera.OrthographicSize * 2f);
+
+            Assert.That(atValley, Is.EqualTo(atMenu).Within(0.0001f));
+        }
+
+        [Test]
         public void The_score_stays_clear_of_the_buttons_in_the_top_corners()
         {
             // Restart and pause sit at the bar's own height. The bar itself is narrow enough to run
