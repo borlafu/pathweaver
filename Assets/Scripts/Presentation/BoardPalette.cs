@@ -134,11 +134,14 @@ namespace Pathweaver.Game.Presentation
         /// <summary>The mark on a node not yet bought.</summary>
         internal static readonly Color AtlasGlyphLocked = new Color(0.44f, 0.47f, 0.53f);
 
-        /// <summary>Star Essence, as a pip or a cost.</summary>
+        /// <summary>
+        /// Star Essence, wherever it is named or counted.
+        /// </summary>
+        /// <remarks>
+        /// One colour across the atlas balance, a node's cost, the line a cleared board pays out on, and
+        /// the relics named while paused — so a player can follow one currency by eye through four screens.
+        /// </remarks>
         internal static readonly Color AtlasEssence = new Color(0.86f, 0.82f, 0.52f);
-
-        /// <summary>Essence pips when the balance has run past what the row can show.</summary>
-        internal static readonly Color AtlasEssenceFull = new Color(0.98f, 0.94f, 0.70f);
 
         /// <summary>A cost the player cannot yet meet.</summary>
         internal static readonly Color AtlasCostUnaffordable = new Color(0.40f, 0.40f, 0.42f);

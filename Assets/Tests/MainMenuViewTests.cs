@@ -8,23 +8,23 @@ namespace Pathweaver.Game.EditorTests
     /// </summary>
     /// <remarks>
     /// Layout arithmetic only. Whether a hexagon looks tappable needs a person, but whether the row
-    /// stays centred when a button leaves it does not — and that is the part a hidden atlas changes.
+    /// stays centred when a button arrives or leaves does not — and that is the part showing or hiding
+    /// the atlas changes.
     /// </remarks>
     public class MainMenuViewTests
     {
         [Test]
-        public void The_atlas_is_withheld()
+        public void The_atlas_is_offered_now_that_it_can_explain_itself()
         {
-            // The reason lives on MainMenuView.IsAtlasVisible: the atlas works but explains nothing,
-            // and it cannot explain itself without a font. This test exists so re-enabling it is a
-            // deliberate act with a failing test attached, rather than a stray edit.
-            Assert.That(MainMenuView.IsAtlasVisible, Is.False);
+            // It was withheld while the game had no font to write a cost or an effect with. That is what
+            // changed; nothing in the atlas model did.
+            Assert.That(MainMenuView.IsAtlasVisible, Is.True);
         }
 
         [Test]
-        public void Hiding_the_atlas_leaves_four_secondary_buttons()
+        public void Showing_the_atlas_makes_five_secondary_buttons()
         {
-            Assert.That(MainMenuView.SecondaryCount, Is.EqualTo(4));
+            Assert.That(MainMenuView.SecondaryCount, Is.EqualTo(5));
         }
 
         [Test]

@@ -16,14 +16,34 @@ namespace Pathweaver.Game.Presentation.Menus
     /// biome pack extends the picture without this screen knowing about it.
     /// </para>
     /// <para>
-    /// State is carried by colour, and cost by pips on the node: unlocked, affordable now, reachable
-    /// but not yet affordable, and locked behind something else. Four states is the most this can say
-    /// without a font, and it is enough to answer "what can I buy" at a glance.
+    /// State is carried by colour — unlocked, affordable now, reachable but not yet affordable, and
+    /// locked behind something else — and that is still worth having, because it answers "what can I
+    /// buy" at a glance. But it was all this screen said, which is why the atlas was withheld from the
+    /// closed test: a player met coloured hexagons and guessed. The colours are now the summary and the
+    /// words are the answer, in <see cref="Text.AtlasWords"/>.
+    /// </para>
+    /// <para>
+    /// A tap selects a node and says what it costs and what it gives; a second tap on the same node buys
+    /// it. Arming before spending is the pattern the Pivot Token and the erase-everything control already
+    /// use, and for the same reason: essence is slow to earn, and a screen where one stray tap spends it
+    /// is a screen a player learns to be careful on rather than to explore.
     /// </para>
     /// </remarks>
     internal sealed class AtlasView : MonoBehaviour
     {
         internal const string BackId = "back";
+
+        /// <summary>Where the line naming what a node gives sits, as a viewport fraction.</summary>
+        internal const float EffectViewportY = 0.25f;
+
+        /// <summary>Where the line saying whether it can be bought sits.</summary>
+        internal const float StatusViewportY = 0.18f;
+
+        /// <summary>Where the balance sits.</summary>
+        internal const float BalanceViewportY = 0.09f;
+
+        /// <summary>How much of the width a line of this screen's text may use.</summary>
+        internal const float WrapWidthFraction = 0.84f;
 
         /// <summary>
         /// A node's radius as a share of the distance between two nodes.
@@ -37,25 +57,43 @@ namespace Pathweaver.Game.Presentation.Menus
 
         private const float LinkThicknessFactor = 0.14f;
 
-        /// <summary>The band of screen the constellation may use, in viewport fractions.</summary>
+        /// <summary>
+        /// The band of screen the constellation may use, in viewport fractions.
+        /// </summary>
+        /// <remarks>
+        /// The bottom edge rose from 0.28 when the two lines of text arrived beneath it: the pips they
+        /// replaced took one row, and a sentence that wraps takes two or three.
+        /// </remarks>
         private const float TopEdge = 0.95f;
-        private const float BottomEdge = 0.28f;
+        private const float BottomEdge = 0.34f;
 
         /// <summary>Breathing room around the constellation, in world units.</summary>
         private const float MarginWorldUnits = 0.12f;
 
-        /// <summary>Essence pips shown before the row is capped.</summary>
-        private const int MaximumEssencePips = 12;
-
         private readonly List<HexButton> _nodeButtons = new List<HexButton>();
         private readonly List<GameObject> _decorations = new List<GameObject>();
-        private readonly List<MeshRenderer> _essencePips = new List<MeshRenderer>();
 
         private HexButton _back;
         private Material _material;
         private Camera _camera;
         private float _spacing = 1f;
         private float _radius = 0.4f;
+
+        private Text.TextLabel _effect;
+        private Text.TextLabel _status;
+        private Text.TextLabel _balance;
+
+        private AtlasMap _map;
+        private AtlasProgress _progress;
+
+        /// <summary>
+        /// The node a tap has selected, or null.
+        /// </summary>
+        /// <remarks>
+        /// Kept across a rebuild, because buying a node redraws the whole screen and the node the player
+        /// was reading about should still be the one described afterwards.
+        /// </remarks>
+        internal string SelectedNode { get; private set; }
 
         /// <summary>
         /// Draws the constellation for the given progress.
@@ -64,6 +102,8 @@ namespace Pathweaver.Game.Presentation.Menus
         {
             _camera = camera;
             _material = material;
+            _map = map;
+            _progress = progress;
 
             Clear();
 
@@ -92,13 +132,99 @@ namespace Pathweaver.Game.Presentation.Menus
                 DrawNode(node, map, progress, centre);
             }
 
-            DrawEssence(progress.Essence);
+            _effect = AddLine("effect", EffectViewportY, BoardPalette.TextPrimary);
+            _status = AddLine("status", StatusViewportY, BoardPalette.TextSecondary);
+            _balance = AddLine("balance", BalanceViewportY, BoardPalette.AtlasEssence);
 
             _back = HexButton.Create(
                 transform, BackId, camera, material,
                 new Vector2(0.14f, 0.09f), 0.4f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.12f);
 
             MenuGlyphs.AddBack(_back);
+
+            Describe();
+        }
+
+        /// <summary>
+        /// Selects a node, or confirms the one already selected.
+        /// </summary>
+        /// <remarks>
+        /// Returns whether the caller should go on to buy it, so the spending itself stays where the rest
+        /// of the game's state changes are — this screen decides what the player is asking about, not what
+        /// they own.
+        /// </remarks>
+        internal bool Select(string nodeId)
+        {
+            var confirming = nodeId != null && nodeId == SelectedNode;
+
+            SelectedNode = nodeId;
+
+            // Redrawn rather than only re-described, because the ring that says which node is armed is
+            // part of the node. The first version wrote the words and left the constellation unchanged, so
+            // a player reading "tap again to unlock it" had nothing on screen saying which node "it" was.
+            if (_map != null && _progress != null && _camera != null && _material != null)
+            {
+                Build(_camera, _material, _map, _progress);
+            }
+            else
+            {
+                Describe();
+            }
+
+            return confirming;
+        }
+
+        /// <summary>Drops the selection, so leaving and returning starts from the introduction.</summary>
+        internal void ClearSelection()
+        {
+            SelectedNode = null;
+            Describe();
+        }
+
+        /// <summary>
+        /// Writes the two lines under the constellation for whatever is selected.
+        /// </summary>
+        /// <remarks>
+        /// With nothing selected they carry the introduction rather than nothing, because an empty half
+        /// of the screen is what made the first version of this screen unreadable.
+        /// </remarks>
+        private void Describe()
+        {
+            if (_balance != null && _progress != null)
+            {
+                _balance.SetText(Text.AtlasWords.Balance(_progress.Essence));
+            }
+
+            var node = SelectedNode != null && _map != null && _map.Contains(SelectedNode)
+                ? _map.Node(SelectedNode)
+                : null;
+
+            if (node == null)
+            {
+                _effect?.SetText(Text.AtlasWords.Introduction);
+                _status?.SetText(string.Empty);
+                return;
+            }
+
+            _effect?.SetText(Text.AtlasWords.Effect(node.Effect));
+            _status?.SetText(Text.AtlasWords.Status(node, _map, _progress));
+        }
+
+        private Text.TextLabel AddLine(string lineName, float viewportY, Color colour)
+        {
+            var label = Text.TextLabel.Create(
+                transform,
+                _camera,
+                lineName,
+                new Vector2(0.5f, viewportY),
+                Text.LabelMetrics.BodyHeightFraction,
+                colour,
+                TMPro.TextAlignmentOptions.Center,
+                HexButton.LabelDepth);
+
+            label.SetWrapWidth(WrapWidthFraction);
+
+            return label;
         }
 
         /// <summary>
@@ -217,7 +343,12 @@ namespace Pathweaver.Game.Presentation.Menus
 
             if (!unlocked)
             {
-                DrawCost(button, node.Cost, affordable);
+                DrawCost(button, node, affordable);
+            }
+
+            if (node.Id == SelectedNode)
+            {
+                DrawSelectionMark(button);
             }
 
             _nodeButtons.Add(button);
@@ -260,34 +391,53 @@ namespace Pathweaver.Game.Presentation.Menus
         }
 
         /// <summary>
-        /// Draws a node's cost as pips beneath it.
+        /// Draws a node's cost as a numeral in its lower half.
         /// </summary>
         /// <remarks>
-        /// Pips rather than a number, because there is still no font — and at these costs a row of
-        /// shapes reads faster than a digit would anyway. They sit inside the node's lower half: below
-        /// it, they collided with whatever node the constellation put underneath.
+        /// <para>
+        /// It used to be a row of pips, on the grounds that a row of shapes reads faster than a digit.
+        /// That was true of a cost of three and false of a cost of twenty, which took four rows and had to
+        /// be counted — and counting is the thing a numeral removes. The first region costs 51 across
+        /// eleven nodes, so several of them were never going to be pip-sized.
+        /// </para>
+        /// <para>
+        /// Inside the node rather than below it: below, it collided with whatever node the constellation
+        /// happened to put underneath.
+        /// </para>
         /// </remarks>
-        private void DrawCost(HexButton button, int cost, bool affordable)
+        private void DrawCost(HexButton button, AtlasNode node, bool affordable)
         {
-            const int perRow = 5;
-            var colour = affordable ? BoardPalette.AtlasEssence : BoardPalette.AtlasCostUnaffordable;
+            var viewport = _camera.WorldToViewportPoint(button.transform.position);
 
-            var pipRadius = _radius * 0.11f;
-            var pipSpacing = _radius * 0.29f;
-            var mesh = HexMeshFactory.CreateHexagon(pipRadius);
-            var rows = Mathf.CeilToInt(cost / (float)perRow);
+            var label = Text.TextLabel.Create(
+                transform,
+                _camera,
+                $"cost-{node.Id}",
+                new Vector2(viewport.x, viewport.y - MenuCamera.ViewportHalfHeight(_radius * 0.42f)),
+                Text.LabelMetrics.CaptionHeightFraction,
+                affordable ? BoardPalette.AtlasEssence : BoardPalette.AtlasCostUnaffordable,
+                TMPro.TextAlignmentOptions.Center,
+                HexButton.LabelDepth);
 
-            for (var index = 0; index < cost; index++)
-            {
-                var row = index / perRow;
-                var column = index % perRow;
-                var inRow = Mathf.Min(cost - (row * perRow), perRow);
+            label.SetText(node.Cost.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
-                var x = (column - ((inRow - 1) * 0.5f)) * pipSpacing;
-                var y = (-_radius * 0.34f) - ((row - ((rows - 1) * 0.5f)) * pipSpacing * 0.95f);
+            _decorations.Add(label.gameObject);
+        }
 
-                button.AddGlyph(mesh, colour, new Vector3(x, y, 0f));
-            }
+        /// <summary>
+        /// Rings the node a tap has selected.
+        /// </summary>
+        /// <remarks>
+        /// A ring rather than a change of colour, because colour on this screen already means "what state
+        /// is this node in" and a fifth meaning would collide with the four it has. It is also the second
+        /// tap that spends, so which node is armed has to be unmistakable.
+        /// </remarks>
+        private void DrawSelectionMark(HexButton button)
+        {
+            button.AddGlyph(
+                GlyphMeshFactory.CreateRing(_radius * 0.92f, _radius * 0.1f),
+                BoardPalette.TokenArmed,
+                Vector3.zero);
         }
 
         private void DrawLink(Vector3 from, Vector3 to, bool lit)
@@ -316,41 +466,6 @@ namespace Pathweaver.Game.Presentation.Menus
             _decorations.Add(link);
         }
 
-        /// <summary>
-        /// Draws the essence balance as a row of pips along the bottom.
-        /// </summary>
-        /// <remarks>
-        /// Capped at twelve. A balance can grow past that, and a row of forty shapes says less than a
-        /// full row does — what a player needs from this is whether the next node is within reach,
-        /// which the node's own cost pips answer.
-        /// </remarks>
-        private void DrawEssence(int essence)
-        {
-            var shown = Mathf.Min(essence, MaximumEssencePips);
-            var mesh = HexMeshFactory.CreateRegularPolygon(4, 0.075f, rotationDegrees: 45f);
-
-            for (var index = 0; index < shown; index++)
-            {
-                var pip = new GameObject($"Essence{index}");
-                pip.transform.SetParent(transform, worldPositionStays: false);
-
-                var viewport = new Vector3(0.5f + ((index - ((shown - 1) * 0.5f)) * 0.055f), 0.16f, 0f);
-                var world = _camera.ViewportToWorldPoint(viewport);
-                pip.transform.position = new Vector3(world.x, world.y, -1.4f);
-
-                pip.AddComponent<MeshFilter>().sharedMesh = mesh;
-
-                var renderer = pip.AddComponent<MeshRenderer>();
-                renderer.sharedMaterial = _material;
-                renderer.material.color = essence > MaximumEssencePips
-                    ? BoardPalette.AtlasEssenceFull
-                    : BoardPalette.AtlasEssence;
-
-                _essencePips.Add(renderer);
-                _decorations.Add(pip);
-            }
-        }
-
         private void Clear()
         {
             foreach (var button in _nodeButtons)
@@ -372,7 +487,18 @@ namespace Pathweaver.Game.Presentation.Menus
             }
 
             _decorations.Clear();
-            _essencePips.Clear();
+
+            foreach (var label in new[] { _effect, _status, _balance })
+            {
+                if (label != null)
+                {
+                    Destroy(label.gameObject);
+                }
+            }
+
+            _effect = null;
+            _status = null;
+            _balance = null;
 
             if (_back != null)
             {

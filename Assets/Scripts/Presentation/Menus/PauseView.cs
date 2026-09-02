@@ -46,13 +46,42 @@ namespace Pathweaver.Game.Presentation.Menus
         internal const float ScoreViewportY = 0.685f;
 
         /// <summary>
+        /// Where the line naming the World Atlas relics in force sits.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Here rather than on the board. A fourth skip pip appearing in the drawer read as the game being
+        /// inconsistent rather than as something the player had bought, and the moment they want that
+        /// explained is the moment they stop to ask how it is going — which is what pausing is. On the
+        /// board it would be a permanent line of text over the puzzle to answer a question asked once.
+        /// </para>
+        /// <para>
+        /// Above the level's name rather than under the score, which is where it went first: the block
+        /// below the score is solid controls from 0.674 downward, so a line at 0.64 was drawn inside the
+        /// resume button. The top of the panel was the only free space, and the panel grew to hold it.
+        /// </para>
+        /// </remarks>
+        internal const float RelicsViewportY = 0.8f;
+
+        /// <summary>
+        /// How much of the width that line may use before wrapping.
+        /// </summary>
+        /// <remarks>
+        /// Narrower than the screen, because the panel behind it is narrower than the screen: a line that
+        /// ran to the edges would hang off the thing it is written on. A full set of relics wraps to two
+        /// lines at this width, which is what the panel's height allows for.
+        /// </remarks>
+        internal const float RelicsWrapWidthFraction = 0.7f;
+
+        /// <summary>
         /// Where the panel is centred, as a viewport fraction.
         /// </summary>
         /// <remarks>
-        /// Between the title at the top of the block and the help control at the bottom of it, so the panel
-        /// covers the whole screen rather than being centred on the screen and missing one end.
+        /// Between the topmost thing on the screen and the bottommost, so the panel covers the whole block
+        /// rather than being centred on the screen and missing one end. The topmost is the relics line
+        /// rather than the title, since the relics line arrived above it.
         /// </remarks>
-        internal static float PanelViewportY => (TitleViewportY + HelpViewportY) * 0.5f;
+        internal static float PanelViewportY => (RelicsViewportY + HelpViewportY) * 0.5f;
 
         /// <summary>How large the panel behind the controls is, in world units.</summary>
         /// <remarks>
@@ -67,10 +96,14 @@ namespace Pathweaver.Game.Presentation.Menus
         /// is the conversion this codebase keeps getting wrong; <c>MenuCamera.ViewportHalfHeight</c> is
         /// what makes it checkable.
         /// </para>
+        /// <para>
+        /// It grew from 4.22 when the relics line arrived above the title, because a panel that stops short
+        /// of the topmost thing written on it is the same bug as the first attempt.
+        /// </para>
         /// </remarks>
         internal const float PanelWidth = 2.33f;
 
-        internal const float PanelHeight = 4.22f;
+        internal const float PanelHeight = 4.4f;
 
         private HexButton _resume;
         private HexButton _restart;
@@ -78,6 +111,7 @@ namespace Pathweaver.Game.Presentation.Menus
         private HexButton _help;
         private Text.TextLabel _title;
         private Text.TextLabel _score;
+        private Text.TextLabel _relics;
         private Text.TextLabel _helpMark;
         private Transform _panel;
         private MeshRenderer _panelRenderer;
@@ -106,6 +140,18 @@ namespace Pathweaver.Game.Presentation.Menus
                 BoardPalette.TextSecondary,
                 TMPro.TextAlignmentOptions.Center,
                 HexButton.LabelDepth);
+
+            _relics = Text.TextLabel.Create(
+                transform,
+                camera,
+                "relics",
+                new Vector2(0.5f, RelicsViewportY),
+                Text.LabelMetrics.CaptionHeightFraction,
+                BoardPalette.AtlasEssence,
+                TMPro.TextAlignmentOptions.Center,
+                HexButton.LabelDepth);
+
+            _relics.SetWrapWidth(RelicsWrapWidthFraction);
 
             _resume = HexButton.Create(
                 transform, ResumeId, camera, material,
@@ -199,6 +245,18 @@ namespace Pathweaver.Game.Presentation.Menus
         /// The same wording and grouping as the number under the progress bar. Two different renderings of
         /// one figure would read as two figures.
         /// </remarks>
+        /// <summary>
+        /// Names the World Atlas relics in force, or writes nothing when there are none.
+        /// </summary>
+        /// <remarks>
+        /// Nothing rather than "no relics": a player who has bought none has probably not met the atlas,
+        /// and a line about a screen they have never opened explains less than an empty space does.
+        /// </remarks>
+        internal void SetRelics(Pathweaver.Core.Atlas.AtlasBonuses bonuses)
+        {
+            _relics?.SetText(Text.AtlasWords.Relics(bonuses));
+        }
+
         internal void SetScore(long score, long target)
         {
             _score?.SetText(
