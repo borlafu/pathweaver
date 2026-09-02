@@ -1,0 +1,105 @@
+# Biome 2, level 2 — The Bramble
+#
+# A thin path across a wide place. Where The Long Valley sprawls at fifty-five cells, this is
+# twenty-eight over a footprint just as large: two zigzags of bends at opposite corners, a straight run
+# between them, and a handful of spurs that go nowhere. Panning here is travel rather than survey.
+#
+# Every cell of a zigzag needs a bend, because a pointy-top hexagon has no northern neighbour and
+# "down" therefore alternates south-east and south-west. That is the lesson biome one teaches on its
+# second level, at three cells; this asks for it six times in a row, twice, across a board that cannot
+# be seen at once.
+#
+# The spurs matter more than they look. A board of nothing but forced cells is a transcription
+# exercise — biome one's own second level says as much — so each route carries somewhere wrong to go,
+# and the wind run's branch at 0,2 will take a bend legally and lead nowhere.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-02
+name: The Bramble
+
+base-score: 100
+
+# Either zigzag plus the wind run clears it; a zigzag alone does not. Six conduits pay 448, four pay
+# 246, so the cheapest way through is 694 against this, and all three pairs reach 1,142.
+target-score: 650
+
+tokens: 1
+skips: 3
+
+seed: 19
+
+cell: 0,-8
+cell: 0,-7
+cell: -1,-6
+cell: -1,-5
+cell: -2,-4
+cell: -2,-3
+cell: -3,-2
+cell: -3,-1
+cell: 6,-2
+cell: 6,-1
+cell: 5,0
+cell: 5,1
+cell: 4,2
+cell: 4,3
+cell: 3,4
+cell: 3,5
+cell: -2,1
+cell: -1,1
+cell: 0,1
+cell: 1,1
+cell: 2,1
+cell: 3,1
+cell: 1,-7
+cell: -2,-6
+cell: 7,-2
+cell: 2,4
+cell: 0,2
+cell: 1,2
+
+spring: 0,-8 water
+hub: -3,-1 water
+spring: 6,-2 crystal
+hub: 3,5 crystal
+spring: -2,1 wind
+hub: 3,1 wind
+
+# Bends for the two zigzags, straights for the run between them. One tile of the wrong shape in each of
+# two kinds, because a bag that can only be placed correctly makes the skip control decoration.
+tile: 0,2 water x7
+tile: 0,3 water x1
+tile: 0,2 crystal x7
+tile: 0,3 wind x5
+tile: 0,2 wind x1
+
+# The board's own solution, replayed by the solvability gate rather than searched for. The search
+# exhausted six hundred thousand states here in sixteen seconds without a verdict — open space is what
+# makes it explode, and a thin path across a wide place is mostly open space.
+#
+# It clears the board on the two zigzags alone, at 896 against a target of 650, and leaves the wind run
+# three conduits short. That is deliberate: this solution is the cheapest way through rather than the
+# board's ceiling, because the cheapest way is the one worth proving reachable.
+#
+# Two of the three skips are spent, on tiles that arrive before there is anywhere legal to put them.
+# Rotations are written down because the zigzags alternate between two of them and a spur will accept
+# the wrong one legally.
+
+solve: -1,1 rot 0
+solve: 0,-7 rot 2
+solve: -1,-6 rot 5
+solve: skip
+solve: 0,1 rot 0
+solve: -1,-5 rot 2
+solve: -2,-4 rot 5
+solve: 6,-1 rot 2
+solve: 1,1 rot 0
+solve: 5,0 rot 5
+solve: 5,1 rot 2
+solve: skip
+solve: -2,-3 rot 2
+solve: -3,-2 rot 5
+solve: 4,2 rot 5
+solve: 4,3 rot 2
+solve: 3,4 rot 5
