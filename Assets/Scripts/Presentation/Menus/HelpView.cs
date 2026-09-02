@@ -51,6 +51,29 @@ namespace Pathweaver.Game.Presentation.Menus
         internal const float WrapWidthFraction = 0.84f;
 
         /// <summary>
+        /// How much of the screen width a heading may use before wrapping.
+        /// </summary>
+        /// <remarks>
+        /// The headings had no wrap box at all, and "Longer routes pay more  3/4" ran off both edges of a
+        /// portrait phone with its first and last characters cut in half. Heading text is about one and a
+        /// half times body size, so it fits far fewer characters to a line than the paragraph beneath it —
+        /// which is not obvious from either number, and is why this is a box rather than a shorter title.
+        /// Wrapping to two lines still clears the first paragraph slot.
+        /// </remarks>
+        internal const float HeadingWrapWidthFraction = 0.9f;
+
+        /// <summary>
+        /// The longest a heading may be, in characters, counting the page number appended to it.
+        /// </summary>
+        /// <remarks>
+        /// Heading text is about one and a half times body size, so where a paragraph fits roughly 34
+        /// characters to a line a heading fits about 20 — and two lines is all the room there is above the
+        /// first paragraph. The <c>1/4</c> counts, which is five characters nothing in the heading text
+        /// itself accounts for.
+        /// </remarks>
+        internal const int LongestHeading = 40;
+
+        /// <summary>
         /// The longest a paragraph may be, in characters.
         /// </summary>
         /// <remarks>
@@ -61,6 +84,31 @@ namespace Pathweaver.Game.Presentation.Menus
         /// the first draft of the last page ran to five lines and climbed over its own heading.
         /// </remarks>
         internal const int LongestParagraph = 136;
+
+        /// <summary>
+        /// How many paragraph slots the page with the most paragraphs uses.
+        /// </summary>
+        /// <remarks>
+        /// The layout below the text depends on it: <see cref="HelpFigure"/> sits in the band between the
+        /// last slot and the two controls at the bottom, and that band closes as paragraphs are added.
+        /// </remarks>
+        internal static int LongestPageLines
+        {
+            get
+            {
+                var longest = 0;
+                foreach (var page in Pages)
+                {
+                    longest = Mathf.Max(longest, page.Lines.Length);
+                }
+
+                return longest;
+            }
+        }
+
+        /// <summary>Where the lowest paragraph slot in use sits.</summary>
+        internal static float LastLineViewportY
+            => FirstLineViewportY - ((LongestPageLines - 1) * LineSpacing);
 
         /// <summary>
         /// The pages, in the order a player meets what they describe.
@@ -113,6 +161,7 @@ namespace Pathweaver.Game.Presentation.Menus
         private HexButton _next;
         private HexButton _back;
         private TextLabel _heading;
+        private HelpFigure _figure;
         private int _page;
 
         /// <summary>How many pages there are.</summary>
@@ -134,6 +183,24 @@ namespace Pathweaver.Game.Presentation.Menus
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// The heading a page is drawn with, page number and all.
+        /// </summary>
+        /// <remarks>
+        /// The page number is in the heading rather than drawn as pips, because a heading is being read
+        /// anyway and a second row of shapes would be one more thing to decode. It is built here rather
+        /// than inline so a test can measure the string that actually gets rendered — the counter is five
+        /// characters the heading text itself does not account for, and it is what pushed the longest
+        /// heading off both edges of the screen.
+        /// </remarks>
+        internal static string HeadingFor(int page)
+        {
+            var index = ((page % PageCount) + PageCount) % PageCount;
+
+            return $"{Pages[index].Heading}  {(index + 1).ToString(CultureInfo.InvariantCulture)}/"
+                   + PageCount.ToString(CultureInfo.InvariantCulture);
         }
 
         /// <summary>Every page's heading.</summary>
@@ -160,15 +227,11 @@ namespace Pathweaver.Game.Presentation.Menus
                 TextAlignmentOptions.Center,
                 HexButton.LabelDepth);
 
+            _heading.SetWrapWidth(HeadingWrapWidthFraction);
+
             // One label per line of the longest page, reused rather than rebuilt: a page turn should
             // not create and destroy meshes, and the count is known at compile time.
-            var longestPage = 0;
-            foreach (var page in Pages)
-            {
-                longestPage = Mathf.Max(longestPage, page.Lines.Length);
-            }
-
-            for (var index = 0; index < longestPage; index++)
+            for (var index = 0; index < LongestPageLines; index++)
             {
                 var line = TextLabel.Create(
                     transform,
@@ -198,6 +261,12 @@ namespace Pathweaver.Game.Presentation.Menus
                 new Vector2(0.14f, 0.09f), 0.4f, BoardPalette.MenuSecondary, touchRadiusFraction: 0.12f);
             MenuGlyphs.AddBack(_back);
 
+            // A picture per page, drawn from the board's own cells. Built after the controls so that if
+            // the two ever overlap it is visible in the capture rather than hidden behind a button.
+            _figure = new GameObject("Figure").AddComponent<HelpFigure>();
+            _figure.transform.SetParent(transform, worldPositionStays: false);
+            _figure.Build(camera, material);
+
             ShowPage(0);
         }
 
@@ -210,17 +279,15 @@ namespace Pathweaver.Game.Presentation.Menus
 
             var current = Pages[_page];
 
-            // The page number is in the heading rather than drawn as pips, because a heading is being
-            // read anyway and a second row of shapes would be one more thing to decode.
-            _heading?.SetText(
-                $"{current.Heading}  {(_page + 1).ToString(CultureInfo.InvariantCulture)}/"
-                + PageCount.ToString(CultureInfo.InvariantCulture));
+            _heading?.SetText(HeadingFor(_page));
 
             for (var index = 0; index < _lines.Count; index++)
             {
                 _lines[index].SetText(
                     index < current.Lines.Length ? current.Lines[index] : string.Empty);
             }
+
+            _figure?.ShowPage(_page);
         }
 
         /// <summary>Advances a page, wrapping back to the first.</summary>
