@@ -26,6 +26,38 @@ namespace Pathweaver.Game.App
     /// </remarks>
     internal sealed class GameFlow : MonoBehaviour
     {
+        /// <summary>
+        /// Where the only control a finished board offers sits, as viewport fractions.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// In the drawer, in the gap the tile tray leaves behind. It used to be centred on the screen,
+        /// which was the wrong reading of "it is the only control left": most routes run through the
+        /// middle of the board, so clearing a level hid the route that cleared it, and the payout rising
+        /// from the hub spent most of its life behind a green hexagon.
+        /// </para>
+        /// <para>
+        /// The drawer costs nothing to move it to. It is empty by then, it is where every other thing a
+        /// thumb touches already lives, and it leaves the whole board visible for the one moment the
+        /// player is meant to look at what they built.
+        /// </para>
+        /// </remarks>
+        internal const float NextButtonViewportX = 0.5f;
+
+        internal const float NextButtonViewportY = 0.12f;
+
+        /// <summary>
+        /// How large that control is, in world units.
+        /// </summary>
+        /// <remarks>
+        /// Smaller than the 0.85 it was drawn at on the centre of the screen, because the drawer is not
+        /// that tall — but it keeps a touch target generous enough that shrinking it costs no reach.
+        /// </remarks>
+        internal const float NextButtonRadius = 0.55f;
+
+        /// <summary>How far from its centre a tap still counts, as a fraction of the shorter screen edge.</summary>
+        internal const float NextButtonTouchFraction = 0.2f;
+
         [SerializeField]
         private ScreenRouter _router;
 
@@ -135,13 +167,16 @@ namespace Pathweaver.Game.App
 
             MenuGlyphs.AddPause(_pauseButton);
 
-            // The only control a finished board offers, in either mode, and centred because it is
-            // the only one: nothing else on screen is worth aiming at. Green rather than blue,
-            // because reaching it is the win.
+            // The only control a finished board offers, in either mode. In the drawer rather than on the
+            // middle of the screen, so it does not cover the route it is celebrating. Green rather than
+            // blue, because reaching it is the win.
             _nextButton = HexButton.Create(
                 _hud.transform, "next", _camera, material,
-                new Vector2(0.5f, 0.5f), 0.85f, BoardPalette.ProgressComplete, touchRadiusFraction: 0.22f);
-            MenuGlyphs.AddPlay(_nextButton, 0.34f);
+                new Vector2(NextButtonViewportX, NextButtonViewportY),
+                NextButtonRadius,
+                BoardPalette.ProgressComplete,
+                touchRadiusFraction: NextButtonTouchFraction);
+            MenuGlyphs.AddPlay(_nextButton, NextButtonRadius * 0.4f);
             _nextButton.gameObject.SetActive(false);
 
             _session.StateChanged += OnStateChanged;
