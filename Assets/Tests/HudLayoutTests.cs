@@ -412,15 +412,55 @@ namespace Pathweaver.Game.EditorTests
         [Test]
         public void A_level_number_clears_its_hexagon_without_reaching_the_row_below()
         {
-            // Twenty levels give a four-column grid of five rows in a band 0.60 tall, so about 0.15
-            // between rows. The number has to be further from its own button than a line of text is
-            // tall, and nearer to it than to the button beneath.
-            const float rowStepAtTwentyLevels = 0.15f;
+            // Asked at the number of levels that ship rather than at a number written down once. The
+            // campaign went from twenty to forty when biome two was finished, which took the grid from
+            // four columns to five and nearly halved the row spacing — and this test had 0.15 in it,
+            // which was the twenty-level answer.
+            var levels = Pathweaver.Game.App.CampaignCatalogue.LevelIds().Count;
+            var extents = new Vector2(
+                MenuCamera.OrthographicSize * 2f * PhoneAspect, MenuCamera.OrthographicSize * 2f);
+
+            var layout = LevelSelectView.Arrange(levels, extents);
 
             Assert.That(
-                LevelSelectView.NumberOffset, Is.GreaterThan(LabelMetrics.CaptionHeightFraction));
+                LevelSelectView.NumberOffset,
+                Is.GreaterThan(LabelMetrics.CaptionHeightFraction),
+                "The number would sit on the hexagon it names.");
+
             Assert.That(
-                LevelSelectView.NumberOffset, Is.LessThan(rowStepAtTwentyLevels * 0.5f));
+                LevelSelectView.NumberOffset,
+                Is.LessThan(layout.RowStep * 0.5f),
+                $"At {levels} levels the rows are {layout.RowStep:F3} apart and the number is nearer "
+                + "the button below it than its own.");
+        }
+
+        [Test]
+        public void The_level_grid_fits_on_one_screen_at_the_campaign_it_ships_with()
+        {
+            // The grid grows rather than scrolls, on purpose: scrolling would put a drag on a screen
+            // whose only other gesture is a tap. Growing has a limit, and forty levels is nearer it than
+            // twenty was.
+            var levels = Pathweaver.Game.App.CampaignCatalogue.LevelIds().Count;
+            var extents = new Vector2(
+                MenuCamera.OrthographicSize * 2f * PhoneAspect, MenuCamera.OrthographicSize * 2f);
+
+            var layout = LevelSelectView.Arrange(levels, extents);
+            var rows = Mathf.CeilToInt(levels / (float)layout.Columns);
+
+            var halfHeight = MenuCamera.ViewportHalfHeight(layout.Radius);
+
+            Assert.That(
+                layout.RowStep,
+                Is.GreaterThan(halfHeight * 2f * 0.9f),
+                "Rows of buttons would overlap each other.");
+
+            Assert.That(
+                layout.FirstRow + halfHeight, Is.LessThan(1f), "The top row runs off the screen.");
+
+            Assert.That(
+                layout.FirstRow - ((rows - 1) * layout.RowStep) - halfHeight,
+                Is.GreaterThan(0.12f),
+                "The bottom row reaches the back button.");
         }
     }
 }

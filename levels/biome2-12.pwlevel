@@ -1,0 +1,72 @@
+# Biome 2, level 12 — Chain of Wells
+#
+# Four short runs stepping down and across the board, each three conduits long, each a different
+# kind. The first board in the biome with four pairs on it.
+#
+# Short routes on a large board invert the usual pressure. Nothing here takes long to build and
+# everything takes a while to reach, so the cost of a wasted tile is the journey rather than the tile
+# — which is the first time the skip control is cheaper than walking.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-12
+name: Chain of Wells
+
+base-score: 100
+
+# Each well pays 182, so three reach 546 against this and four reach 728. Which three is the
+# player's business.
+target-score: 500
+
+tokens: 1
+skips: 3
+
+seed: 67
+
+# 28 cells, 11.7 by 8.5 world units.
+cell: -4,-4
+cell: -3,-4
+cell: -2,-4
+cell: -1,-4
+cell: 0,-4
+cell: -3,-1
+cell: -2,-1
+cell: -1,-1
+cell: 0,-1
+cell: 1,-1
+cell: -2,2
+cell: -1,2
+cell: 0,2
+cell: 1,2
+cell: 2,2
+cell: -1,5
+cell: 0,5
+cell: 1,5
+cell: 2,5
+cell: 3,5
+cell: -4,-3
+cell: 1,-4
+cell: -3,0
+cell: 2,-1
+cell: -2,3
+cell: 3,2
+cell: -1,6
+cell: 4,5
+
+spring: -4,-4 water
+hub: 0,-4 water
+spring: -3,-1 wind
+hub: 1,-1 wind
+spring: -2,2 crystal
+hub: 2,2 crystal
+spring: -1,5 trade
+hub: 3,5 trade
+
+# Straights in four kinds. With four bags interleaved a player holds the wrong colour more often
+# than not, which is what makes the walking matter.
+tile: 0,3 crystal x5
+tile: 0,3 trade x5
+tile: 0,3 water x5
+tile: 0,3 wind x5
+

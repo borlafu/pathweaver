@@ -1,0 +1,57 @@
+# Biome 2, level 4 — The Crossing
+#
+# A straight run along the northern rim and a zigzag falling the whole height of the board, laid so
+# they pass close without ever wanting the same cell. Two work sites, one wide and one tall, and the
+# only thing between them is distance.
+#
+# The zigzag is the board. Seven conduits of bends pay 605 on their own, which is five more than the
+# target — so a player who reads the board can clear it with one route and never touch the other. The
+# straight run is the safety margin, and finding that out is the lesson.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-04
+name: The Crossing
+
+base-score: 100
+
+# The zigzag alone reaches 605 against this. Both routes reach 851.
+target-score: 600
+
+tokens: 1
+skips: 3
+
+seed: 31
+
+# 19 cells, 8.2 by 7.0 world units.
+cell: -5,-5
+cell: -4,-5
+cell: -3,-5
+cell: -2,-5
+cell: -1,-5
+cell: 0,-5
+cell: 3,-6
+cell: 3,-5
+cell: 2,-4
+cell: 2,-3
+cell: 1,-2
+cell: 1,-1
+cell: 0,0
+cell: 0,1
+cell: -1,2
+cell: -5,-4
+cell: 1,-5
+cell: 4,-6
+cell: 0,2
+
+spring: -5,-5 water
+hub: 0,-5 water
+spring: 3,-6 crystal
+hub: -1,2 crystal
+
+# Bends for the zigzag, straights for the rim, and one spare of each in case a draw arrives before
+# there is anywhere to put it.
+tile: 0,2 crystal x8
+tile: 0,3 water x5
+

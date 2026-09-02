@@ -1,0 +1,100 @@
+# Biome 2, level 8 — Switchback
+#
+# The first board built from sharp turns. A route runs two cells east, doubles back two cells
+# south-west, and repeats — so its corner cells need a tile with its two edges one apart rather than
+# two, which is a shape no board before this has asked for.
+#
+# The shape matters because it is the one a player will have mistaken for a bend. A wide bend turns
+# sixty degrees and a sharp one a hundred and twenty; they look alike in the tray and are not
+# interchangeable anywhere on this board.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-08
+name: Switchback
+
+base-score: 100
+
+# Either switchback reaches 817. Both reach 1,634, which is what the board is for once the target
+# stops being the question.
+target-score: 700
+
+tokens: 1
+skips: 3
+
+seed: 47
+
+# 28 cells, 12.6 by 7.8 world units.
+cell: -3,-5
+cell: -2,-5
+cell: -1,-5
+cell: -2,-4
+cell: -3,-3
+cell: -2,-3
+cell: -1,-3
+cell: -2,-2
+cell: -3,-1
+cell: -2,-1
+cell: 4,4
+cell: 3,4
+cell: 2,4
+cell: 3,3
+cell: 4,2
+cell: 3,2
+cell: 2,2
+cell: 3,1
+cell: 4,0
+cell: 3,0
+cell: -3,-4
+cell: -1,-1
+cell: 5,4
+cell: 2,1
+cell: -4,-3
+cell: 0,-1
+cell: 6,4
+cell: 1,2
+
+spring: -3,-5 water
+hub: -2,-1 water
+spring: 4,4 wind
+hub: 3,0 wind
+
+# Straights for the runs and sharp bends for the corners, in the proportions the routes actually
+# need. Two shapes that are easy to confuse, so the counts are tight.
+tile: 0,1 water x5
+tile: 0,3 water x5
+tile: 0,1 wind x5
+tile: 0,3 wind x5
+
+
+# The board's own solution, replayed by the solvability gate rather than searched for. The search
+# exhausted six hundred thousand states here without a verdict: what costs it is open space rather
+# than cell count, and a board with room to travel is a board with room to search.
+#
+# It reaches 817 against a target of 700 in 21 moves. 2 of its three skips are spent, on tiles that arrive before there is anywhere legal to put them.
+#
+# Rotations are written down. They are optional in the format, but a spur will accept the wrong one
+# legally and a corner will not accept the right one twice.
+
+solve: 4,0 rot 2
+solve: 3,4 rot 0
+solve: 3,1 rot 2
+solve: -2,-5 rot 0
+solve: 2,1 rot 2
+solve: -1,-5 rot 2
+solve: 1,2 rot 2
+solve: 2,4 rot 5
+solve: -2,-4 rot 2
+solve: -3,-4 rot 1
+solve: 2,2 rot 5
+solve: 5,4 rot 2
+solve: -1,-1 rot 0
+solve: 3,3 rot 2
+solve: 0,-1 rot 0
+solve: -3,-3 rot 5
+solve: 4,2 rot 2
+solve: -3,-1 rot 5
+solve: skip
+solve: skip
+solve: 3,2 rot 0

@@ -1,0 +1,103 @@
+# Biome 2, level 6 — Three Rivers
+#
+# The same descent three times, side by side, at the full height of the board. Nothing here is a
+# puzzle: it is a board about pace, and about whether a player has learned to finish a site before
+# travelling rather than dabbling at all three.
+#
+# Identical routes on purpose. When three sites differ, a player picks the easy one; when they are the
+# same, the only decision left is the order, and the order is about the tile bag rather than the board.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-06
+name: Three Rivers
+
+base-score: 100
+
+# Two rivers clear it at 1,210. All three reach 1,815.
+target-score: 800
+
+tokens: 1
+skips: 3
+
+seed: 41
+
+# 33 cells, 10.4 by 7.0 world units.
+cell: -4,-5
+cell: -4,-4
+cell: -5,-3
+cell: -5,-2
+cell: -6,-1
+cell: -6,0
+cell: -7,1
+cell: -7,2
+cell: -8,3
+cell: 1,-5
+cell: 1,-4
+cell: 0,-3
+cell: 0,-2
+cell: -1,-1
+cell: -1,0
+cell: -2,1
+cell: -2,2
+cell: -3,3
+cell: 6,-5
+cell: 6,-4
+cell: 5,-3
+cell: 5,-2
+cell: 4,-1
+cell: 4,0
+cell: 3,1
+cell: 3,2
+cell: 2,3
+cell: -3,-5
+cell: -7,3
+cell: 2,-5
+cell: -2,3
+cell: 7,-5
+cell: 3,3
+
+spring: -4,-5 water
+hub: -8,3 water
+spring: 1,-5 wind
+hub: -3,3 wind
+spring: 6,-5 crystal
+hub: 2,3 crystal
+
+# Bends only, in three kinds. A river accepts any bend of its own colour, so the skip control is
+# here for the wrong kind rather than the wrong shape.
+tile: 0,2 crystal x8
+tile: 0,2 water x8
+tile: 0,2 wind x8
+
+
+# The board's own solution, replayed by the solvability gate rather than searched for. The search
+# exhausted six hundred thousand states here without a verdict: what costs it is open space rather
+# than cell count, and a board with room to travel is a board with room to search.
+#
+# It reaches 1,210 against a target of 800 in 20 moves. None of its three skips are spent.
+#
+# Rotations are written down. They are optional in the format, but a spur will accept the wrong one
+# legally and a corner will not accept the right one twice.
+
+solve: -4,-4 rot 2
+solve: -5,-3 rot 5
+solve: 1,-4 rot 2
+solve: 6,-4 rot 2
+solve: 5,-3 rot 5
+solve: 5,-2 rot 2
+solve: 0,-3 rot 5
+solve: -5,-2 rot 2
+solve: 0,-2 rot 2
+solve: 4,-1 rot 5
+solve: -6,-1 rot 5
+solve: 4,0 rot 2
+solve: 3,1 rot 5
+solve: -1,-1 rot 5
+solve: -6,0 rot 2
+solve: -1,0 rot 2
+solve: -7,1 rot 5
+solve: 3,2 rot 2
+solve: -2,1 rot 5
+solve: -2,2 rot 2

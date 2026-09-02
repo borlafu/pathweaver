@@ -1,0 +1,72 @@
+# Biome 2, level 15 — The Four Corners
+#
+# One pair in each corner of the board and nothing in the middle. Four kinds, three conduits each,
+# and the longest journey in the biome between any two of them.
+#
+# The board is a test of the tray rather than of the board. Four kinds interleaved means the tile in
+# hand belongs to a quarter of the screen a player is probably not looking at, and the choice every
+# time is to travel, to skip, or to leave the tile somewhere it does nothing.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-15
+name: The Four Corners
+
+base-score: 100
+
+# Each corner pays 182, so all four reach 728 against this. Three reach 546. Every corner is
+# needed, which is the point of putting them as far apart as the board allows.
+target-score: 700
+
+tokens: 1
+skips: 3
+
+seed: 79
+
+# 28 cells, 13.4 by 9.2 world units.
+cell: -6,-5
+cell: -5,-5
+cell: -4,-5
+cell: -3,-5
+cell: -2,-5
+cell: 4,-5
+cell: 4,-4
+cell: 4,-3
+cell: 4,-2
+cell: 4,-1
+cell: -6,4
+cell: -5,4
+cell: -4,4
+cell: -3,4
+cell: -2,4
+cell: 2,2
+cell: 2,3
+cell: 2,4
+cell: 2,5
+cell: 2,6
+cell: -6,-4
+cell: -1,-5
+cell: 5,-5
+cell: 5,-1
+cell: -6,5
+cell: -1,4
+cell: 3,2
+cell: 3,6
+
+spring: -6,-5 water
+hub: -2,-5 water
+spring: 4,-5 wind
+hub: 4,-1 wind
+spring: -6,4 crystal
+hub: -2,4 crystal
+spring: 2,2 trade
+hub: 2,6 trade
+
+# Straights in four kinds, generously, because the walking is the cost here and a dry bag would
+# make it a wait instead.
+tile: 0,3 crystal x5
+tile: 0,3 trade x5
+tile: 0,3 water x5
+tile: 0,3 wind x5
+

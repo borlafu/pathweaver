@@ -1,0 +1,59 @@
+# Biome 2, level 16 — The Long Portage
+#
+# The longest single route in the biome: ten conduits, east across the north of the board and then
+# south-east down its far side, with one corner in the middle of it.
+#
+# Ten conduits pay 1,489, which is more than any two routes on any board before this. The board is
+# an argument that length is worth more than breadth — and the four-conduit wind run beside it is
+# the counter-argument, because it is a quarter of the work for a sixth of the pay.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-16
+name: The Long Portage
+
+base-score: 100
+
+# The portage alone reaches 1,489. Nothing else on the board comes close, and the target is set
+# where the portage clears it and the wind run cannot.
+target-score: 1100
+
+tokens: 1
+skips: 3
+
+seed: 83
+
+# 21 cells, 11.7 by 7.8 world units.
+cell: -7,-3
+cell: -6,-3
+cell: -5,-3
+cell: -4,-3
+cell: -3,-3
+cell: -2,-3
+cell: -2,-2
+cell: -2,-1
+cell: -2,0
+cell: -2,1
+cell: -2,2
+cell: -2,3
+cell: 2,-6
+cell: 3,-6
+cell: 4,-6
+cell: 5,-6
+cell: 6,-6
+cell: -7,-2
+cell: -1,3
+cell: 2,-5
+cell: 7,-6
+
+spring: -7,-3 water
+hub: -2,3 water
+spring: 2,-6 wind
+hub: 6,-6 wind
+
+# Straights, and the one bend the corner needs.
+tile: 0,2 water x2
+tile: 0,3 water x10
+tile: 0,3 wind x4
+

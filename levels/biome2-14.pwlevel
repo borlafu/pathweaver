@@ -1,0 +1,66 @@
+# Biome 2, level 14 — Deep Country
+#
+# The widest board in the biome. A run along the north, a drop down the east, and a run along the
+# south, arranged so that the three of them touch the four corners between them and the middle of
+# the board is empty.
+#
+# It exists to be crossed. Nothing about the routes is hard and everything about reaching them is
+# long, which is the biome's own idea taken as far as one board can take it.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.
+
+id: biome2-14
+name: Deep Country
+
+base-score: 100
+
+# All three reach 940 against this. The drop and either run reach 694, so this is a board that
+# has to be finished three times.
+target-score: 850
+
+tokens: 1
+skips: 3
+
+seed: 73
+
+# 26 cells, 13.0 by 9.2 world units.
+cell: -6,-4
+cell: -5,-4
+cell: -4,-4
+cell: -3,-4
+cell: -2,-4
+cell: -1,-4
+cell: 4,-5
+cell: 4,-4
+cell: 4,-3
+cell: 4,-2
+cell: 4,-1
+cell: 4,0
+cell: 4,1
+cell: 4,2
+cell: -5,5
+cell: -4,5
+cell: -3,5
+cell: -2,5
+cell: -1,5
+cell: 0,5
+cell: -6,-3
+cell: 0,-4
+cell: 5,-5
+cell: 5,2
+cell: -5,6
+cell: 1,5
+
+spring: -6,-4 water
+hub: -1,-4 water
+spring: 4,-5 wind
+hub: 4,2 wind
+spring: -5,5 crystal
+hub: 0,5 crystal
+
+# Straights throughout, which is what a board about distance rather than difficulty wants.
+tile: 0,3 crystal x5
+tile: 0,3 water x5
+tile: 0,3 wind x7
+
