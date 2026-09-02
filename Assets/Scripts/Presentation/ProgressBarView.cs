@@ -40,7 +40,17 @@ namespace Pathweaver.Game.Presentation
         /// now runs between them rather than under them.
         /// </remarks>
         private const float WidthFraction = 0.52f;
-        private const float Height = 0.12f;
+
+        /// <summary>
+        /// How thick the bar is, in world units at the menu camera.
+        /// </summary>
+        /// <remarks>
+        /// World units, and therefore scaled against the camera every frame like every control is. The bar's
+        /// length already tracked the screen — it is measured from two viewport points — while its thickness
+        /// did not, so a board zoomed out to fit a valley drew a noticeably thinner bar than a small level
+        /// did. A report that changes shape between levels reads as two different reports.
+        /// </remarks>
+        internal const float Height = 0.12f;
         private const float FillEase = 6f;
 
         [SerializeField]
@@ -112,7 +122,11 @@ namespace Pathweaver.Game.Presentation
             // which runs first — so a width captured once could be computed against the
             // camera's pre-fit size and leave the bar the wrong length.
             var width = WorldWidth();
-            _bar.localScale = new Vector3(width, 1f, 1f);
+
+            // Length from the viewport, thickness from the camera. Both end up as a fixed share of the
+            // screen, which is the only way the bar looks the same on a small level and a large one.
+            _bar.localScale = new Vector3(
+                width, Menus.HexButton.ScaleFor(ResolvedCamera.orthographicSize), 1f);
 
             // Eased rather than snapped: the movement is what catches the eye, and a bar that
             // jumps has already finished moving by the time a player looks at it.
