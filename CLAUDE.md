@@ -83,7 +83,7 @@ Assets/Plugins/                 Pathweaver.Core.dll, built, not committed
 Assets/Settings/                URP asset and 2D renderer
 Assets/Editor/                  command-line project setup
 Assets/Fonts/                   Varela Round, its licence, and the SDF atlas
-Assets/TextMesh Pro/            TMP shaders and settings, extracted, committed
+Assets/TextMesh Pro/            TMP's one shader, its settings, committed
 Packages/, ProjectSettings/     Unity configuration, committed
 ```
 
@@ -223,6 +223,12 @@ The Python script exists because `TMP_PackageResourceImporter.ImportResources` q
 import rather than performing it, so under `-batchmode -quit` the Editor exits before
 anything lands. It unpacks the same `.unitypackage` by hand, keeping each `asset.meta` so
 the GUIDs the package's assets use to reference one another survive.
+
+What is committed is a subset of what it unpacks. Liberation Sans, its four materials, its TTF
+and the four HDRP and URP shader graphs were removed once it was clear nothing referenced them:
+TMP's fallback list is empty and the default font asset is Varela Round, so the only reason to
+carry a second font was a fallback chain that does not exist. Re-running the script brings them
+all back, so delete them again rather than assuming the tree is minimal.
 
 Text can be reviewed the same way the board can — at phone aspect, with no device:
 
