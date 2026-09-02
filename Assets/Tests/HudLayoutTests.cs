@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using Pathweaver.Game.App;
 using Pathweaver.Game.Presentation;
 using Pathweaver.Game.Presentation.Menus;
 using Pathweaver.Game.Presentation.Text;
@@ -306,6 +307,68 @@ namespace Pathweaver.Game.EditorTests
             Assert.That(
                 HexButton.LabelDepth,
                 Is.LessThan(HexButton.FaceDepth - deepestGlyphStack));
+        }
+
+        [Test]
+        public void The_finished_board_button_is_in_the_drawer_and_not_over_the_board()
+        {
+            // It used to sit at 0.5, 0.5 with a radius of 0.85, which covered the middle of the board —
+            // and on most levels the route runs through the middle, so clearing a level hid the route
+            // that cleared it. The drawer is empty by then and is where every other control lives.
+            var top = GameFlow.NextButtonViewportY
+                      + MenuCamera.ViewportHalfHeight(GameFlow.NextButtonRadius);
+
+            var bottom = GameFlow.NextButtonViewportY
+                         - MenuCamera.ViewportHalfHeight(GameFlow.NextButtonRadius);
+
+            Assert.That(top, Is.LessThan(TrayHeightFraction), "It reaches out of the drawer.");
+            Assert.That(bottom, Is.GreaterThan(0f), "It reaches off the bottom of the screen.");
+        }
+
+        [Test]
+        public void The_finished_board_button_clears_the_counters_either_side_of_it()
+        {
+            // The two pip columns stay on a finished board, because they report rather than act. They sit
+            // at 0.12 and 0.86, so the button between them must not reach either.
+            var halfWidth = MenuCamera.ViewportHalfWidth(GameFlow.NextButtonRadius, PhoneAspect);
+
+            var pivotColumn = 0.12f
+                              + MenuCamera.ViewportHalfWidth(
+                                  TokenPipsView.PipPosition(TokenPipsView.PipsPerRow - 1).x
+                                  + TokenPipsView.PipRadius,
+                                  PhoneAspect);
+
+            var skipColumn = 0.86f
+                             - MenuCamera.ViewportHalfWidth(
+                                 TokenPipsView.PipPosition(TokenPipsView.PipsPerRow - 1).x
+                                 + TokenPipsView.PipRadius,
+                                 PhoneAspect);
+
+            Assert.That(
+                GameFlow.NextButtonViewportX - halfWidth,
+                Is.GreaterThan(pivotColumn),
+                "It reaches the Pivot Token count.");
+
+            Assert.That(
+                GameFlow.NextButtonViewportX + halfWidth,
+                Is.LessThan(skipColumn),
+                "It reaches the skip count.");
+        }
+
+        [Test]
+        public void The_finished_board_button_stays_easy_to_hit_after_shrinking()
+        {
+            // It lost more than a third of its radius on moving into the drawer. A control that is the
+            // only thing on screen worth aiming at should not become harder to aim at than it looks: the
+            // touch radius is a fraction of the shorter screen edge, and world units map to pixels
+            // uniformly, so this is the drawn radius expressed in those terms.
+            var drawnRadiusFraction =
+                MenuCamera.ViewportHalfHeight(GameFlow.NextButtonRadius) / PhoneAspect;
+
+            Assert.That(
+                GameFlow.NextButtonTouchFraction,
+                Is.GreaterThanOrEqualTo(drawnRadiusFraction),
+                "A tap on the edge of the button would miss it.");
         }
 
         [Test]

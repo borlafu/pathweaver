@@ -108,7 +108,10 @@ namespace Pathweaver.Game.Presentation
                 return;
             }
 
-            if (state == null)
+            // A finished board deals nothing, so there is nothing to promise. It went on showing the tile
+            // that would have come next, which was both a lie and a collision: the control that moves on
+            // sits in the drawer now, and the promise of a tile was drawn over the edge of it.
+            if (state == null || (_session != null && _session.IsComplete))
             {
                 Hide();
                 return;
