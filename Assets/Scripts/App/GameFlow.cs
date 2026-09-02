@@ -58,6 +58,15 @@ namespace Pathweaver.Game.App
         /// <summary>How far from its centre a tap still counts, as a fraction of the shorter screen edge.</summary>
         internal const float NextButtonTouchFraction = 0.2f;
 
+        /// <summary>
+        /// Where a cleared board says what it paid into the World Atlas.
+        /// </summary>
+        /// <remarks>
+        /// Under the score, because it is the score that earned it — the harvest is a share of the base
+        /// route score, so the two numbers belong together and one explains the other.
+        /// </remarks>
+        internal const float EssenceEarnedViewportY = 0.865f;
+
         [SerializeField]
         private ScreenRouter _router;
 
@@ -112,6 +121,7 @@ namespace Pathweaver.Game.App
         private AtlasMap _atlasMap;
         private HexButton _pauseButton;
         private HexButton _nextButton;
+        private Presentation.Text.TextLabel _essenceEarned;
         private bool _hasRecordedThisClear;
 
         /// <summary>
@@ -177,6 +187,16 @@ namespace Pathweaver.Game.App
                 BoardPalette.ProgressComplete,
                 touchRadiusFraction: NextButtonTouchFraction);
             MenuGlyphs.AddPlay(_nextButton, NextButtonRadius * 0.4f);
+
+            _essenceEarned = Presentation.Text.TextLabel.Create(
+                _hud.transform,
+                _camera,
+                "essence-earned",
+                new Vector2(0.5f, EssenceEarnedViewportY),
+                Presentation.Text.LabelMetrics.CaptionHeightFraction,
+                BoardPalette.AtlasEssence,
+                TMPro.TextAlignmentOptions.Center,
+                HexButton.LabelDepth);
             _nextButton.gameObject.SetActive(false);
 
             _session.StateChanged += OnStateChanged;
@@ -328,11 +348,19 @@ namespace Pathweaver.Game.App
 
             if (button == AtlasView.BackId)
             {
+                // Dropped so that coming back starts from the introduction rather than from whatever the
+                // player was reading last time, which by then may be a node they already own.
+                _atlas.ClearSelection();
                 _router.Show(GameScreen.MainMenu);
                 return true;
             }
 
-            if (!_atlasMap.CanUnlock(button, _atlasProgress))
+            // The first tap on a node says what it costs and what it gives; only the second buys it. An
+            // unaffordable node is selected too, because saying why is the whole reason this screen came
+            // back — it used to answer a tap it could not honour with silence.
+            var confirming = _atlas.Select(button);
+
+            if (!confirming || !_atlasMap.CanUnlock(button, _atlasProgress))
             {
                 return true;
             }
@@ -460,6 +488,11 @@ namespace Pathweaver.Game.App
 
             _atlasProgress = _atlasProgress.WithEssence(harvested);
             _atlasStore.Save(_atlasProgress);
+
+            // Said out loud, next to the score that earned it. It was paid in silence before, so a player
+            // had no way to connect a balance on the atlas screen with anything they had done — which is
+            // half of why the atlas had to be withheld at all.
+            _essenceEarned?.SetText(Pathweaver.Game.Presentation.Text.AtlasWords.Earned(harvested));
         }
 
         private void ShowAtlas()
@@ -540,6 +573,7 @@ namespace Pathweaver.Game.App
             _lastEndlessLevelId = null;
             _isEndlessRound = false;
             _hasRecordedThisClear = false;
+            _essenceEarned?.SetText(string.Empty);
 
             _settings.SetResetArmed(false);
             _router.Show(GameScreen.MainMenu);
@@ -597,6 +631,7 @@ namespace Pathweaver.Game.App
         private void StartEndlessRound()
         {
             _hasRecordedThisClear = false;
+            _essenceEarned?.SetText(string.Empty);
             _isEndlessRound = true;
 
             // A finished board stays playable, so tokens can change after the round was banked.
@@ -637,6 +672,7 @@ namespace Pathweaver.Game.App
         private void StartLevel(string levelId)
         {
             _hasRecordedThisClear = false;
+            _essenceEarned?.SetText(string.Empty);
             _isEndlessRound = false;
 
             // The screen is shown first so the play interface is active before the level reports
@@ -678,6 +714,7 @@ namespace Pathweaver.Game.App
             {
                 _pause.SetLevelName(_session.LevelName);
                 _pause.SetScore(_session.State?.Score ?? 0, _session.TargetScore);
+                _pause.SetRelics(_atlasMap.BonusesFor(_atlasProgress));
             }
 
             // Visible while playing and while paused, hidden behind the menus. Pausing is looking

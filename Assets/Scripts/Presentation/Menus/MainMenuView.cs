@@ -59,22 +59,22 @@ namespace Pathweaver.Game.Presentation.Menus
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The atlas is built, saved, and covered by tests, but nothing on screen says what Star
-        /// Essence is, what a node costs, or what a relic does — so a player meets a constellation of
-        /// coloured hexagons and has to guess. It is withheld until it can be read rather than
-        /// guessed, which needs a font the project does not yet have.
+        /// True again. It was withheld from the closed test because nothing on screen said what Star
+        /// Essence was, what a node cost, or what a relic did, so a player met a constellation of coloured
+        /// hexagons and guessed. None of that was a fault in the model — it was that the game had no font
+        /// to write a number or a sentence with.
         /// </para>
         /// <para>
-        /// Withheld, not disabled: <c>GameFlow.AwardEssence</c> keeps paying on every clear while this
-        /// is false, so essence banks up and a player loses nothing by the wait.
+        /// It now says all three, in <c>Text.AtlasWords</c>: a balance as a figure, a cost as a numeral on
+        /// the node, and what a node gives and whether it can be bought as sentences under it. Essence
+        /// banked while it was hidden is spendable, which was the promise made when it was withheld.
         /// </para>
         /// <para>
-        /// A property rather than a <c>const</c> deliberately. A constant false condition makes the
-        /// guarded branch unreachable code, which the compiler is right to warn about and which would
-        /// have to be silenced; this reads the same and does not.
+        /// Kept as a property rather than becoming a plain expression, because a flag that has been turned
+        /// off once may need turning off again, and the argument for either state belongs in one place.
         /// </para>
         /// </remarks>
-        internal static bool IsAtlasVisible => false;
+        internal static bool IsAtlasVisible => true;
 
         /// <summary>
         /// How many buttons the secondary row holds.

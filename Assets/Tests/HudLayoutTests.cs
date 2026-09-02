@@ -93,6 +93,23 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void The_relics_line_sits_above_the_level_name_and_clear_of_it()
+        {
+            // It went under the score first, which put it inside the resume button: the block below the
+            // score is solid controls from 0.674 downward, and 0.64 is inside that. Two lines' worth of
+            // clearance, because a full set of relics wraps.
+            const int wrappedLines = 2;
+
+            Assert.That(PauseView.RelicsViewportY, Is.GreaterThan(PauseView.TitleViewportY));
+
+            Assert.That(
+                PauseView.RelicsViewportY - (wrappedLines * 0.5f * LabelMetrics.CaptionHeightFraction),
+                Is.GreaterThan(
+                    PauseView.TitleViewportY + (LabelMetrics.HeadingHeightFraction * 0.5f)),
+                "The relics line would touch the level name.");
+        }
+
+        [Test]
         public void The_pause_panel_covers_the_whole_block_of_controls()
         {
             // Centred between the title at the top and the help control at the bottom, so it cannot be
@@ -112,7 +129,11 @@ namespace Pathweaver.Game.EditorTests
             var top = PauseView.PanelViewportY + halfHeight;
             var bottom = PauseView.PanelViewportY - halfHeight;
 
-            Assert.That(top, Is.GreaterThan(PauseView.TitleViewportY), "The level name spills out the top.");
+            Assert.That(
+                top,
+                Is.GreaterThan(
+                    PauseView.RelicsViewportY + LabelMetrics.CaptionHeightFraction),
+                "The relics line spills out the top.");
             Assert.That(
                 bottom,
                 Is.LessThan(PauseView.HelpViewportY),
