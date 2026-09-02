@@ -108,6 +108,60 @@ namespace Pathweaver.EditorTools
             }
         }
 
+        /// <summary>
+        /// Renders the level list, at phone aspect, with every level shown as cleared and as locked.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Run with:
+        /// <code>
+        /// unity -batchmode -quit -projectPath . \
+        ///   -executeMethod Pathweaver.EditorTools.TextPreview.CaptureLevelSelect \
+        ///   -output Artifacts/level-select -logFile /tmp/unity.log
+        /// </code>
+        /// Writes <c>&lt;output&gt;-cleared.png</c> and <c>&lt;output&gt;-fresh.png</c>.
+        /// </para>
+        /// <para>
+        /// This exists because the grid grows rather than scrolls, and growing has a limit. The campaign
+        /// went from twenty levels to forty when biome two was finished, which took the grid from four
+        /// columns to five and from five rows to eight and nearly halved the row spacing. Arithmetic can
+        /// say the rows do not overlap; only a render says whether forty buttons and forty numbers still
+        /// read as a list.
+        /// </para>
+        /// </remarks>
+        internal static void CaptureLevelSelect()
+        {
+            var prefix = OutputPath("Artifacts/level-select");
+
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var camera = BuildPreviewCamera();
+            var material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            var campaign = Pathweaver.Game.App.CampaignCatalogue.Load();
+
+            // Both extremes, because they are drawn differently: a cleared level is green, the next one
+            // is offered, and everything past it is locked.
+            var everything = Pathweaver.Core.Campaign.CampaignProgress.Empty;
+            foreach (var id in campaign.LevelIds)
+            {
+                everything = everything.WithCleared(id);
+            }
+
+            foreach (var (progress, suffix) in new[]
+                     {
+                         (everything, "cleared"),
+                         (Pathweaver.Core.Campaign.CampaignProgress.Empty, "fresh"),
+                     })
+            {
+                var view = new GameObject($"LevelSelect {suffix}").AddComponent<LevelSelectView>();
+                view.Build(camera, material, campaign, progress);
+
+                Write(camera, $"{prefix}-{suffix}.png");
+
+                Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
         private static Camera BuildPreviewCamera()
         {
             var camera = new GameObject("Camera").AddComponent<Camera>();

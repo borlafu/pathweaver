@@ -274,6 +274,19 @@ re-running after any change to those numbers; it is what caught the em dash rend
 gap, and what put `BoardPalette.TextPrimary` and `TextSecondary` in the palette after the
 first sheet was drawn in a pip colour at 1.8:1 against the background.
 
+The level list renders too, which matters more since it grew to forty buttons:
+
+```bash
+unity -batchmode -quit -projectPath . \
+  -executeMethod Pathweaver.EditorTools.TextPreview.CaptureLevelSelect \
+  -output Artifacts/level-select -logFile /tmp/unity.log
+```
+
+Writes `-cleared.png` and `-fresh.png`, because the two extremes are drawn differently. The grid grows
+rather than scrolls — scrolling would put a drag on a screen whose only other gesture is a tap — and
+growing has a limit. Arithmetic can say the rows do not overlap; only a render says whether forty
+buttons and forty numbers still read as a list.
+
 The help screen renders a page per file, figures and all:
 
 ```bash
