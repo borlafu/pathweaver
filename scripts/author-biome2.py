@@ -17,6 +17,7 @@ Run it after editing a specification.  It rewrites the level files in place and 
 solution they carry, since those lines depend on the order the tile bag deals and not on geometry.
 """
 import os
+import random
 import sys
 
 DIRS = [(1, 0), (0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1)]
@@ -49,6 +50,22 @@ def direction_between(a, b):
 def separation(a, b):
     diff = abs(a - b) % 6
     return min(diff, 6 - diff)
+
+
+def hex_distance(a, b):
+    dq = a[0] - b[0]
+    dr = a[1] - b[1]
+    return max(abs(dq), abs(dr), abs(dq + dr))
+
+
+def disc(centre, radius):
+    """Every cell within the given hex distance of a centre."""
+    q0, r0 = centre
+    out = []
+    for dq in range(-radius, radius + 1):
+        for dr in range(max(-radius, -dq - radius), min(radius, -dq + radius) + 1):
+            out.append((q0 + dq, r0 + dr))
+    return out
 
 
 def world(cell):
@@ -103,35 +120,72 @@ def render(spec):
     duplicates = [c for c in set(cells) if cells.count(c) > 1]
     assert not duplicates, f"{spec['id']}: two routes want the same cell: {sorted(duplicates)}"
 
-    # A dead end beyond each endpoint, chosen rather than authored. Every route needs somewhere wrong
-    # to go — a board of nothing but forced cells is a transcription exercise — and picking them by
-    # hand meant picking cells a route already wanted, over and over.
-    taken = set(cells)
-    tips = []
-    for route in routes:
-        for anchor in (route.spring, route.hub):
-            for direction in range(6):
-                candidate = step(anchor, direction)
-                if candidate not in taken:
-                    taken.add(candidate)
-                    cells.append(candidate)
-                    tips.append(candidate)
-                    break
+    # Terrain, not corridors. The first version of biome two made the board *be* the route: a line of
+    # cells with a dead end at either end, which left a player exactly one place to put each tile and
+    # made a large board read as a diagram of a route rather than as somewhere to be.
+    #
+    # So each route is now the spine of an island, and every cell within `island_radius` of it is open
+    # ground. That gives a player somewhere to lay a conduit that is not the way the board expects them
+    # to reach the hub — including longer ways round, which pay more — and it is what makes panning feel
+    # like crossing a place rather than following a wire.
+    #
+    # Craters are then carved back out, and the gaps between islands are the mountains. Both exist so
+    # that open ground has a shape, because an unbroken blob is as characterless as a line. A route cell
+    # is never carved, so no crater can make a board unsolvable.
+    route_cells = set(cells)
 
-    # Chained further out when a spec asks for it. Only one board needs this: a board that the
-    # solvability search cannot finish has to be large enough to be allowed its own solution, and
-    # ShippedLevelsTests puts that floor at more than twenty-three cells.
-    for _ in range(spec.get("spur_depth", 1) - 1):
-        grown = []
-        for tip in tips:
-            for direction in range(6):
-                candidate = step(tip, direction)
-                if candidate not in taken:
-                    taken.add(candidate)
-                    cells.append(candidate)
-                    grown.append(candidate)
-                    break
-        tips = grown
+    # Some boards are built around a hole: The Basin Road curves past an empty middle no route may
+    # cross, and The Great Circuit encloses a space it never enters. Flooding those with island would
+    # delete the only idea those boards have, so a spec may declare them off limits.
+    forbidden = set()
+    for centre, radius in spec.get("voids", []):
+        forbidden.update(disc(centre, radius))
+
+    ground = []
+    for route in routes:
+        for cell in route.cells:
+            for candidate in disc(cell, spec.get("island_radius", 2)):
+                if (candidate not in route_cells
+                        and candidate not in forbidden
+                        and candidate not in ground):
+                    ground.append(candidate)
+
+    # How far each piece of open ground is from the nearest route. Craters are carved from the high
+    # ground — the cells furthest from any route — which is what turns one slab into islands rather
+    # than punching arbitrary holes in a continent. The first attempt chose crater centres uniformly and
+    # produced exactly that: a broad, regular shelf with two dents in it.
+    height = {cell: min(hex_distance(cell, r) for r in route_cells) for cell in ground}
+
+    craters = set()
+    chooser = random.Random(spec["seed"])
+
+    # Fractions of the ground rather than counts of cells. Counts were tuned per board and did not
+    # survive a change to the island radius: the same "ten craters" that dented a ninety-cell board ate a
+    # forty-cell one, and half the biome came out smaller after the islands were made larger.
+    target_craters = int(len(ground) * spec.get("crater_fraction", 0.16))
+
+    while len(craters) < target_craters:
+        remaining = [cell for cell in ground if cell not in craters]
+        if not remaining:
+            break
+
+        summit = max(height[cell] for cell in remaining)
+        centre = chooser.choice(sorted(cell for cell in remaining if height[cell] == summit))
+
+        for hollow in disc(centre, spec.get("crater_radius", 1)):
+            if hollow not in route_cells:
+                craters.add(hollow)
+
+    # And a ragged coast. An island whose outline is a clean hexagon reads as a diagram of an island;
+    # taking cells off the shore is the cheapest way to make it read as ground.
+    edges = sorted(
+        cell for cell in ground
+        if cell not in craters and height[cell] == spec.get("island_radius", 2))
+
+    for cell in chooser.sample(edges, int(len(edges) * spec.get("shore_fraction", 0.3))):
+        craters.add(cell)
+
+    cells.extend(cell for cell in ground if cell not in craters)
 
     xs = [world(c)[0] for c in cells]
     ys = [world(c)[1] for c in cells]
@@ -143,8 +197,11 @@ def render(spec):
     assert span[0] >= 7.0 and span[1] >= 7.0, \
         f"{spec['id']}: span {span[0]:.1f} by {span[1]:.1f} does not need panning"
 
-    # And an upper bound. Panning is travel; a board three screens wide is a commute.
-    assert span[0] <= 14.0 and span[1] <= 12.0, \
+    # And an upper bound. Panning is travel; a board four screens wide is a commute. Raised when the
+    # routes became islands: terrain adds an island radius of ground on every side, so a layout tuned to
+    # fourteen units of route grew to eighteen of board. The bound is on the board, because that is what
+    # a player crosses — a spec over it wants a smaller island rather than a bigger allowance.
+    assert span[0] <= 17.0 and span[1] <= 14.0, \
         f"{spec['id']}: span {span[0]:.1f} by {span[1]:.1f} is too far to walk"
 
     # The bag: exactly what the routes need, plus the slack the spec asks for.
@@ -230,8 +287,12 @@ if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from author_biome2_specs import SPECS  # noqa: E402
 
+    wanted = set(sys.argv[1:])
     failures = 0
     for spec in SPECS:
+        if wanted and spec["id"] not in wanted:
+            continue
+
         try:
             print(render(spec))
         except AssertionError as error:

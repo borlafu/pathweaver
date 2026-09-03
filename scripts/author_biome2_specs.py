@@ -21,10 +21,108 @@ def elbow(first, count_first, second, count_second):
 
 SPECS = [
     dict(
+        id="biome2-01",
+        name="The Long Valley",
+        seed=7,
+        target=550,
+        island_radius=2,
+        routes=[
+            ("water", (-2, -6), zig(1, 2, 3)),
+            ("wind", (-2, -3), line(0, 5)),
+            ("crystal", (-9, 3), line(3, 4)),
+        ],
+        comment="""# Biome 2, level 1 — The Long Valley
+#
+# The first board that has to be navigated rather than read. It opens showing all of itself, settles
+# near the water spring in the north, and is panned from there.
+#
+# Three pairs, far apart, each needing four or five conduits — rather than one enormous route. A
+# sixteen-conduit forced line down the spine would score absurdly and play as sixteen placements with
+# no decision in them. Separate work sites are also what makes panning meaningful: the player travels
+# between them.
+#
+# Rebuilt as terrain. It used to be fifty-five hand-placed cells laid out as a spine with spurs, which
+# was the densest board in the biome and still, in the end, a drawing of its own routes. Now each route
+# is the spine of an island and the ground around it is open, so the descent can be taken down the
+# middle or round either shore — and the long way round pays more.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.""",
+        target_comment="""# Two of the three pairs clear it. Water pays most for the fewest tiles, so the choice is which of the
+# two long straight runs to spend the board on.""",
+        bag_comment="""# Water wants bends, wind and crystal want straights. The counts are what the routes need plus slack,
+# because a corridor with no spare tile is a corridor a single unlucky draw ends.""",
+        slack=2,
+    ),
+    dict(
+        id="biome2-02",
+        name="The Bramble",
+        seed=19,
+        target=650,
+        island_radius=2,
+        routes=[
+            ("water", (0, -8), zig(1, 2, 3) + [1]),
+            ("crystal", (6, -2), zig(1, 2, 3) + [1]),
+            ("wind", (-2, 1), line(0, 5)),
+        ],
+        comment="""# Biome 2, level 2 — The Bramble
+#
+# Two zigzags of bends at opposite corners of the board and a straight run between them, so three work
+# sites far apart. Every cell of a zigzag needs a bend, because a pointy-top hexagon has no northern
+# neighbour and "down" therefore alternates south-east and south-west. That is the lesson biome one
+# teaches on its second level, at three cells; this asks for it six times in a row, twice, across a
+# board that cannot be seen at once.
+#
+# The islands are what make it a bramble rather than two wires. A zigzag through open ground can be
+# taken tight or loose, and a loose one is longer and pays more.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.""",
+        target_comment="""# Either zigzag plus the wind run clears it. Six conduits pay 448 and four pay 246.""",
+        bag_comment="""# Bends for the two zigzags, straights for the run between them.""",
+    ),
+    dict(
+        id="biome2-03",
+        name="The Wheel",
+        seed=23,
+        target=480,
+        island_radius=2,
+        routes=[
+            ("water", (6, 0), line(3, 5)),
+            ("crystal", (-6, 6), line(5, 5)),
+            ("wind", (0, -6), line(1, 5)),
+        ],
+        comment="""# Biome 2, level 3 — The Wheel
+#
+# Three straight spokes meeting at one chamber, each four conduits long, each a different resource. The
+# hubs sit together at the middle and the springs at the rim, so a route is built inward — the reverse
+# of every board before it, and the reason the opening has no panning in it at all: the chamber holds
+# all three sites in one view, and travel arrives only as the routes lengthen.
+#
+# The chamber lost an idea when the board became terrain, and it is worth saying which. It used to be a
+# single cell touching all three hubs, surrounded by nothing: the most connected-looking place on the
+# board and, in fact, a dead end. Open ground cannot hold that trick, because a cell with ground around
+# it is no longer a dead end.
+#
+# What replaces it is broader and still a decision. The chamber is now open ground where any of the three
+# kinds may be laid, so the temptation is no longer one cell that goes nowhere but a whole middle that
+# serves whichever hub a player points it at — and serving one costs the room to serve the others.
+#
+# Edge directions run clockwise on screen from due east: 0 east, 1 south-east, 2 south-west, 3 west,
+# 4 north-west, 5 north-east.""",
+        target_comment="""# Two spokes clear it. Four conduits pay 246, so two are 492 and all three are 738 — which leaves the
+# third spoke as the reason to keep playing a board already won.
+
+# The rim was pulled a cell closer when the spokes became islands: at six cells each the board stood
+# fourteen and a half world units tall, which is further than panning should ask anyone to walk.""",
+        bag_comment="""# Straights, which every cell of every spoke wants.""",
+    ),
+    dict(
         id="biome2-04",
         name="The Crossing",
         seed=31,
         target=600,
+        island_radius=2,
         routes=[
             ("water", (-5, -5), line(0, 5)),
             ("crystal", (3, -6), zig(1, 2, 4)),
@@ -50,6 +148,7 @@ SPECS = [
         name="The Far Shore",
         seed=37,
         target=600,
+        island_radius=2,
         routes=[
             ("water", (-6, -4), zig(1, 2, 3)),
             ("wind", (5, -4), zig(2, 1, 3)),
@@ -74,6 +173,8 @@ SPECS = [
         name="Three Rivers",
         seed=41,
         target=800,
+        island_radius=2,
+        crater_radius=1,
         routes=[
             ("water", (-4, -5), zig(1, 2, 4)),
             ("wind", (1, -5), zig(1, 2, 4)),
@@ -99,6 +200,7 @@ SPECS = [
         name="The Long Bend",
         seed=43,
         target=650,
+        island_radius=2,
         routes=[
             ("water", (-5, -5), elbow(0, 3, 1, 6)),
             ("crystal", (3, 4), elbow(3, 3, 4, 6)),
@@ -126,6 +228,7 @@ SPECS = [
         name="Switchback",
         seed=47,
         target=700,
+        island_radius=2,
         spur_depth=2,
         routes=[
             ("water", (-3, -5), [0, 0, 2, 2, 0, 0, 2, 2, 0]),
@@ -153,6 +256,8 @@ SPECS = [
         name="The Basin Road",
         seed=53,
         target=550,
+        island_radius=2,
+        voids=[((0, 0), 2)],
         routes=[
             ("water", (-4, -4), [0, 0, 1, 1, 2, 2, 3, 3]),
             ("crystal", (4, 4), [3, 3, 4, 4, 5, 5, 0, 0]),
@@ -175,6 +280,7 @@ SPECS = [
         name="Two Cliffs",
         seed=59,
         target=900,
+        island_radius=2,
         routes=[
             ("water", (-4, -5), line(1, 8)),
             ("wind", (4, -5), line(1, 8)),
@@ -201,6 +307,7 @@ SPECS = [
         name="The Cistern Walk",
         seed=61,
         target=750,
+        island_radius=2,
         slack=2,
         routes=[
             ("water", (-5, -3), [0, 0, 0, 1, 1, 1, 0, 0]),
@@ -226,6 +333,7 @@ SPECS = [
         name="Chain of Wells",
         seed=67,
         target=500,
+        island_radius=2,
         routes=[
             ("water", (-4, -4), line(0, 4)),
             ("wind", (-3, -1), line(0, 4)),
@@ -254,6 +362,7 @@ SPECS = [
         name="The Split Ridge",
         seed=71,
         target=780,
+        island_radius=2,
         routes=[
             ("water", (0, -6), zig(2, 1, 4)),
             ("wind", (-6, 3), line(0, 4)),
@@ -278,6 +387,7 @@ SPECS = [
         name="Deep Country",
         seed=73,
         target=850,
+        island_radius=2,
         routes=[
             ("water", (-6, -4), line(0, 5)),
             ("wind", (4, -5), line(1, 7)),
@@ -303,6 +413,7 @@ SPECS = [
         name="The Four Corners",
         seed=79,
         target=700,
+        island_radius=2,
         routes=[
             ("water", (-6, -5), line(0, 4)),
             ("wind", (4, -5), line(1, 4)),
@@ -331,6 +442,7 @@ SPECS = [
         name="The Long Portage",
         seed=83,
         target=1100,
+        island_radius=2,
         routes=[
             ("water", (-7, -3), elbow(0, 5, 1, 6)),
             ("wind", (2, -6), line(0, 4)),
@@ -355,6 +467,7 @@ SPECS = [
         name="Contested Ground",
         seed=89,
         target=600,
+        island_radius=2,
         slack=3,
         routes=[
             ("water", (-7, 0), [0, 0, 0, 1, 1, 0]),
@@ -384,6 +497,8 @@ SPECS = [
         name="The Great Circuit",
         seed=97,
         target=1200,
+        island_radius=2,
+        voids=[((-2, -1), 2), ((-3, 0), 1)],
         routes=[
             ("water", (-3, -4), [0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 4]),
             ("wind", (2, 3), line(0, 4)),
@@ -407,6 +522,7 @@ SPECS = [
         name="Watersheds",
         seed=101,
         target=780,
+        island_radius=2,
         routes=[
             ("water", (-2, -6), zig(1, 2, 4)),
             ("wind", (4, -6), zig(2, 1, 4)),
@@ -432,6 +548,7 @@ SPECS = [
         name="The Whole Country",
         seed=103,
         target=1300,
+        island_radius=2,
         routes=[
             ("water", (-6, -5), elbow(0, 3, 1, 4)),
             ("wind", (4, -6), line(1, 8)),
