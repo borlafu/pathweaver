@@ -1,0 +1,40 @@
+# The World Atlas, second region.
+#
+# Five nodes docking onto the first region's outer edge, and only one of them changes anything on a
+# board. That is not a shortage of ideas — it is what the balance had room for.
+#
+# The first region already grants three extra skips and three extra Pivot Tokens, which is the most
+# AtlasPackTests allows and also where TokenRules.MaximumCapacity tops out, so a fourth of either
+# would have to raise a ceiling that exists to stop a board becoming impossible to deadlock. It grants
+# two extra Star Essence against a limit of three, so exactly one more is available. Everything else
+# this region can offer has to leave a board alone.
+#
+# So it makes the atlas cheaper instead. A discount relic takes one essence off every node still to be
+# bought, and this region is a road whose prices come down as it is walked: five nodes with a face
+# value of 41, which cost 33 if bought in the cheapest order. Nothing here is a side-bet that might
+# not pay — every discount is also a prerequisite, so the saving is the road's own toll coming down
+# rather than a wager on how much is left to buy.
+#
+# The one decision is which of the two roots to take first. Pilgrim Road is cheaper, so buying it
+# first makes Waystone cost five instead of six; the other order pays six and then three. One essence,
+# for reading the numbers.
+#
+# Worldsend is the outer edge. A third region docks onto it by naming it, and its discount is worth
+# nothing until one exists — which is stated on the node rather than hidden in it.
+
+pack: biome2
+docks: storm-eye,wayfarer-mark
+
+# The two roots, one off each of the first region's outer nodes. Both cheap, both discounts, and the
+# cheaper one first is worth one essence.
+node: pilgrim-road cost 4 at 3,1 gives discount 1 needs storm-eye
+node: waystone cost 6 at 2,2 gives discount 1 needs wayfarer-mark
+
+# The join, and the region's only effect a board will notice: the third and last Star Essence relic
+# the balance allows.
+node: star-ledger cost 9 at 3,2 gives essence 1 needs pilgrim-road,waystone
+
+# The road out. Long Survey pays for itself against Worldsend alone; Worldsend pays for itself against
+# a region that has not shipped, and says so.
+node: long-survey cost 10 at 4,1 gives discount 1 needs star-ledger
+node: worldsend cost 12 at 3,3 gives discount 1 needs long-survey

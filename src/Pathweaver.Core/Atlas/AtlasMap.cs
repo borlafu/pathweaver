@@ -13,11 +13,12 @@ namespace Pathweaver.Core.Atlas
     /// </remarks>
     public readonly struct AtlasBonuses
     {
-        internal AtlasBonuses(int skips, int tokens, int essencePerClear)
+        internal AtlasBonuses(int skips, int tokens, int essencePerClear, int discount = 0)
         {
             Skips = skips;
             Tokens = tokens;
             EssencePerClear = essencePerClear;
+            Discount = discount;
         }
 
         public static AtlasBonuses None => new AtlasBonuses(0, 0, 0);
@@ -28,8 +29,18 @@ namespace Pathweaver.Core.Atlas
 
         public int EssencePerClear { get; }
 
+        /// <summary>
+        /// How much less every node still to be bought costs.
+        /// </summary>
+        /// <remarks>
+        /// The only bonus here that changes nothing on a board. The other three ease a level; this eases
+        /// the atlas, which is why a second region could carry it when the balance had no room left for
+        /// another skip or another Pivot Token.
+        /// </remarks>
+        public int Discount { get; }
+
         public override string ToString()
-            => $"+{Skips} skips, +{Tokens} tokens, +{EssencePerClear} essence";
+            => $"+{Skips} skips, +{Tokens} tokens, +{EssencePerClear} essence, -{Discount} cost";
     }
 
     /// <summary>
@@ -58,6 +69,15 @@ namespace Pathweaver.Core.Atlas
         }
 
         /// <summary>Every node, ordered by pack and then by identifier.</summary>
+        /// <summary>
+        /// The least a node may cost, however many discount relics are held.
+        /// </summary>
+        /// <remarks>
+        /// One rather than zero. A free node is not a decision, and a region whose prices reached zero
+        /// would unlock itself the moment the player looked at it.
+        /// </remarks>
+        public const int MinimumCost = 1;
+
         public IReadOnlyList<AtlasNode> Nodes
             => _nodes.Values
                 .OrderBy(node => node.Pack, StringComparer.Ordinal)
@@ -160,7 +180,37 @@ namespace Pathweaver.Core.Atlas
                 }
             }
 
-            return progress.Essence >= node.Cost;
+            return progress.Essence >= CostOf(nodeId, progress);
+        }
+
+        /// <summary>
+        /// What a node costs this player, which is not always what the pack file says.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A discount relic takes <see cref="AtlasBonuses.Discount"/> off every node still to be bought,
+        /// down to a floor of <see cref="MinimumCost"/>: a node that cost nothing would not be a decision.
+        /// It applies to the price rather than to the record, so a node already unlocked is unaffected —
+        /// there is no refund, and buying a discount after the fact buys nothing.
+        /// </para>
+        /// <para>
+        /// This is what the player is charged and what the atlas screen shows. Both have to be the same
+        /// number, or the screen is lying about the price.
+        /// </para>
+        /// </remarks>
+        public int CostOf(string nodeId, AtlasProgress progress)
+        {
+            if (progress is null)
+            {
+                throw new ArgumentNullException(nameof(progress));
+            }
+
+            if (!Contains(nodeId))
+            {
+                throw new KeyNotFoundException($"No atlas node called \"{nodeId}\".");
+            }
+
+            return Math.Max(MinimumCost, _nodes[nodeId].Cost - BonusesFor(progress).Discount);
         }
 
         /// <summary>
@@ -181,6 +231,7 @@ namespace Pathweaver.Core.Atlas
             var skips = 0;
             var tokens = 0;
             var essence = 0;
+            var discount = 0;
 
             foreach (var id in progress.UnlockedNodes)
             {
@@ -200,10 +251,13 @@ namespace Pathweaver.Core.Atlas
                     case AtlasEffectKind.Essence:
                         essence += node.Effect.Amount;
                         break;
+                    case AtlasEffectKind.Discount:
+                        discount += node.Effect.Amount;
+                        break;
                 }
             }
 
-            return new AtlasBonuses(skips, tokens, essence);
+            return new AtlasBonuses(skips, tokens, essence, discount);
         }
 
         private static void RequirePrerequisitesExist(

@@ -2,7 +2,9 @@ using System.Linq;
 using NUnit.Framework;
 using Pathweaver.Core.Atlas;
 using Pathweaver.Game.App;
+using Pathweaver.Game.Presentation.Menus;
 using Pathweaver.Game.Presentation.Text;
+using UnityEngine;
 
 namespace Pathweaver.Game.EditorTests
 {
@@ -170,6 +172,58 @@ namespace Pathweaver.Game.EditorTests
         }
 
         [Test]
+        public void A_discount_relic_says_what_it_lowers()
+        {
+            // The one effect the second region had room for, and the only one that changes nothing on a
+            // board — so the sentence has to say what it does change.
+            Assert.That(
+                AtlasWords.Effect(new AtlasEffect(AtlasEffectKind.Discount, 1)),
+                Is.EqualTo("Every node you have not bought yet costs 1 less."));
+
+            Assert.That(
+                AtlasWords.Effect(new AtlasEffect(AtlasEffectKind.Discount, 2)),
+                Does.Contain("2 less"));
+        }
+
+        [Test]
+        public void A_discounted_node_quotes_the_price_it_will_charge()
+        {
+            // Quoting the pack file's number would contradict both the numeral drawn on the node and what
+            // the purchase actually takes. Three places, one figure.
+            var map = AtlasLoader.Parse(string.Join(
+                "\n",
+                "pack: test",
+                "node: cheap cost 3 at 0,0 gives discount 1",
+                "node: dear cost 9 at 1,0 gives skip 1 needs cheap"));
+
+            var withRelic = AtlasProgress.Of(new[] { "cheap" }, essence: 20);
+
+            Assert.That(
+                AtlasWords.Status(map.Node("dear"), map, withRelic),
+                Does.Contain("8 Star Essence"));
+
+            Assert.That(
+                AtlasWords.Status(map.Node("dear"), map, withRelic),
+                Does.Not.Contain("9 Star Essence"));
+        }
+
+        [Test]
+        public void A_discount_is_not_named_among_the_relics_in_force_on_a_board()
+        {
+            // The relics line is shown while paused, and answers "why does this board deal four skips".
+            // A discount answers nothing about a board, so naming it there would be noise at the one
+            // moment the line has a job.
+            var map = AtlasLoader.Parse(string.Join(
+                "\n",
+                "pack: test",
+                "node: thrift cost 3 at 0,0 gives discount 2"));
+
+            var bonuses = map.BonusesFor(AtlasProgress.Of(new[] { "thrift" }, essence: 0));
+
+            Assert.That(AtlasWords.Relics(bonuses), Is.Empty);
+        }
+
+        [Test]
         public void No_relics_means_no_line_rather_than_a_line_saying_none()
         {
             // A player who has bought none has probably never opened the atlas, and a line about a screen
@@ -198,6 +252,44 @@ namespace Pathweaver.Game.EditorTests
         public void A_clear_that_paid_says_how_much()
         {
             Assert.That(AtlasWords.Earned(4), Is.EqualTo("+4 Star Essence"));
+        }
+
+        [Test]
+        public void Every_effect_has_its_own_mark_and_its_own_sentence()
+        {
+            // Discount shipped wearing the essence diamond, because the switch that picks a mark had a
+            // catch-all and a new effect silently borrowed an existing one. Two different relics looked
+            // like the same relic. This is the test that would have said so.
+            var shapes = new System.Collections.Generic.Dictionary<string, AtlasEffectKind>();
+            var sentences = new System.Collections.Generic.HashSet<string>();
+
+            foreach (AtlasEffectKind kind in System.Enum.GetValues(typeof(AtlasEffectKind)))
+            {
+                var mesh = AtlasView.MarkFor(kind, radius: 1f);
+                Assert.That(mesh, Is.Not.Null, $"{kind} has no mark.");
+
+                // The geometry itself, not its vertex count: a bar and a triangle both have four
+                // vertices, so counting them called two obviously different shapes the same.
+                var fingerprint = string.Join(
+                    ";",
+                    mesh.vertices
+                        .Select(v => $"{v.x:F3},{v.y:F3}")
+                        .OrderBy(text => text, System.StringComparer.Ordinal));
+
+                UnityEngine.Object.DestroyImmediate(mesh);
+
+                Assert.That(
+                    shapes.ContainsKey(fingerprint),
+                    Is.False,
+                    $"{kind} wears the same shape as {(shapes.TryGetValue(fingerprint, out var other) ? other.ToString() : "another effect")}.");
+
+                shapes[fingerprint] = kind;
+
+                Assert.That(
+                    sentences.Add(AtlasWords.Effect(new AtlasEffect(kind, 1))),
+                    Is.True,
+                    $"{kind} says the same thing as another effect.");
+            }
         }
 
         [Test]

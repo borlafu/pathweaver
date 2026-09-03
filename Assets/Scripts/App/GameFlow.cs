@@ -365,7 +365,10 @@ namespace Pathweaver.Game.App
                 return true;
             }
 
-            _atlasProgress = _atlasProgress.WithUnlocked(button, _atlasMap.Node(button).Cost);
+            // The discounted price, not the one written in the pack file. Charging the face value while
+            // the screen shows the discount would make the discount a lie.
+            _atlasProgress = _atlasProgress.WithUnlocked(
+                button, _atlasMap.CostOf(button, _atlasProgress));
             _atlasStore.Save(_atlasProgress);
 
             // Rebuilt rather than patched: the node just bought changes its own colour, its links, the

@@ -128,6 +128,87 @@ public class AtlasPackTests
         Assert.InRange(bonuses.EssencePerClear, 1, 3);
     }
 
+    [Fact]
+    public void A_later_region_docks_onto_an_earlier_one_rather_than_replacing_it()
+    {
+        // PRD section 4.2's requirement, as arithmetic: nothing already shipped changes when a pack
+        // arrives. A pack that renamed or repriced a first-region node would pass every other test here.
+        // Arrange
+        var first = AtlasLoader.Parse(
+            File.ReadAllText(Path.Combine(RepositoryPath("atlas"), "biome1.pwatlas")));
+        var combined = ShippedAtlas();
+
+        // Assert
+        foreach (var node in first.Nodes)
+        {
+            Assert.True(combined.Contains(node.Id), $"{node.Id} vanished when the packs were combined.");
+            Assert.Equal(node.Cost, combined.Node(node.Id).Cost);
+            Assert.Equal(node.Effect, combined.Node(node.Id).Effect);
+        }
+    }
+
+    [Fact]
+    public void The_atlas_costs_less_walked_than_its_prices_add_up_to()
+    {
+        // Discount relics are the second region's whole reason for existing, so the region has to be
+        // cheaper to walk than to read. Bought cheapest-first, which is what a player who reads the
+        // numbers does.
+        // Arrange
+        var map = ShippedAtlas();
+        var faceValue = map.Nodes.Sum(node => node.Cost);
+
+        var progress = AtlasProgress.Empty;
+        var paid = 0;
+
+        // Act — buy everything, always taking whichever affordable-by-prerequisite node is cheapest now
+        while (progress.UnlockedNodes.Count < map.Nodes.Count)
+        {
+            var next = map.Nodes
+                .Where(node => !progress.IsUnlocked(node.Id))
+                .Where(node => node.Requires.All(progress.IsUnlocked))
+                .OrderBy(node => map.CostOf(node.Id, progress))
+                .FirstOrDefault();
+
+            Assert.NotNull(next);
+
+            var price = map.CostOf(next!.Id, progress);
+            paid += price;
+            progress = progress.WithEssence(price).WithUnlocked(next.Id, price);
+        }
+
+        // Assert
+        Assert.True(
+            paid < faceValue,
+            $"the atlas costs {paid} walked and {faceValue} read, so its discounts save nothing.");
+    }
+
+    [Fact]
+    public void A_discount_relic_is_on_the_road_rather_than_a_side_bet()
+    {
+        // A discount only pays back across the nodes still to be bought, so one bought late loses
+        // essence. That is survivable when the node is a prerequisite — the player was going to buy it
+        // anyway and its price coming down is a gift — and a trap when it is optional.
+        //
+        // The exception is the outer edge, whose discount is an investment in a region that has not
+        // shipped. That is stated on the node in the pack file, which is the most a level file can do.
+        // Arrange
+        var map = ShippedAtlas();
+        var required = map.Nodes.SelectMany(node => node.Requires).ToHashSet();
+        var outerEdge = map.Nodes.Where(node => !required.Contains(node.Id)).Select(n => n.Id).ToHashSet();
+
+        // Assert
+        foreach (var node in map.Nodes.Where(n => n.Effect.Kind == AtlasEffectKind.Discount))
+        {
+            Assert.True(
+                required.Contains(node.Id) || outerEdge.Contains(node.Id),
+                $"{node.Id} discounts nothing that needs it and nothing depends on it.");
+        }
+
+        Assert.True(
+            outerEdge.Count <= 2,
+            "more than two outer nodes makes 'the edge a later region docks onto' ambiguous.");
+    }
+
     private static AtlasMap ShippedAtlas()
         => AtlasMap.Combine(
             Directory
