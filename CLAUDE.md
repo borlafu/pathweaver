@@ -198,16 +198,16 @@ large enough to need panning. The search stays the default wherever it can run, 
 refuses an authored solution on a board of 23 cells or fewer, which is a size that has been
 searched successfully.
 
-Of the twenty biome-two boards, **nine are searched and eleven are replayed**, and what
-decides it is open space rather than cell count: `The Wheel` is 28 cells and searched in
-seconds because its spokes are forced corridors, while `The Bramble` is also 28 and exhausted
-600,000 states in 16 seconds without a verdict.
+**Every biome-two board is replayed**, and none is searched. That is a consequence of them
+being terrain rather than corridors: open space is what makes the search explode, and these
+boards are three-quarters open ground. Biome one is still searched throughout, which is where
+the stronger check earns its place — those boards are small enough for it to finish.
 
-The whole gate runs in about 22 seconds for 40 levels. It briefly took **ten minutes**, and
-the cause was not the new boards: two tests each ran a full search, one to ask whether a level
+The whole suite runs in about 12 seconds for 40 levels. It briefly took **ten minutes**, and
+the cause was not the boards: two tests each ran a full search, one to ask whether a level
 could be cleared and the next to ask again so it could replay the answer. On biome one that
-was a reasonable way to keep two questions apart; on biome two it doubled the slowest thing in
-the suite. They are one test now — one search, then one replay of what it found.
+was a reasonable way to keep two questions apart; on a large board it doubled the slowest thing
+in the suite. They are one test now — one search, then one replay of what it found.
 
 Batch operations on the Unity project, useful because they need no GUI:
 
@@ -227,8 +227,22 @@ python3 scripts/author-biome2.py
 ```
 
 It reads `scripts/author_biome2_specs.py`, where a route is a kind, the cell its spring sits on, and
-the directions walked to its hub. The cells, the dead ends beyond each endpoint, the shape every
-conduit needs and the tile bag are all derived from that. It refuses a specification rather than
+the directions walked to its hub. Everything else is derived: the shape every conduit needs, the tile
+bag, and the **terrain**.
+
+Terrain is what stops a large board being a drawing of its own routes. Each route is the spine of an
+island — every cell within `island_radius` of it is open ground — so a player has somewhere to lay a
+conduit that is not the way the board expects them to reach the hub, including longer ways round, which
+pay more. Craters are then carved out of the ground **furthest from any route**, which is the bit that
+matters: carving uniformly gave one broad regular continent with dents in it, while carving the high
+ground makes islands separate themselves and turns the gaps between them into mountains. A fraction of
+the shore is taken off as well, because an island with a clean hexagonal outline reads as a diagram of an
+island. Craters and shore are fractions of the ground rather than counts of cells, since counts tuned for
+a ninety-cell board ate a forty-cell one.
+
+A route cell is never carved, so no crater can make a board unsolvable. A board built around a hole —
+`The Basin Road`'s empty middle, `The Great Circuit`'s enclosed space — declares it with `voids`, because
+flooding it with island would delete the only idea the board has. It refuses a specification rather than
 emitting a bad board, and every refusal it makes is a mistake it caught while these levels were being
 written: two routes wanting the same cell, a dead end placed on a route, a board too small to need
 panning or too large to walk, and — the one that justifies the whole script — **a target score higher
@@ -416,7 +430,7 @@ lose.
 | How is a Pivot Token spent? | Tap the remove button under the pip column to arm it, then tap a conduit to retrieve it. Arming is a mode rather than a bare tap on a conduit, because the board is the one thing a thumb touches constantly and a token is the scarcest thing the player holds. Arming spends nothing, and a tap anywhere else cancels. |
 | What does the World Atlas cost and pay? | Star Essence, one per base score harvested on any cleared board, in both modes. Nodes are relics — extra skips, extra Pivot Tokens, extra essence per clear — and are additive on top of a board's own allowance, because an upgrade that replaced it would make a generous level worse than a mean one. The whole first region costs 51 and clearing the twenty levels once pays at least 77, a relationship CI checks. |
 | What makes a biome-two board different from a biome-one board? | Footprint, not cell count. `The Long Valley` is fifty-five cells and `The Bramble` twenty-eight, over nearly the same nine-by-ten world units — the second is a thin path across a wide place and the first a sprawl, and both need panning for the same reason. What decides whether the solvability search can prove a level is open space rather than size: the twenty-eight-cell `Wheel` is searched in seconds because its spokes are forced corridors, while `The Bramble` exhausted six hundred thousand states in sixteen seconds and carries its own solution. A large board is also built as several work sites rather than one long route, because a sixteen-conduit forced line is sixteen placements with no decision in them — and because separate sites are what makes travelling between them mean something. |
-| What is a biome-two board, and how many are there? | Twenty, matching biome one, and what makes one is footprint rather than cell count: every board is at least seven by seven world units against a default zoom that fits about five by five, and none is wider than fourteen or taller than twelve — panning should be travel, not a commute. They are built as several work sites rather than one long route, because a sixteen-conduit forced line is sixteen placements with no decision in them, and because separate sites are what makes travelling between them mean anything. Every board also carries dead ends beyond its endpoints, so there is somewhere plausible to waste a tile. The shapes escalate: wide bends, then a single corner in a long straight, then sharp hundred-and-twenty-degree turns, then curves, then four kinds at once. |
+| What is a biome-two board, and how many are there? | Twenty, matching biome one, and each is a **place rather than a route**. The first version made the board *be* the route — a line of cells with a dead end at either end — which left a player exactly one place to put each tile and made a large board read as a diagram. Now every route is the spine of an island, three-quarters of each board is open ground, and craters carved from the high ground leave mountains between the islands. Boards run 73 to 137 cells over 8 to 17 world units against a default zoom that fits about five, so panning is crossing somewhere rather than following a wire. Two costs are worth knowing: **deadlock nearly disappears**, because 'board full' is a long way off and a Pivot Token therefore has less to rescue; and on routes that turn sharply a **shortcut** across the island exists, so a player can reach the hub the cheap way and score less — recoverable, since a pair pays the difference on a better route and a token buys the space back. Straight runs and zigzags have no shortcut, because on a hex grid they are already the shortest path. |
 | What does the second World Atlas region give, and why so little? | Discounts, and one last Star Essence relic. The first region already grants three extra skips and three extra Pivot Tokens, which is both what `AtlasPackTests` allows and where `TokenRules.MaximumCapacity` tops out — so a fourth of either would have to raise a ceiling that exists to stop a board becoming impossible to deadlock, and a relic that raised only the room to hold tokens would do nothing at all, because region one already maxes it. Essence stands at two against a limit of three, so exactly one more was available. Everything else the region offers therefore has to leave a board alone, and `AtlasEffectKind.Discount` does: it takes essence off every node still to be bought, floored at one by `AtlasMap.MinimumCost`. Five nodes with a face value of 41 cost 33 walked. The price a player is charged, the numeral drawn on the node and the sentence under it all come from `AtlasMap.CostOf`, because three places quoting two numbers is a screen that lies. Every discount is also a prerequisite, so none is a side-bet that might not pay — except at the outer edge, whose discount is an investment in a region that has not shipped and which says so on the node. |
 | How does a future biome pack dock on? | It adds a file under `atlas/` with its own `pack:` line and a `docks:` line naming the nodes it attaches to. Nothing already shipped changes. The `docks:` declaration exists because otherwise a prerequisite living in another file is indistinguishable from a typo, and one of the two has to be an error. |
 | Do tokens survive the end of a board? | Yes. Endless rounds carry both Pivot Tokens and skips; campaign levels carry Pivot Tokens, in `CampaignProgress`. In both cases the board's own allowance is a floor rather than a replacement. They are earned, so taking them back at a boundary is taking back a reward — and since clearing a board ends it, a token earned by the clearing route would otherwise be unspendable. A fresh endless run keeps none. Campaign skips are not carried: three per level is an allowance rather than a reward, and every authored level is solvable within its own. |
