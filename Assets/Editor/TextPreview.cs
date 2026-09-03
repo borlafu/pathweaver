@@ -162,6 +162,65 @@ namespace Pathweaver.EditorTools
             }
         }
 
+        /// <summary>
+        /// Renders the World Atlas at three points in its own progression.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Run with:
+        /// <code>
+        /// unity -batchmode -quit -projectPath . \
+        ///   -executeMethod Pathweaver.EditorTools.TextPreview.CaptureAtlas \
+        ///   -output Artifacts/atlas -logFile /tmp/unity.log
+        /// </code>
+        /// Writes <c>-fresh</c>, <c>-first-region</c> and <c>-everything</c>.
+        /// </para>
+        /// <para>
+        /// The constellation scales itself to whatever the pack files lay out, which is the point — a
+        /// docking region extends the picture without this screen knowing about it — and also the risk.
+        /// The second region took it from eight nodes to thirteen and from two columns of hexagons to
+        /// four. A test can say the spacing is positive; only a render says the numerals still fit inside
+        /// the nodes they price.
+        /// </para>
+        /// </remarks>
+        internal static void CaptureAtlas()
+        {
+            var prefix = OutputPath("Artifacts/atlas");
+
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var camera = BuildPreviewCamera();
+            var material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            var map = Pathweaver.Game.App.AtlasCatalogue.Load();
+
+            var firstRegion = Pathweaver.Core.Atlas.AtlasProgress.Of(
+                new[]
+                {
+                    "spring-well", "deep-channel", "ley-line", "tide-lens",
+                    "crystal-facet", "glass-siphon", "storm-eye", "wayfarer-mark",
+                },
+                essence: 12);
+
+            var everything = Pathweaver.Core.Atlas.AtlasProgress.Of(
+                System.Linq.Enumerable.Select(map.Nodes, node => node.Id), essence: 4);
+
+            foreach (var (progress, suffix) in new[]
+                     {
+                         (Pathweaver.Core.Atlas.AtlasProgress.Of(
+                             System.Array.Empty<string>(), essence: 6), "fresh"),
+                         (firstRegion, "first-region"),
+                         (everything, "everything"),
+                     })
+            {
+                var view = new GameObject($"Atlas {suffix}").AddComponent<AtlasView>();
+                view.Build(camera, material, map, progress);
+
+                Write(camera, $"{prefix}-{suffix}.png");
+
+                Object.DestroyImmediate(view.gameObject);
+            }
+        }
+
         private static Camera BuildPreviewCamera()
         {
             var camera = new GameObject("Camera").AddComponent<Camera>();

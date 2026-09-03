@@ -337,7 +337,7 @@ namespace Pathweaver.Game.Presentation.Menus
             // What the node gives, as its own mark: a hexagon for a token, a chevron pair for a skip,
             // a small star for essence. The same three shapes the HUD already uses for those things.
             button.AddGlyph(
-                EffectGlyph(node.Effect.Kind, _radius),
+                MarkFor(node.Effect.Kind, _radius),
                 EffectColour(node.Effect.Kind, unlocked),
                 new Vector3(0f, _radius * 0.22f, 0f));
 
@@ -368,11 +368,29 @@ namespace Pathweaver.Game.Presentation.Menus
             return true;
         }
 
-        private static Mesh EffectGlyph(AtlasEffectKind kind, float radius) => kind switch
+        /// <summary>
+        /// The mark a node wears, one shape per effect.
+        /// </summary>
+        /// <remarks>
+        /// Every kind is listed and an unknown one throws, rather than falling through to whichever mark
+        /// happened to be the default. `Discount` shipped wearing the essence diamond for exactly that
+        /// reason: the switch had a catch-all, so a new effect silently borrowed an existing mark and two
+        /// different relics looked like the same relic.
+        /// </remarks>
+        internal static Mesh MarkFor(AtlasEffectKind kind, float radius) => kind switch
         {
             AtlasEffectKind.Token => HexMeshFactory.CreateHexagon(radius * 0.34f),
             AtlasEffectKind.Skip => HexMeshFactory.CreateRectangle(radius * 0.5f, radius * 0.17f),
-            _ => HexMeshFactory.CreateRegularPolygon(4, radius * 0.36f, rotationDegrees: 45f),
+            AtlasEffectKind.Essence =>
+                HexMeshFactory.CreateRegularPolygon(4, radius * 0.36f, rotationDegrees: 45f),
+
+            // A triangle pointing down: the price comes down. Distinct from the bar, the hexagon and the
+            // diamond, which is what matters — colour may never carry a fact on its own here.
+            AtlasEffectKind.Discount =>
+                HexMeshFactory.CreateRegularPolygon(3, radius * 0.38f, rotationDegrees: 180f),
+
+            _ => throw new System.ArgumentOutOfRangeException(
+                nameof(kind), kind, "This effect has no mark. Give it one rather than letting it borrow."),
         };
 
         private static Color EffectColour(AtlasEffectKind kind, bool unlocked)
@@ -386,6 +404,10 @@ namespace Pathweaver.Game.Presentation.Menus
             {
                 AtlasEffectKind.Token => BoardPalette.TokenHeld,
                 AtlasEffectKind.Skip => BoardPalette.SkipHeld,
+
+                // Essence and discount share a colour on purpose: both are about Star Essence, and the
+                // shape is what tells them apart. That is the same division the board uses, where a
+                // resource says its kind by motif as well as by colour.
                 _ => BoardPalette.AtlasEssence,
             };
         }
@@ -419,7 +441,10 @@ namespace Pathweaver.Game.Presentation.Menus
                 TMPro.TextAlignmentOptions.Center,
                 HexButton.LabelDepth);
 
-            label.SetText(node.Cost.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            // What the player will be charged rather than what the pack file says, so the numerals visibly
+            // fall the moment a discount relic is bought. That is the only feedback a discount has.
+            label.SetText(_map.CostOf(node.Id, _progress)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture));
 
             _decorations.Add(label.gameObject);
         }

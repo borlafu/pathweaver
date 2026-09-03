@@ -22,6 +22,18 @@ namespace Pathweaver.Core.Atlas
 
         /// <summary>Extra Star Essence for every board cleared.</summary>
         Essence = 2,
+
+        /// <summary>
+        /// Every node still to be bought costs this much less Star Essence.
+        /// </summary>
+        /// <remarks>
+        /// The one effect a second region had room for. The first region already grants the most skips
+        /// and the most Pivot Tokens the balance allows — three of each, which is also where
+        /// <see cref="Rules.TokenRules.MaximumCapacity"/> tops out — so a relic that made a board easier
+        /// would have to raise a ceiling that exists to stop a board becoming undeadlockable. A relic
+        /// that makes the atlas cheaper changes no board at all.
+        /// </remarks>
+        Discount = 3,
     }
 
     /// <summary>An effect and how much of it.</summary>

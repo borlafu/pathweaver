@@ -175,7 +175,8 @@ namespace Pathweaver.Core.Atlas
         {
             if (index + 2 >= words.Length || words[index] != "gives")
             {
-                throw new AtlasFormatException("Expected \"gives <skip|token|essence> <number>\".", line);
+                throw new AtlasFormatException(
+                    "Expected \"gives <skip|token|essence|discount> <number>\".", line);
             }
 
             var kind = words[index + 1] switch
@@ -183,6 +184,7 @@ namespace Pathweaver.Core.Atlas
                 "skip" => AtlasEffectKind.Skip,
                 "token" => AtlasEffectKind.Token,
                 "essence" => AtlasEffectKind.Essence,
+                "discount" => AtlasEffectKind.Discount,
                 _ => throw new AtlasFormatException($"Unknown effect \"{words[index + 1]}\".", line),
             };
 

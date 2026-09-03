@@ -62,6 +62,8 @@ namespace Pathweaver.Game.Presentation.Text
                     $"{count} more Pivot {Plural(effect.Amount, "Token", "Tokens")} on every board.",
                 AtlasEffectKind.Skip =>
                     $"{count} more {Plural(effect.Amount, "skip", "skips")} on every board.",
+                AtlasEffectKind.Discount =>
+                    $"Every node you have not bought yet costs {effect.Amount} less.",
                 _ => $"{count} more {Essence} for every board you clear.",
             };
         }
@@ -91,12 +93,16 @@ namespace Pathweaver.Game.Presentation.Text
                 return "Unlock the node it grows from first.";
             }
 
-            if (progress.Essence < node.Cost)
+            // The price this player pays, which a discount relic lowers. Quoting the pack file's number
+            // here would contradict both the numeral on the node and what the purchase charges.
+            var price = map.CostOf(node.Id, progress);
+
+            if (progress.Essence < price)
             {
-                return $"Costs {Cost(node.Cost)}. You have {Number(progress.Essence)}.";
+                return $"Costs {Cost(price)}. You have {Number(progress.Essence)}.";
             }
 
-            return $"Costs {Cost(node.Cost)}. Tap again to unlock it.";
+            return $"Costs {Cost(price)}. Tap again to unlock it.";
         }
 
         /// <summary>
